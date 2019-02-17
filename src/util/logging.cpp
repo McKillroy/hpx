@@ -142,9 +142,7 @@ namespace hpx { namespace util
     ///////////////////////////////////////////////////////////////////////////
     // custom formatter: shepherd
     struct shepherd_thread_id
-      : hpx::util::logging::formatter::class_<
-            shepherd_thread_id,
-            hpx::util::logging::formatter::implement_op_equal::no_context>
+      : hpx::util::logging::formatter::class_<shepherd_thread_id>
     {
         shepherd_thread_id()
         {}
@@ -172,9 +170,7 @@ namespace hpx { namespace util
     ///////////////////////////////////////////////////////////////////////////
     // custom formatter: locality prefix
     struct locality_prefix
-      : hpx::util::logging::formatter::class_<
-            locality_prefix,
-            hpx::util::logging::formatter::implement_op_equal::no_context>
+      : hpx::util::logging::formatter::class_<locality_prefix>
     {
         locality_prefix()
         {}
@@ -199,9 +195,7 @@ namespace hpx { namespace util
     ///////////////////////////////////////////////////////////////////////////
     // custom formatter: HPX thread id
     struct thread_id
-      : hpx::util::logging::formatter::class_<
-            thread_id,
-            hpx::util::logging::formatter::implement_op_equal::no_context>
+      : hpx::util::logging::formatter::class_<thread_id>
     {
         void operator()(param str) const
         {
@@ -227,9 +221,7 @@ namespace hpx { namespace util
     ///////////////////////////////////////////////////////////////////////////
     // custom formatter: HPX thread phase
     struct thread_phase
-      : hpx::util::logging::formatter::class_<
-            thread_phase,
-            hpx::util::logging::formatter::implement_op_equal::no_context>
+      : hpx::util::logging::formatter::class_<thread_phase>
     {
         void operator()(param str) const
         {
@@ -254,9 +246,7 @@ namespace hpx { namespace util
     ///////////////////////////////////////////////////////////////////////////
     // custom formatter: locality prefix of parent thread
     struct parent_thread_locality
-      : hpx::util::logging::formatter::class_<
-            parent_thread_locality,
-            hpx::util::logging::formatter::implement_op_equal::no_context>
+      : hpx::util::logging::formatter::class_<parent_thread_locality>
     {
         void operator()(param str) const
         {
@@ -278,9 +268,7 @@ namespace hpx { namespace util
     ///////////////////////////////////////////////////////////////////////////
     // custom formatter: HPX parent thread id
     struct parent_thread_id
-      : hpx::util::logging::formatter::class_<
-            parent_thread_id,
-            hpx::util::logging::formatter::implement_op_equal::no_context>
+      : hpx::util::logging::formatter::class_<parent_thread_id>
     {
         void operator()(param str) const
         {
@@ -303,9 +291,7 @@ namespace hpx { namespace util
     ///////////////////////////////////////////////////////////////////////////
     // custom formatter: HPX parent thread phase
     struct parent_thread_phase
-      : hpx::util::logging::formatter::class_<
-            parent_thread_phase,
-            hpx::util::logging::formatter::implement_op_equal::no_context>
+      : hpx::util::logging::formatter::class_<parent_thread_phase>
     {
         void operator()(param str) const
         {
@@ -327,9 +313,7 @@ namespace hpx { namespace util
     ///////////////////////////////////////////////////////////////////////////
     // custom formatter: HPX component id of current thread
     struct thread_component_id
-      : hpx::util::logging::formatter::class_<
-            thread_component_id,
-            hpx::util::logging::formatter::implement_op_equal::no_context>
+      : hpx::util::logging::formatter::class_<thread_component_id>
     {
         void operator()(param str) const
         {
@@ -1236,6 +1220,92 @@ namespace hpx { namespace util { namespace detail
         init_debuglog_console_log(ini);
     }
 }}}
+
+
+///////////////////////////////////////////////////////////////////////////////
+#include <hpx/util/logging/format/destination/file.hpp>
+
+namespace hpx { namespace util { namespace logging { namespace destination
+{
+    file::mutex_type file::mtx_;
+}}}}
+
+
+///////////////////////////////////////////////////////////////////////////////
+#include <hpx/util/logging/format/destination/named.hpp>
+
+namespace hpx { namespace util { namespace logging { namespace destination {
+namespace detail
+{
+    void named_context::compute_write_steps() {
+        m_info.write_steps.clear();
+
+        std::istringstream in(m_info.format_string);
+        std::string word;
+        while ( in >> word) {
+            if ( word[0] == '+')
+                word.erase( word.begin());
+            else if ( word[0] == '-')
+                // ignore this word
+                continue;
+
+            if ( m_info.name_to_destination.find(word) !=
+                m_info.name_to_destination.end())
+                m_info.write_steps.push_back( m_info.
+                    name_to_destination.find(word)->second);
+        }
+    }
+}
+}}}}
+
+
+///////////////////////////////////////////////////////////////////////////////
+#include <hpx/util/logging/format/formatter/named_spacer.hpp>
+
+namespace hpx { namespace util { namespace logging { namespace formatter {
+namespace detail
+{
+    void base_named_spacer_context::compute_write_steps() {
+        typedef std::size_t size_type;
+
+        m_info.write_steps.clear();
+        std::string remaining = m_info.format_string;
+        size_type start_search_idx = 0;
+        while ( !remaining.empty() ) {
+            size_type idx = remaining.find('%', start_search_idx);
+            if ( idx != std::string::npos) {
+                // see if just escaped
+                if ( (idx < remaining.size() - 1) && remaining[idx + 1] == '%') {
+                    // we found an escaped char
+                    start_search_idx = idx + 2;
+                    continue;
+                }
+
+                // up to here, this is a spacer string
+                start_search_idx = 0;
+                std::string spacer = unescape( remaining.substr(0, idx) );
+                remaining = remaining.substr(idx + 1);
+                // find end of formatter name
+                idx = remaining.find('%');
+                format_base_type * fmt = nullptr;
+                if ( idx != std::string::npos) {
+                    std::string name = remaining.substr(0, idx);
+                    remaining = remaining.substr(idx + 1);
+                    fmt = m_info.name_to_formatter[name];
+                }
+                // note: fmt could be null, in case
+                m_info.write_steps.push_back( write_step( spacer, fmt) );
+            }
+            else {
+                // last part
+                m_info.write_steps.push_back(
+                    write_step( unescape(remaining), nullptr) );
+                remaining.clear();
+            }
+        }
+    }
+}
+}}}}
 
 #if defined(HPX_MSVC_WARNING_PRAGMA)
 #pragma warning(pop)

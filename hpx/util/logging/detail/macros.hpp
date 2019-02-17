@@ -114,7 +114,7 @@ Note that @c logger_type only needs to be a declaration (a @c typedef, for insta
 
 Example:
 @code
-typedef logger_format_write< > logger_type;
+typedef logger_format_write logger_type;
 HPX_DECLARE_LOG(g_l, logger_type)
 @endcode
 
@@ -129,7 +129,7 @@ This defines a log. It should be used in a source file, to define the log.
 
 Example:
 @code
-typedef logger_format_write< > logger_type;
+typedef logger_format_write logger_type;
 ...
 HPX_DEFINE_LOG(g_l, logger_type)
 @endcode
@@ -147,7 +147,7 @@ It should be used in a source file, to define the log.
 
 Example:
 @code
-typedef logger< default_, destination::file> err_log_type;
+typedef logger<destination::file> err_log_type;
 ...
 HPX_DEFINE_LOG_WITH_ARGS( g_log_err(), err_log_type, ("err.txt") )
 @endcode
