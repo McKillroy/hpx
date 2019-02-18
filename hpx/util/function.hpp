@@ -75,11 +75,14 @@ namespace hpx { namespace util
         using base_type::target;
     };
 
-    template <typename Sig, bool Serializable>
-    static bool is_empty_function(
-        function<Sig, Serializable> const& f) noexcept
+    namespace detail
     {
-        return f.empty();
+        template <typename Sig, bool Serializable>
+        static bool is_empty_function(
+            function<Sig, Serializable> const& f) noexcept
+        {
+            return f.empty();
+        }
     }
 }}
 

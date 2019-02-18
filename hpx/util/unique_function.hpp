@@ -14,6 +14,7 @@
 #include <hpx/traits/get_function_annotation.hpp>
 #include <hpx/traits/is_callable.hpp>
 #include <hpx/util/detail/basic_function.hpp>
+#include <hpx/util/detail/empty_function.hpp>
 #include <hpx/util/detail/function_registration.hpp>
 #include <hpx/util/detail/vtable/unique_function_vtable.hpp>
 #include <hpx/util/detail/vtable/vtable.hpp>
@@ -72,11 +73,14 @@ namespace hpx { namespace util
         using base_type::target;
     };
 
-    template <typename Sig, bool Serializable>
-    static bool is_empty_function(
-        unique_function<Sig, Serializable> const& f) noexcept
+    namespace detail
     {
-        return f.empty();
+        template <typename Sig, bool Serializable>
+        static bool is_empty_function(
+            unique_function<Sig, Serializable> const& f) noexcept
+        {
+            return f.empty();
+        }
     }
 }}
 

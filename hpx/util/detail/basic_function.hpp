@@ -129,7 +129,7 @@ namespace hpx { namespace util { namespace detail
                 std::is_constructible<target_type, target_type const&>::value,
                 "F shall be CopyConstructible");
 
-            if (!is_empty_function(f))
+            if (!detail::is_empty_function(f))
             {
                 vtable const* f_vptr = get_vtable<target_type>();
                 if (vptr == f_vptr)
@@ -261,7 +261,8 @@ namespace hpx { namespace util { namespace detail
     };
 
     template <typename Sig, bool Copyable>
-    static bool is_empty_function(function_base<Sig, Copyable> const& f) noexcept
+    static bool is_empty_function(
+        function_base<Sig, Copyable> const& f) noexcept
     {
         return f.empty();
     }
