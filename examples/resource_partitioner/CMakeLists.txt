@@ -4,20 +4,21 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 set(example_programs
-  oversubscribing_resource_partitioner
-  simple_resource_partitioner
   simplest_resource_partitioner_1
   simplest_resource_partitioner_2
 )
 
-if(CMAKE_COMPILER_IS_GNUCXX AND HPX_WITH_GCC_VERSION_CHECK)
-  if(NOT CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
-    if (HPX_WITH_CXX14_RETURN_TYPE_DEDUCTION)
-      set(example_programs ${example_programs}
-        async_customization
-        guided_pool_test
-      )
-    endif()
+if(HPX_WITH_MAX_CPU_COUNT AND HPX_WITH_SHARED_PRIORITY_SCHEDULER)
+  set(example_programs ${example_programs}
+    oversubscribing_resource_partitioner
+    simple_resource_partitioner
+  )
+
+  if (HPX_WITH_CXX14_RETURN_TYPE_DEDUCTION)
+    set(example_programs ${example_programs}
+      async_customization
+      guided_pool_test
+    )
   endif()
 endif()
 
@@ -54,23 +55,10 @@ foreach(example_program ${example_programs})
     add_definitions(-D_USE_MATH_DEFINES)
   endif()
 
-  # add a custom target for this example
-  add_hpx_pseudo_target(examples.resource_partitioner.${example_program})
-
-  # make pseudo-targets depend on master pseudo-target
-  add_hpx_pseudo_dependencies(examples.resource_partitioner
-                              examples.resource_partitioner.${example_program})
-
-  # add dependencies to pseudo-target
-  add_hpx_pseudo_dependencies(examples.resource_partitioner.${example_program}
-                              ${example_program})
+  add_hpx_example_target_dependencies("resource_partitioner" ${example_program})
 
   if(HPX_WITH_TESTS AND HPX_WITH_TESTS_EXAMPLES)
-    add_hpx_example_test("resource_partitioner" ${example_program} ${${example_program}_PARAMETERS})
-    add_hpx_pseudo_target(tests.examples.resource_partitioner.${example_program})
-    add_hpx_pseudo_dependencies(tests.examples.resource_partitioner
-                                tests.examples.resource_partitioner.${example_program})
-    add_hpx_pseudo_dependencies(tests.examples.resource_partitioner.${example_program}
-                                ${example_program})
+    add_hpx_example_test("resource_partitioner" ${example_program}
+      ${${example_program}_PARAMETERS})
   endif()
 endforeach()

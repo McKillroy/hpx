@@ -9,10 +9,10 @@
 #define HPX_SERIALIZATION_POLYMORPHIC_INTRUSIVE_FACTORY_HPP
 
 #include <hpx/config.hpp>
+#include <hpx/preprocessor/stringize.hpp>
 #include <hpx/runtime/serialization/serialization_fwd.hpp>
 #include <hpx/util/debug/demangle_helper.hpp>
-#include <hpx/util/detail/pp/stringize.hpp>
-#include <hpx/util/jenkins_hash.hpp>
+#include <hpx/hashing/jenkins_hash.hpp>
 
 #include <string>
 #include <unordered_map>

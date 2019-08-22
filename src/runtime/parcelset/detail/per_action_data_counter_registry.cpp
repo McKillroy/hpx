@@ -6,12 +6,12 @@
 #include <hpx/config.hpp>
 
 #if defined(HPX_HAVE_PARCELPORT_ACTION_COUNTERS)
-#include <hpx/exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/runtime/parcelset/detail/per_action_data_counter_registry.hpp>
 #include <hpx/performance_counters/counter_creators.hpp>
 #include <hpx/performance_counters/registry.hpp>
 #include <hpx/util/bind_front.hpp>
-#include <hpx/util/format.hpp>
+#include <hpx/format.hpp>
 #include <hpx/util/regex_from_pattern.hpp>
 
 #include <cstdint>

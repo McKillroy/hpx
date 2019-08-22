@@ -7,9 +7,10 @@
 #include <hpx/runtime/naming/id_type.hpp>
 #include <hpx/runtime/naming/name.hpp>
 
-#include <hpx/error_code.hpp>
-#include <hpx/exception.hpp>
+#include <hpx/assertion.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/lcos/future.hpp>
+#include <hpx/logging.hpp>
 #include <hpx/runtime/agas/addressing_service.hpp>
 #include <hpx/runtime/components/server/destroy_component.hpp>
 #include <hpx/runtime/launch_policy.hpp>
@@ -19,13 +20,11 @@
 #include <hpx/runtime/serialization/serialize.hpp>
 #include <hpx/runtime_fwd.hpp>
 #include <hpx/state.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/traits/is_bitwise_serializable.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/assert_owns_lock.hpp>
+#include <hpx/thread_support/assert_owns_lock.hpp>
+#include <hpx/thread_support/unlock_guard.hpp>
 #include <hpx/util/bind.hpp>
-#include <hpx/util/logging.hpp>
-#include <hpx/util/unlock_guard.hpp>
 
 #include <boost/io/ios_state.hpp>
 
@@ -583,7 +582,7 @@ namespace hpx { namespace naming
     }   // detail
 
     ///////////////////////////////////////////////////////////////////////////
-    gid_type operator+ (gid_type const& lhs, gid_type const& rhs)
+    gid_type operator+ (gid_type const& lhs, gid_type const& rhs) noexcept
     {
         std::uint64_t lsb = lhs.id_lsb_ + rhs.id_lsb_;
         std::uint64_t msb = lhs.id_msb_ + rhs.id_msb_;
@@ -606,7 +605,7 @@ namespace hpx { namespace naming
         return gid_type(msb, lsb);
     }
 
-    gid_type operator- (gid_type const& lhs, gid_type const& rhs)
+    gid_type operator- (gid_type const& lhs, gid_type const& rhs) noexcept
     {
         std::uint64_t lsb = lhs.id_lsb_ - rhs.id_lsb_;
         std::uint64_t msb = lhs.id_msb_ - rhs.id_msb_;

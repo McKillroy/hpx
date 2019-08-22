@@ -14,7 +14,7 @@
 #include <hpx/include/threads.hpp>
 #include <hpx/lcos/when_all.hpp>
 #include <hpx/runtime/threads/executors/pool_executor.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <cstddef>
 #include <string>
@@ -25,7 +25,7 @@
 const int max_threads = 4;
 
 // dummy function we will call using async
-void dummy_task(std::size_t n, std::string text)
+void dummy_task(std::size_t n, std::string const& text)
 {
     for (std::size_t i(0); i < n; ++i)
     {

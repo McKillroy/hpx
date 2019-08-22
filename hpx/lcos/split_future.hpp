@@ -66,7 +66,7 @@ namespace hpx
 #else // DOXYGEN
 
 #include <hpx/config.hpp>
-#include <hpx/exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/lcos/detail/future_data.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/lcos/local/packaged_continuation.hpp>
@@ -75,9 +75,9 @@ namespace hpx
 #include <hpx/traits/future_access.hpp>
 #include <hpx/traits/future_traits.hpp>
 #include <hpx/util/deferred_call.hpp>
-#include <hpx/util/detail/pack.hpp>
-#include <hpx/util/tuple.hpp>
-#include <hpx/util/unused.hpp>
+#include <hpx/datastructures/detail/pack.hpp>
+#include <hpx/datastructures/tuple.hpp>
+#include <hpx/type_support/unused.hpp>
 
 #include <boost/intrusive_ptr.hpp>
 
@@ -87,6 +87,8 @@ namespace hpx
 #include <type_traits>
 #include <utility>
 #include <vector>
+
+#if !defined(HPX_COMPUTE_DEVICE_CODE)
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace hpx { namespace lcos
@@ -414,6 +416,7 @@ namespace hpx
 {
     using lcos::split_future;
 }
+#endif
 
 #endif
 #endif

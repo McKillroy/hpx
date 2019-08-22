@@ -7,18 +7,17 @@
 #define HPX_RUNTIME_THREADS_POLICIES_SHARED_PRIORITY_QUEUE_SCHEDULER
 
 #include <hpx/config.hpp>
-#include <hpx/compat/mutex.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/runtime/get_worker_thread_num.hpp>
 #include <hpx/runtime/threads/policies/lockfree_queue_backends.hpp>
 #include <hpx/runtime/threads/policies/queue_helpers.hpp>
 #include <hpx/runtime/threads/policies/scheduler_base.hpp>
-#include <hpx/runtime/threads/policies/thread_queue.hpp>
+#include <hpx/runtime/threads/policies/thread_queue_mc.hpp>
 #include <hpx/runtime/threads/thread_data.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/runtime/threads_fwd.hpp>
-#include <hpx/throw_exception.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/logging.hpp>
+#include <hpx/errors.hpp>
+#include <hpx/logging.hpp>
 #include <hpx/util_fwd.hpp>
 
 #include <array>
@@ -26,15 +25,34 @@
 #include <cstdint>
 #include <exception>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <numeric>
 #include <type_traits>
 
 #include <hpx/config/warnings_prefix.hpp>
 
-namespace hpx {
-namespace threads {
-namespace policies {
+#if !defined(HPX_HAVE_MAX_CPU_COUNT) && defined(HPX_HAVE_MORE_THAN_64_THREADS)
+static_assert(false,
+    "The shared_priority_scheduler does not support dynamic bitsets for CPU "
+    "masks, i.e. HPX_WITH_MAX_CPU_COUNT=\"\" and "
+    "HPX_WITH_MORE_THAN_64_THREADS=ON. Reconfigure HPX with either "
+    "HPX_WITH_MAX_CPU_COUNT=N, where N is an integer, or disable the "
+    "shared_priority_scheduler by setting HPX_WITH_THREAD_SCHEDULERS to not "
+    "include \"all\" or \"shared-priority\"");
+#else
+
+namespace hpx { namespace threads { namespace policies {
+
+    ///////////////////////////////////////////////////////////////////////////
+#if defined(HPX_HAVE_CXX11_STD_ATOMIC_128BIT)
+    using default_shared_priority_queue_scheduler_terminated_queue =
+        lockfree_lifo;
+#else
+    using default_shared_priority_queue_scheduler_terminated_queue =
+        lockfree_fifo;
+#endif
+
     ///////////////////////////////////////////////////////////////////////////
     /// The shared_priority_queue_scheduler maintains a set of high, normal, and
     /// low priority queues. For each priority level there is a core/queue ratio
@@ -43,10 +61,10 @@ namespace policies {
     /// high priority queue, the next 4 will share another one and so on. In
     /// addition, the shared_priority_queue_scheduler is NUMA-aware and takes
     /// NUMA scheduling hints into account when creating and scheduling work.
-    template <typename Mutex = compat::mutex,
+    template <typename Mutex = std::mutex,
         typename PendingQueuing = lockfree_fifo,
-        typename StagedQueuing = lockfree_fifo,
-        typename TerminatedQueuing = lockfree_lifo>
+        typename TerminatedQueuing =
+            default_shared_priority_queue_scheduler_terminated_queue>
     class shared_priority_queue_scheduler : public scheduler_base
     {
     protected:
@@ -64,20 +82,20 @@ namespace policies {
     public:
         typedef std::false_type has_periodic_maintenance;
 
-        typedef thread_queue<Mutex, PendingQueuing, StagedQueuing,
-            TerminatedQueuing>
+        typedef thread_queue_mc<Mutex, PendingQueuing, TerminatedQueuing>
             thread_queue_type;
 
-        shared_priority_queue_scheduler(
-            std::size_t num_worker_threads,
+        shared_priority_queue_scheduler(std::size_t num_worker_threads,
             core_ratios cores_per_queue,
             char const* description,
+            detail::affinity_data const& affinity_data,
             int max_tasks = max_thread_count)
           : scheduler_base(num_worker_threads, description)
           , cores_per_queue_(cores_per_queue)
           , max_queue_thread_count_(max_tasks)
           , num_workers_(num_worker_threads)
           , num_domains_(1)
+          , affinity_data_(affinity_data)
           , initialized_(false)
         {
             HPX_ASSERT(num_worker_threads != 0);
@@ -86,7 +104,10 @@ namespace policies {
         virtual ~shared_priority_queue_scheduler() {}
 
         bool numa_sensitive() const override { return true; }
-        virtual bool has_thread_stealing() const override { return true; }
+        virtual bool has_thread_stealing(std::size_t num_thread) const override
+        {
+            return true;
+        }
 
         static std::string get_scheduler_name()
         {
@@ -670,9 +691,8 @@ namespace policies {
         }
 
         /// Return the next thread to be executed, return false if none available
-        virtual bool get_next_thread(std::size_t thread_num,
-            bool running, std::int64_t& idle_loop_count,
-            threads::thread_data*& thrd) override
+        virtual bool get_next_thread(std::size_t thread_num, bool running,
+            threads::thread_data*& thrd, bool /*enable_stealing*/) override
         {
             bool result = false;
 
@@ -1066,11 +1086,13 @@ namespace policies {
         /// manager to allow for maintenance tasks to be executed in the
         /// scheduler. Returns true if the OS thread calling this function
         /// has to be terminated (i.e. no more work has to be done).
-        virtual bool wait_or_add_new(std::size_t thread_num,
-            bool running, std::int64_t& idle_loop_count) override
+        virtual bool wait_or_add_new(std::size_t thread_num, bool running,
+            std::int64_t& idle_loop_count, bool /*enable_stealing*/,
+            std::size_t& added) override
         {
-            std::size_t added = 0;
             bool result = true;
+
+            added = 0;
 
             if (thread_num == std::size_t(-1)) {
                 HPX_THROW_EXCEPTION(bad_parameter,
@@ -1088,47 +1110,45 @@ namespace policies {
                 // set the preferred queue for this domain, if applicable
                 std::size_t q_index = q_lookup_[thread_num];
                 // get next task, steal if from another domain
-                result = hp_queues_[dom].wait_or_add_new(q_index, running,
-                    idle_loop_count, added);
+                result =
+                    hp_queues_[dom].wait_or_add_new(q_index, running, added) &&
+                    result;
                 if (0 != added) return result;
             }
 
             // try a normal priority task
-            if (!result) {
-                for (std::size_t d=0; d<num_domains_; ++d) {
-                    std::size_t dom = (domain_num+d) % num_domains_;
-                    // set the preferred queue for this domain, if applicable
-                    std::size_t q_index = q_lookup_[thread_num];
-                    // get next task, steal if from another domain
-                    result = np_queues_[dom].wait_or_add_new(q_index, running,
-                        idle_loop_count, added);
-                    if (0 != added) return result;
-                }
+            for (std::size_t d=0; d<num_domains_; ++d) {
+                std::size_t dom = (domain_num+d) % num_domains_;
+                // set the preferred queue for this domain, if applicable
+                std::size_t q_index = q_lookup_[thread_num];
+                // get next task, steal if from another domain
+                result = np_queues_[dom].wait_or_add_new(
+                                q_index, running, added) &&
+                    result;
+                if (0 != added) return result;
             }
 
             // low priority task
-            if (!result) {
 #ifdef JB_LP_STEALING
-                for (std::size_t d=domain_num; d<domain_num+num_domains_; ++d) {
-                    std::size_t dom = d % num_domains_;
-                    // set the preferred queue for this domain, if applicable
-                    std::size_t q_index = (dom==domain_num) ?
-                        q_lookup_[thread_num] :
-                        lp_lookup_[(counters_[dom]++ %
-                            lp_queues_[dom].num_cores)];
+            for (std::size_t d=domain_num; d<domain_num+num_domains_; ++d) {
+                std::size_t dom = d % num_domains_;
+                // set the preferred queue for this domain, if applicable
+                std::size_t q_index = (dom==domain_num) ?
+                    q_lookup_[thread_num] :
+                    lp_lookup_[(counters_[dom]++ %
+                        lp_queues_[dom].num_cores)];
 
-                    result = lp_queues_[dom].wait_or_add_new(q_index, running,
-                        idle_loop_count, added);
-                    if (0 != added) return result;
-                }
-#else
-                // no cross domain stealing for LP queues
-                result = lp_queues_[domain_num].wait_or_add_new(0, running,
-                    idle_loop_count, added);
+                result = lp_queues_[dom].wait_or_add_new(
+                    q_index, running, added);
                 if (0 != added) return result;
-#endif
             }
-
+#else
+            // no cross domain stealing for LP queues
+            result =
+                lp_queues_[domain_num].wait_or_add_new(0, running, added) &&
+                result;
+            if (0 != added) return result;
+#endif
             return result;
         }
 
@@ -1140,8 +1160,7 @@ namespace policies {
             {
                 initialized_ = true;
 
-                auto &rp = resource::get_partitioner();
-                auto const& topo = rp.get_topology();
+                auto const& topo = create_topology();
 
                 // For each worker thread, count which each numa domain they
                 // belong to and build lists of useful indexes/refs
@@ -1155,7 +1174,7 @@ namespace policies {
                 for (std::size_t local_id=0; local_id!=num_workers_; ++local_id)
                 {
                     std::size_t global_id = local_to_global_thread_index(local_id);
-                    std::size_t pu_num = rp.get_pu_num(global_id);
+                    std::size_t pu_num = affinity_data_.get_pu_num(global_id);
                     std::size_t domain = topo.get_numa_node_number(pu_num);
                     d_lookup_[local_id] = domain;
                     num_domains_ = (std::max)(num_domains_, domain+1);
@@ -1299,11 +1318,14 @@ namespace policies {
         // number of numa domains that the threads are occupying
         std::size_t num_domains_;
 
+        detail::affinity_data const& affinity_data_;
+
         // used to make sure the scheduler is only initialized once on a thread
         bool initialized_;
         hpx::lcos::local::spinlock init_mutex;
     };
 }}}
+#endif
 
 #include <hpx/config/warnings_suffix.hpp>
 

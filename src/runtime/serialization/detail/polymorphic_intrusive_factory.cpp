@@ -8,8 +8,8 @@
 #include <hpx/runtime/serialization/detail/polymorphic_intrusive_factory.hpp>
 
 #include <hpx/config.hpp>
-#include <hpx/exception.hpp>
-#include <hpx/util/static.hpp>
+#include <hpx/errors.hpp>
+#include <hpx/type_support/static.hpp>
 
 #include <string>
 

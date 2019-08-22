@@ -8,6 +8,12 @@
 
 #include <hpx/config.hpp>
 
+// #if defined(HPX_COMPUTE_DEVICE_CODE)
+//
+// #error "hpx::dataflow is not supported in device code"
+//
+// #else
+
 // Intentionally #include future.hpp outside of the guards as it may #include
 // dataflow.hpp itself
 #include <hpx/lcos/future.hpp>
@@ -27,14 +33,14 @@
 #include <hpx/traits/is_future.hpp>
 #include <hpx/traits/is_launch_policy.hpp>
 #include <hpx/traits/promise_local_result.hpp>
-#include <hpx/util/always_void.hpp>
+#include <hpx/type_support/always_void.hpp>
 #include <hpx/util/annotated_function.hpp>
 #include <hpx/util/deferred_call.hpp>
-#include <hpx/util/internal_allocator.hpp>
+#include <hpx/allocator_support/internal_allocator.hpp>
 #include <hpx/util/invoke_fused.hpp>
 #include <hpx/util/pack_traversal_async.hpp>
 #include <hpx/util/thread_description.hpp>
-#include <hpx/util/tuple.hpp>
+#include <hpx/datastructures/tuple.hpp>
 
 #include <hpx/parallel/executors/execution.hpp>
 #include <hpx/parallel/executors/parallel_executor.hpp>
@@ -575,5 +581,7 @@ namespace hpx
             alloc, std::forward<T0>(t0), std::forward<Ts>(ts)...);
     }
 }
+
+// #endif
 
 #endif /*HPX_LCOS_DATAFLOW_HPP*/

@@ -7,15 +7,15 @@
 #define HPX_UTIL_DETAIL_PACK_TRAVERSAL_ASYNC_IMPL_HPP
 
 #include <hpx/config.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/traits/future_access.hpp>
-#include <hpx/util/allocator_deleter.hpp>
-#include <hpx/util/always_void.hpp>
-#include <hpx/util/assert.hpp>
+#include <hpx/allocator_support/allocator_deleter.hpp>
+#include <hpx/type_support/always_void.hpp>
 #include <hpx/util/detail/container_category.hpp>
-#include <hpx/util/detail/pack.hpp>
+#include <hpx/datastructures/detail/pack.hpp>
 #include <hpx/util/invoke.hpp>
 #include <hpx/util/invoke_fused.hpp>
-#include <hpx/util/tuple.hpp>
+#include <hpx/datastructures/tuple.hpp>
 
 #include <boost/intrusive_ptr.hpp>
 
@@ -439,13 +439,12 @@ namespace util {
             /// Async traverse a single element which isn't a container or
             /// tuple like type. This function is SFINAEd out if the element
             /// isn't accepted by the visitor.
-            template <typename Current>
-            auto async_traverse_one_impl(container_category_tag<false, false>,
+            template <typename Current, typename = typename always_void<decltype(
+                std::declval<Frame>()->traverse(*std::declval<Current>()))>::type>
+            void async_traverse_one_impl(container_category_tag<false, false>,
                 Current&& current)
                 /// SFINAE this out if the visitor doesn't accept
                 /// the given element
-            -> typename always_void<decltype(
-                    std::declval<Frame>()->traverse(*current))>::type
             {
                 if (!frame_->traverse(*current))
                 {

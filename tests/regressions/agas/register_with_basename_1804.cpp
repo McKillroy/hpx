@@ -8,7 +8,7 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <iostream>
 #include <memory>
@@ -81,6 +81,19 @@ void test()
             std::vector<hpx::future<hpx::id_type> > ids =
                 hpx::find_all_from_basename(name, 1);
             boundingBoxAccepters.push_back(ids[0].get());
+        }
+    }
+
+    // unregistering names again to avoid memory leaks...
+    for (int i = 0; i < 2; ++i)
+    {
+        if (i != rank)
+            continue;
+
+        for (int j = 0; j < 2; ++j)
+        {
+            std::string name = gen_name(j, rank);
+            hpx::unregister_with_basename(name, 0).get();
         }
     }
 

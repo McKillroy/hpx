@@ -1,4 +1,4 @@
-//  Copyright (c) 2007-2018 Hartmut Kaiser
+//  Copyright (c) 2007-2019 Hartmut Kaiser
 //
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -20,20 +20,23 @@
 #include <hpx/traits/action_serialization_filter.hpp>
 #include <hpx/traits/action_stacksize.hpp>
 #include <hpx/traits/action_was_object_migrated.hpp>
+#include <hpx/traits/brace_initializable_traits.hpp>
 #include <hpx/traits/component_config_data.hpp>
+#include <hpx/traits/component_heap_type.hpp>
 #include <hpx/traits/component_pin_support.hpp>
 #include <hpx/traits/component_supports_migration.hpp>
 #include <hpx/traits/component_type_database.hpp>
 #include <hpx/traits/component_type_is_compatible.hpp>
-#include <hpx/traits/concepts.hpp>
+#include <hpx/concepts/concepts.hpp>
+#include <hpx/type_support/detail/wrap_int.hpp>
 #include <hpx/traits/extract_action.hpp>
 #include <hpx/traits/future_access.hpp>
 #include <hpx/traits/future_traits.hpp>
 #include <hpx/traits/get_function_address.hpp>
 #include <hpx/traits/get_function_annotation.hpp>
 #include <hpx/traits/get_remote_result.hpp>
-#include <hpx/traits/has_member_xxx.hpp>
-#include <hpx/traits/has_xxx.hpp>
+#include <hpx/concepts/has_member_xxx.hpp>
+#include <hpx/concepts/has_xxx.hpp>
 #include <hpx/traits/is_action.hpp>
 #include <hpx/traits/is_bind_expression.hpp>
 #include <hpx/traits/is_bitwise_serializable.hpp>
@@ -47,10 +50,10 @@
 #include <hpx/traits/is_future.hpp>
 #include <hpx/traits/is_future_range.hpp>
 #include <hpx/traits/is_future_tuple.hpp>
-#include <hpx/traits/is_iterator.hpp>
+#include <hpx/iterator_support/is_iterator.hpp>
 #include <hpx/traits/is_launch_policy.hpp>
 #include <hpx/traits/is_placeholder.hpp>
-#include <hpx/traits/is_range.hpp>
+#include <hpx/iterator_support/is_range.hpp>
 #include <hpx/traits/is_timed_executor.hpp>
 #include <hpx/traits/is_tuple_like.hpp>
 #include <hpx/traits/is_valid_action.hpp>
@@ -63,7 +66,6 @@
 #include <hpx/traits/promise_remote_result.hpp>
 #include <hpx/traits/segmented_iterator_traits.hpp>
 #include <hpx/traits/supports_streaming_with_any.hpp>
-#include <hpx/traits/detail/wrap_int.hpp>
 
 #endif
 

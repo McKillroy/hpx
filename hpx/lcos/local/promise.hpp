@@ -10,10 +10,10 @@
 #include <hpx/lcos_fwd.hpp>
 #include <hpx/lcos/detail/future_data.hpp>
 #include <hpx/lcos/future.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/traits/future_access.hpp>
-#include <hpx/util/allocator_deleter.hpp>
-#include <hpx/util/unused.hpp>
+#include <hpx/allocator_support/allocator_deleter.hpp>
+#include <hpx/type_support/unused.hpp>
 
 #include <boost/intrusive_ptr.hpp>
 #include <boost/utility/swap.hpp>
@@ -37,12 +37,14 @@ namespace hpx { namespace lcos { namespace local
             promise_base()
               : shared_state_(new shared_state_type(init_no_addref{}), false)
               , future_retrieved_(false)
+              , shared_future_retrieved_(false)
             {}
 
             template <typename Allocator>
             promise_base(std::allocator_arg_t, Allocator const& a)
               : shared_state_()
               , future_retrieved_(false)
+              , shared_future_retrieved_(false)
             {
                 typedef typename traits::detail::shared_state_allocator<
                         SharedState, Allocator
@@ -62,16 +64,20 @@ namespace hpx { namespace lcos { namespace local
                 unique_pointer p (traits::allocate(alloc, 1),
                     util::allocator_deleter<other_allocator>{alloc});
 
-                traits::construct(alloc, p.get(), init_no_addref{}, alloc);
+                using lcos::detail::in_place;
+                traits::construct(alloc, p.get(), init_no_addref{}, in_place{},
+                    alloc);
                 shared_state_.reset(p.release(), false);
             }
 
             promise_base(promise_base&& other) noexcept
               : shared_state_(std::move(other.shared_state_))
               , future_retrieved_(other.future_retrieved_)
+              , shared_future_retrieved_(other.shared_future_retrieved_)
             {
                 other.shared_state_ = nullptr;
                 other.future_retrieved_ = false;
+                other.shared_future_retrieved_ = false;
             }
 
             ~promise_base()
@@ -89,9 +95,11 @@ namespace hpx { namespace lcos { namespace local
 
                     shared_state_ = std::move(other.shared_state_);
                     future_retrieved_ = other.future_retrieved_;
+                    shared_future_retrieved_ = other.shared_future_retrieved_;
 
                     other.shared_state_ = nullptr;
                     other.future_retrieved_ = false;
+                    other.shared_future_retrieved_ = false;
                 }
                 return *this;
             }
@@ -100,6 +108,8 @@ namespace hpx { namespace lcos { namespace local
             {
                 boost::swap(shared_state_, other.shared_state_);
                 boost::swap(future_retrieved_, other.future_retrieved_);
+                boost::swap(
+                    shared_future_retrieved_, other.shared_future_retrieved_);
             }
 
             bool valid() const noexcept
@@ -109,11 +119,12 @@ namespace hpx { namespace lcos { namespace local
 
             future<R> get_future(error_code& ec = throws)
             {
-                if (future_retrieved_)
+                if (future_retrieved_ || shared_future_retrieved_)
                 {
                     HPX_THROWS_IF(ec, future_already_retrieved,
                         "local::detail::promise_base<R>::get_future",
-                        "future has already been retrieved from this promise");
+                        "future or shared future has already been retrieved "
+                        "from this promise");
                     return future<R>();
                 }
 
@@ -127,6 +138,29 @@ namespace hpx { namespace lcos { namespace local
 
                 future_retrieved_ = true;
                 return traits::future_access<future<R> >::create(shared_state_);
+            }
+
+            shared_future<R> get_shared_future(error_code& ec = throws)
+            {
+                if (future_retrieved_)
+                {
+                    HPX_THROWS_IF(ec, future_already_retrieved,
+                        "local::detail::promise_base<R>::get_shared_future",
+                        "future has already been retrieved from this promise");
+                    return shared_future<R>();
+                }
+
+                if (shared_state_ == nullptr)
+                {
+                    HPX_THROWS_IF(ec, no_state,
+                        "local::detail::promise_base<R>::get_shared_future",
+                        "this promise has no valid shared state");
+                    return shared_future<R>();
+                }
+
+                shared_future_retrieved_ = true;
+                return traits::future_access<shared_future<R>>::create(
+                    shared_state_);
             }
 
             template <typename... Ts>
@@ -180,7 +214,8 @@ namespace hpx { namespace lcos { namespace local
         protected:
             void check_abandon_shared_state(const char* fun)
             {
-                if (shared_state_ != nullptr && future_retrieved_ &&
+                if (shared_state_ != nullptr &&
+                    (future_retrieved_ || shared_future_retrieved_) &&
                     !shared_state_->is_ready())
                 {
                     shared_state_->set_error(broken_promise, fun,
@@ -190,6 +225,7 @@ namespace hpx { namespace lcos { namespace local
 
             boost::intrusive_ptr<shared_state_type> shared_state_;
             bool future_retrieved_;
+            bool shared_future_retrieved_;
         };
     }
 
@@ -251,16 +287,24 @@ namespace hpx { namespace lcos { namespace local
 
         // Returns: A future<R> object with the same shared state as *this.
         // Throws: future_error if *this has no shared state or if get_future
-        //         has already been called on a promise with the same shared
-        //         state as *this.
+        //         or get_shared_future has already been called on a promise
+        //         with the same shared state as *this.
         // Error conditions:
-        //   - future_already_retrieved if get_future has already been called
-        //     on a promise with the same shared state as *this.
+        //   - future_already_retrieved if get_future or get_shared_future has
+        //     already been called on a promise with the same shared state as
+        //     *this.
         //   - no_state if *this has no shared state.
-        future<R> get_future(error_code& ec = throws)
-        {
-            return base_type::get_future(ec);
-        }
+        using base_type::get_future;
+
+        // Returns: A shared_future<R> object with the same shared state as *this.
+        // Throws: future_error if *this has no shared state or if
+        //         get_shared_future has already been called on a promise
+        //         with the same shared state as *this.
+        // Error conditions:
+        //   - future_already_retrieved if get_shared_future has already been
+        //     called on a promise with the same shared state as *this.
+        //   - no_state if *this has no shared state.
+        using base_type::get_shared_future;
 
         // Effects: atomically stores the value r in the shared state and makes
         //          that state ready (30.6.4).
@@ -386,18 +430,26 @@ namespace hpx { namespace lcos { namespace local
             return base_type::valid();
         }
 
-        // Returns: A future<R> object with the same shared state as *this.
+        // Returns: A future<R&> object with the same shared state as *this.
         // Throws: future_error if *this has no shared state or if get_future
-        //         has already been called on a promise with the same shared
-        //         state as *this.
+        //         or get_shared_future has already been called on a promise
+        //         with the same shared state as *this.
         // Error conditions:
-        //   - future_already_retrieved if get_future has already been called
-        //     on a promise with the same shared state as *this.
+        //   - future_already_retrieved if get_future or get_shared_future has
+        //     already been called on a promise with the same shared state as
+        //     *this.
         //   - no_state if *this has no shared state.
-        future<R&> get_future(error_code& ec = throws)
-        {
-            return base_type::get_future(ec);
-        }
+        using base_type::get_future;
+
+        // Returns: A shared_future<R&> object with the same shared state as *this.
+        // Throws: future_error if *this has no shared state or if
+        //         get_shared_future has already been called on a promise
+        //         with the same shared state as *this.
+        // Error conditions:
+        //   - future_already_retrieved if get_shared_future has already been
+        //     called on a promise with the same shared state as *this.
+        //   - no_state if *this has no shared state.
+        using base_type::get_shared_future;
 
         // Effects: atomically stores the value r in the shared state and makes
         //          that state ready (30.6.4).
@@ -484,16 +536,24 @@ namespace hpx { namespace lcos { namespace local
 
         // Returns: A future<R> object with the same shared state as *this.
         // Throws: future_error if *this has no shared state or if get_future
-        //         has already been called on a promise with the same shared
-        //         state as *this.
+        //         or get_shared_future has already been called on a promise
+        //         with the same shared state as *this.
         // Error conditions:
-        //   - future_already_retrieved if get_future has already been called
-        //     on a promise with the same shared state as *this.
+        //   - future_already_retrieved if get_future or get_shared_future has
+        //     already been called on a promise with the same shared state as
+        //     *this.
         //   - no_state if *this has no shared state.
-        future<void> get_future(error_code& ec = throws)
-        {
-            return base_type::get_future(ec);
-        }
+        using base_type::get_future;
+
+        // Returns: A shared_future<R> object with the same shared state as *this.
+        // Throws: future_error if *this has no shared state or if
+        //         get_shared_future has already been called on a promise
+        //         with the same shared state as *this.
+        // Error conditions:
+        //   - future_already_retrieved if get_shared_future has already been
+        //     called on a promise with the same shared state as *this.
+        //   - no_state if *this has no shared state.
+        using base_type::get_shared_future;
 
         // Effects: atomically stores the value r in the shared state and makes
         //          that state ready (30.6.4).

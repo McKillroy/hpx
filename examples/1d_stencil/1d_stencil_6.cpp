@@ -11,7 +11,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/hpx.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
-#include <hpx/util/unused.hpp>
+#include <hpx/type_support/unused.hpp>
 
 #include <boost/shared_array.hpp>
 
@@ -56,20 +56,21 @@ private:
 public:
     partition_data()
       : size_(0)
+      , min_index_(0)
     {}
 
     // Create a new (uninitialized) partition of the given size.
     partition_data(std::size_t size)
-      : data_(new double [size], size, buffer_type::take),
-        size_(size),
-        min_index_(0)
+      : data_(std::allocator<double>().allocate(size), size, buffer_type::take)
+      , size_(size)
+      , min_index_(0)
     {}
 
     // Create a new (initialized) partition of the given size.
     partition_data(std::size_t size, double initial_value)
-      : data_(new double [size], size, buffer_type::take),
-        size_(size),
-        min_index_(0)
+      : data_(std::allocator<double>().allocate(size), size, buffer_type::take)
+      , size_(size)
+      , min_index_(0)
     {
         double base_value = double(initial_value * size);
         for (std::size_t i = 0; i != size; ++i)

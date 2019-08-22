@@ -7,6 +7,7 @@
 #define HPX_COMPONENTS_CLIENT_BASE_OCT_31_2008_0424PM
 
 #include <hpx/config.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/runtime/agas/interface.hpp>
 #include <hpx/runtime/components/component_type.hpp>
@@ -14,15 +15,14 @@
 #include <hpx/runtime/components/stubs/stub_base.hpp>
 #include <hpx/runtime/naming/unmanaged.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/traits/acquire_future.hpp>
 #include <hpx/traits/action_remote_result.hpp>
 #include <hpx/traits/future_access.hpp>
 #include <hpx/traits/future_traits.hpp>
 #include <hpx/traits/is_client.hpp>
 #include <hpx/traits/is_future.hpp>
-#include <hpx/util/always_void.hpp>
-#include <hpx/util/assert.hpp>
+#include <hpx/type_support/always_void.hpp>
 #include <hpx/util/bind_back.hpp>
 
 #include <boost/intrusive_ptr.hpp>
@@ -173,8 +173,8 @@ namespace hpx { namespace lcos { namespace detail
         {}
 
         template <typename ... T>
-        future_data(init_no_addref no_addref, T&& ... ts)
-          : future_data_base<id_type>(no_addref, std::forward<T>(ts)...)
+        future_data(init_no_addref no_addref, in_place in_place, T&& ... ts)
+          : future_data_base<id_type>(no_addref, in_place, std::forward<T>(ts)...)
         {}
 
         future_data(init_no_addref no_addref, std::exception_ptr const& e)

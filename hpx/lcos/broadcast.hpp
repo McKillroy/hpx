@@ -136,23 +136,23 @@ namespace hpx { namespace lcos
 
 #include <hpx/config.hpp>
 #include <hpx/apply.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/lcos/detail/async_colocated.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/lcos/when_all.hpp>
+#include <hpx/preprocessor/cat.hpp>
+#include <hpx/preprocessor/expand.hpp>
+#include <hpx/preprocessor/nargs.hpp>
 #include <hpx/runtime/actions/plain_action.hpp>
 #include <hpx/runtime/applier/detail/apply_colocated.hpp>
 #include <hpx/runtime/naming/name.hpp>
 #include <hpx/runtime/serialization/vector.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/traits/extract_action.hpp>
 #include <hpx/traits/promise_local_result.hpp>
-#include <hpx/util/assert.hpp>
 #include <hpx/util/calculate_fanout.hpp>
-#include <hpx/util/detail/pack.hpp>
-#include <hpx/util/detail/pp/cat.hpp>
-#include <hpx/util/detail/pp/expand.hpp>
-#include <hpx/util/detail/pp/nargs.hpp>
-#include <hpx/util/tuple.hpp>
+#include <hpx/datastructures/detail/pack.hpp>
+#include <hpx/datastructures/tuple.hpp>
 
 #include <cstddef>
 #include <type_traits>

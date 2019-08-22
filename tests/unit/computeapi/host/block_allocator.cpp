@@ -4,8 +4,8 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/hpx_init.hpp>
-#include <hpx/include/compute.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/compute/host.hpp>
+#include <hpx/testing.hpp>
 
 #include <atomic>
 #include <cstddef>

@@ -7,7 +7,7 @@
 
 #include <hpx/include/threads.hpp>
 #include <hpx/runtime/threads/policies/parse_affinity_options.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -1030,7 +1030,7 @@ namespace test
     {
         std::string::size_type p = str.find(what);
         if (p != std::string::npos) {
-            std::size_t len = std::strlen(what);
+            std::size_t len = strnlen(what, 64);
             do {
                 str.replace(p, len, with);
                 p = str.find(what, p+len);

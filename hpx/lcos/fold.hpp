@@ -166,21 +166,21 @@ namespace hpx { namespace lcos
 #define HPX_LCOS_FOLD_SEP_29_2013_1442AM
 
 #include <hpx/config.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/lcos/detail/async_colocated.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/lcos/when_all.hpp>
+#include <hpx/preprocessor/cat.hpp>
+#include <hpx/preprocessor/expand.hpp>
+#include <hpx/preprocessor/nargs.hpp>
 #include <hpx/runtime/actions/action_support.hpp>
 #include <hpx/runtime/naming/name.hpp>
 #include <hpx/runtime/serialization/vector.hpp>
 #include <hpx/traits/extract_action.hpp>
 #include <hpx/traits/promise_local_result.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/decay.hpp>
-#include <hpx/util/detail/pp/cat.hpp>
-#include <hpx/util/detail/pp/expand.hpp>
-#include <hpx/util/detail/pp/nargs.hpp>
-#include <hpx/util/detail/pack.hpp>
-#include <hpx/util/tuple.hpp>
+#include <hpx/type_support/decay.hpp>
+#include <hpx/datastructures/detail/pack.hpp>
+#include <hpx/datastructures/tuple.hpp>
 
 #include <cstddef>
 #include <utility>

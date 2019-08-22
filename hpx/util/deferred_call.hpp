@@ -13,10 +13,10 @@
 #include <hpx/traits/get_function_address.hpp>
 #include <hpx/traits/get_function_annotation.hpp>
 #include <hpx/traits/is_callable.hpp>
-#include <hpx/util/decay.hpp>
+#include <hpx/type_support/decay.hpp>
 #include <hpx/util/invoke_fused.hpp>
 #include <hpx/util/result_of.hpp>
-#include <hpx/util/tuple.hpp>
+#include <hpx/datastructures/tuple.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -109,7 +109,7 @@ namespace hpx { namespace util
 
             template <typename F_, typename ...Ts_, typename =
                 typename std::enable_if<
-                    !std::is_same<typename std::decay<F_>::type, deferred>::value
+                    std::is_constructible<F, F_>::value
                 >::type>
             explicit HPX_HOST_DEVICE deferred(F_&& f, Ts_&&... vs)
               : base_type{

@@ -7,13 +7,13 @@
 #define HPX_RUNTIME_THREADS_THREAD_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/exception_fwd.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
 #include <hpx/lcos_fwd.hpp>
 #include <hpx/runtime/threads/thread_data_fwd.hpp>
 #include <hpx/runtime_fwd.hpp>
 #include <hpx/util/deferred_call.hpp>
-#include <hpx/util/steady_clock.hpp>
+#include <hpx/timing/steady_clock.hpp>
 #include <hpx/util_fwd.hpp>
 
 #include <cstddef>

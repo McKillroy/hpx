@@ -16,9 +16,9 @@
 #include <hpx/runtime/components/server/managed_component_base.hpp>
 #include <hpx/runtime/naming/address.hpp>
 #include <hpx/runtime/naming/id_type.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/traits/future_access.hpp>
-#include <hpx/traits/detail/wrap_int.hpp>
+#include <hpx/type_support/detail/wrap_int.hpp>
 #include <hpx/util/deferred_call.hpp>
 #include <hpx/util/unique_function.hpp>
 
@@ -86,7 +86,7 @@ namespace lcos {
               : alloc_(alloc)
             {}
 
-            promise_data_allocator(init_no_addref no_addref,
+            promise_data_allocator(init_no_addref no_addref, in_place in_place,
                     other_allocator const& alloc)
               : promise_data<Result>(no_addref), alloc_(alloc)
             {}

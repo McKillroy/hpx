@@ -3,14 +3,12 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#define HPX_NO_VERSION_CHECK        // avoid linker errors
-
 #include <hpx/config.hpp>
 
 #include "worker_timed.hpp"
 
-#include <hpx/util/format.hpp>
-#include <hpx/util/high_resolution_timer.hpp>
+#include <hpx/format.hpp>
+#include <hpx/timing/high_resolution_timer.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -40,7 +38,7 @@ std::uint64_t delay = 5;
 bool header = true;
 
 ///////////////////////////////////////////////////////////////////////////////
-std::string format_build_date(std::string timestamp)
+std::string format_build_date()
 {
     std::chrono::time_point<std::chrono::system_clock> now =
         std::chrono::system_clock::now();
@@ -64,7 +62,7 @@ void print_results(
         cout << "# BENCHMARK: " << benchmark_name << "\n";
 
         cout << "# VERSION: " << HPX_HAVE_GIT_COMMIT << " "
-                 << format_build_date(__DATE__) << "\n"
+                 << format_build_date() << "\n"
              << "#\n";
 
         // Note that if we change the number of fields above, we have to

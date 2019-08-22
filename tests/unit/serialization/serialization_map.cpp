@@ -11,7 +11,7 @@
 #include <hpx/runtime/serialization/input_archive.hpp>
 #include <hpx/runtime/serialization/output_archive.hpp>
 
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <algorithm>
 #include <iterator>
@@ -25,7 +25,7 @@ struct A
 {
     A() {}
 
-    A(T t) : t_(t) {}
+    explicit A(T t) : t_(t) {}
     T t_;
 
     A & operator=(T t) { t_ = t; return *this; }

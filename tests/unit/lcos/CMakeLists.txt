@@ -23,6 +23,7 @@ set(tests
     async_unwrap_result
     barrier
     broadcast
+    broadcast_component
     broadcast_apply
     channel
     channel_local
@@ -36,10 +37,10 @@ set(tests
     future_then_executor
     future_wait
     global_spmd_block
-    make_ready_future
     local_latch
     local_barrier
     local_barrier_count_up
+    local_barrier_reset
     local_dataflow
     local_dataflow_boost_small_vector
     local_dataflow_executor
@@ -48,6 +49,7 @@ set(tests
     local_mutex
     local_promise_allocator
     make_future
+    make_ready_future
     packaged_action
     promise
     promise_allocator
@@ -146,16 +148,6 @@ foreach(test ${tests})
 
   add_hpx_unit_test("lcos" ${test} ${${test}_PARAMETERS})
 
-  # add a custom target for this example
-  add_hpx_pseudo_target(tests.unit.lcos.${test})
-
-  # make pseudo-targets depend on master pseudo-target
-  add_hpx_pseudo_dependencies(tests.unit.lcos
-                              tests.unit.lcos.${test})
-
-  # add dependencies to pseudo-target
-  add_hpx_pseudo_dependencies(tests.unit.lcos.${test}
-                              ${test}_test)
 endforeach()
 
 if(HPX_WITH_COMPILE_ONLY_TESTS)
@@ -187,18 +179,8 @@ if(HPX_WITH_COMPILE_ONLY_TESTS)
       ${${compile_test}_FLAGS}
       FOLDER "Tests/Unit/LCOs/CompileOnly")
 
-    # add a custom target for this example
-    add_hpx_pseudo_target(tests.unit.lcos.${compile_test})
-
-    # make pseudo-targets depend on master pseudo-target
-    add_hpx_pseudo_dependencies(tests.unit.lcos
-                                tests.unit.lcos.${compile_test})
-
-    # add dependencies to pseudo-target
-    add_hpx_pseudo_dependencies(tests.unit.lcos.${compile_test}
-                                "tests.unit.lcos.${compile_test}")
-
   endforeach()
+
 endif()
 
 #########################################################################################
@@ -208,8 +190,8 @@ set(subdirs
 
 # add sub directories
 foreach(subdir ${subdirs})
-  add_hpx_pseudo_target(tests.unit.lcos.${subdir}dir)
+  add_hpx_pseudo_target(tests.unit.lcos.${subdir})
   add_subdirectory(${subdir})
-  add_hpx_pseudo_dependencies(tests.unit.lcos tests.unit.lcos.${subdir}dir)
+  add_hpx_pseudo_dependencies(tests.unit.lcos tests.unit.lcos.${subdir})
 endforeach()
 

@@ -10,17 +10,17 @@
 #define HPX_RUNTIME_THREADS_THREAD_HELPERS_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/exception_fwd.hpp>
+#include <hpx/concurrency/register_locks.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/runtime/naming_fwd.hpp>
 #include <hpx/runtime/threads_fwd.hpp>
 #include <hpx/runtime/thread_pool_helpers.hpp>
 #include <hpx/runtime/threads/policies/scheduler_mode.hpp>
 #include <hpx/runtime/threads/thread_data_fwd.hpp>
 #include <hpx/runtime/threads/thread_enums.hpp>
+#include <hpx/timing/steady_clock.hpp>
 #include <hpx/util_fwd.hpp>
 #include <hpx/util/unique_function.hpp>
-#include <hpx/util/register_locks.hpp>
-#include <hpx/util/steady_clock.hpp>
 #include <hpx/util/thread_description.hpp>
 
 #include <atomic>
@@ -74,6 +74,7 @@ namespace hpx { namespace threads
         thread_state_enum state = pending,
         thread_state_ex_enum stateex = wait_signaled,
         thread_priority priority = thread_priority_normal,
+        bool retry_on_active = true,
         hpx::error_code& ec = throws);
 
     ///////////////////////////////////////////////////////////////////////
@@ -111,6 +112,7 @@ namespace hpx { namespace threads
         thread_state_enum state = pending,
         thread_state_ex_enum stateex = wait_timeout,
         thread_priority priority = thread_priority_normal,
+        bool retry_on_active = true,
         error_code& ec = throws);
 
     inline thread_id_type set_thread_state(thread_id_type const& id,
@@ -118,10 +120,11 @@ namespace hpx { namespace threads
         thread_state_enum state = pending,
         thread_state_ex_enum stateex = wait_timeout,
         thread_priority priority = thread_priority_normal,
+        bool retry_on_active = true,
         error_code& /*ec*/ = throws)
     {
-        return set_thread_state(id, abs_time, nullptr, state, stateex,
-            priority, throws);
+        return set_thread_state(id, abs_time, nullptr, state, stateex, priority,
+            retry_on_active, throws);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -156,10 +159,11 @@ namespace hpx { namespace threads
         thread_state_enum state = pending,
         thread_state_ex_enum stateex = wait_timeout,
         thread_priority priority = thread_priority_normal,
+        bool retry_on_active = true,
         error_code& ec = throws)
     {
         return set_thread_state(id, rel_time.from_now(), state, stateex,
-            priority, ec);
+            priority, retry_on_active, ec);
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -477,7 +481,21 @@ namespace hpx { namespace threads
     HPX_API_EXPORT void reset_thread_distribution();
 
     /// Set the new scheduler mode
-    HPX_API_EXPORT void set_scheduler_mode(threads::policies::scheduler_mode);
+    HPX_API_EXPORT void set_scheduler_mode(
+        threads::policies::scheduler_mode new_mode);
+
+    /// Add the given flags to the scheduler mode
+    HPX_API_EXPORT void add_scheduler_mode(
+        threads::policies::scheduler_mode to_add);
+
+    /// Add/remove the given flags to the scheduler mode
+    HPX_API_EXPORT void add_remove_scheduler_mode(
+        threads::policies::scheduler_mode to_add,
+        threads::policies::scheduler_mode to_remove);
+
+    /// Remove the given flags from the scheduler mode
+    HPX_API_EXPORT void remove_scheduler_mode(
+        threads::policies::scheduler_mode to_remove);
     /// \endcond
 }}
 

@@ -5,104 +5,13 @@
 
 # Add all files here which should be passed to doxygen
 set(doxygen_dependencies
+    "${PROJECT_SOURCE_DIR}/components/component_storage/include/hpx/components/component_storage/migrate_from_storage.hpp"
+    "${PROJECT_SOURCE_DIR}/components/component_storage/include/hpx/components/component_storage/migrate_to_storage.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/hpx_init.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/hpx_start.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/hpx_finalize.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/hpx_suspend.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/error.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/error_code.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/exception.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/exception_fwd.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/exception_list.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/throw_exception.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/components/component_storage/migrate_from_storage.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/components/component_storage/migrate_to_storage.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/execution_policy.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithm.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/parallel/task_block.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/adjacent_difference.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/adjacent_find.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/all_any_none.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/copy.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/count.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/destroy.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/equal.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/exclusive_scan.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/fill.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/find.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/for_each.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/for_loop.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/for_loop_induction.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/for_loop_reduction.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/generate.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/is_heap.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/includes.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/inclusive_scan.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/is_partitioned.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/is_sorted.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/lexicographical_compare.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/merge.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/minmax.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/mismatch.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/move.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/partition.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/reduce.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/reduce_by_key.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/remove.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/remove_copy.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/replace.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/reverse.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/rotate.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/search.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/set_difference.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/set_intersection.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/set_symmetric_difference.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/set_union.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/sort.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/sort_by_key.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/swap_ranges.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/transform.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/transform_exclusive_scan.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/transform_inclusive_scan.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/transform_reduce.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/transform_reduce_binary.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/uninitialized_copy.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/uninitialized_default_construct.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/uninitialized_fill.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/uninitialized_move.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/uninitialized_value_construct.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/algorithms/unique.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/all_any_none.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/copy.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/count.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/fill.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/find.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/for_each.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/generate.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/is_heap.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/merge.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/minmax.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/partition.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/remove.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/remove_copy.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/replace.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/reverse.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/rotate.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/search.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/sort.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/transform.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/container_algorithms/unique.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/auto_chunk_size.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/dynamic_chunk_size.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/execution_fwd.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/execution_information_fwd.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/guided_chunk_size.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/parallel_executor.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/persistent_auto_chunk_size.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/sequenced_executor.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/service_executors.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/static_chunk_size.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/parallel/executors/thread_pool_executors.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/performance_counters/manage_counter_type.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/runtime_fwd.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/runtime/applier_fwd.hpp"
@@ -156,7 +65,6 @@ set(doxygen_dependencies
     "${PROJECT_SOURCE_DIR}/hpx/lcos/when_some.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/lcos/wait_each.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/lcos/when_each.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/traits/is_execution_policy.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/util/checkpoint.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/util/debugging.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/util/invoke.hpp"
@@ -334,7 +242,11 @@ endforeach()
 file(GLOB_RECURSE sphinx_libs_source_files LIST_DIRECTORIES false RELATIVE
     "${CMAKE_SOURCE_DIR}/libs" "${CMAKE_SOURCE_DIR}/libs/*/docs/*")
 
-set(sphinx_libs_source_files "index.rst" ${sphinx_libs_source_files})
+set(sphinx_libs_source_files
+    "all_modules.rst"
+    "index.rst"
+    "overview.rst"
+    ${sphinx_libs_source_files})
 
 foreach(sphinx_source_file ${sphinx_libs_source_files})
   add_custom_command(
@@ -362,20 +274,48 @@ create_symbolic_link("${PROJECT_SOURCE_DIR}/tests"
 hpx_source_to_doxygen(hpx_autodoc
   DEPENDENCIES ${doxygen_dependencies})
 
-set(SPHINX_DOCS_OUTPUT_DIR "${CMAKE_BINARY_DIR}/share/hpx/docs/html")
+add_custom_target(docs)
 
-add_custom_command(
-  OUTPUT "${SPHINX_DOCS_OUTPUT_DIR}"
-  DEPENDS "${sphinx_source_files_build}"
-    "${CMAKE_CURRENT_BINARY_DIR}/hpx_autodoc/index.xml"
-  COMMAND ${SPHINX_EXECUTABLE} -b html -n -d
-    "${CMAKE_CURRENT_BINARY_DIR}/doctree"
-    "${CMAKE_CURRENT_BINARY_DIR}/sphinx"
-    "${SPHINX_DOCS_OUTPUT_DIR}")
+set(SPHINX_DOCS_HTML_OUTPUT_FILE "index.html")
+set(SPHINX_DOCS_SINGLEHTML_OUTPUT_FILE "index.html")
+set(SPHINX_DOCS_PDF_OUTPUT_FILE "latex/HPX.pdf")
+set(SPHINX_DOCS_MAN_OUTPUT_FILE "hpx.1")
 
-add_custom_target(docs
-  ALL
-  DEPENDS ${SPHINX_DOCS_OUTPUT_DIR})
+foreach(output_format ${HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS})
+  string(TOUPPER ${output_format} output_format_upper_case)
+  set(SPHINX_DOCS_OUTPUT_DIR
+      "${CMAKE_BINARY_DIR}/share/hpx/docs/${output_format}")
+  set(SPHINX_DOCS_OUTPUT_FILE
+      "${SPHINX_DOCS_OUTPUT_DIR}/${SPHINX_DOCS_${output_format_upper_case}_OUTPUT_FILE}")
+
+  # NOTE: The PDF does not build without errors but still produces a reasonable
+  # PDF. If there are real errors this will ignore them. Fixing the errors is at
+  # the moment not worth the effort.
+  if(${output_format} STREQUAL "latexpdf")
+      set(SPHINX_DOCS_BUILD_COMMAND
+          ${SPHINX_EXECUTABLE} -M ${output_format}
+          "${CMAKE_CURRENT_BINARY_DIR}/sphinx"
+          "${SPHINX_DOCS_OUTPUT_DIR}" || (exit 0))
+  else()
+      set(SPHINX_DOCS_BUILD_COMMAND
+          ${SPHINX_EXECUTABLE} -b ${output_format} -n -d
+          "${CMAKE_CURRENT_BINARY_DIR}/doctree"
+          "${CMAKE_CURRENT_BINARY_DIR}/sphinx"
+          "${SPHINX_DOCS_OUTPUT_DIR}")
+  endif()
+
+  add_custom_command(
+    OUTPUT "${SPHINX_DOCS_OUTPUT_FILE}"
+    DEPENDS "${sphinx_source_files_build}"
+      "${CMAKE_CURRENT_BINARY_DIR}/hpx_autodoc/index.xml"
+    COMMAND ${SPHINX_DOCS_BUILD_COMMAND})
+
+  add_custom_target(docs-${output_format}
+    ALL
+    DEPENDS ${SPHINX_DOCS_OUTPUT_FILE})
+
+  add_dependencies(docs docs-${output_format})
+endforeach()
 
 add_custom_target(git_docs
   COMMAND "${CMAKE_COMMAND}"
@@ -384,6 +324,7 @@ add_custom_target(git_docs
     -DHPX_VERSION:STRING=${HPX_VERSION}
     -DHPX_WITH_GIT_BRANCH=${HPX_WITH_GIT_BRANCH}
     -DHPX_WITH_GIT_TAG=${HPX_WITH_GIT_TAG}
+    -DHPX_WITH_DOCUMENTATION_OUTPUT_FORMATS="${HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS}"
     -P "${CMAKE_SOURCE_DIR}/cmake/HPX_UpdateGitDocs.cmake")
 
 set_target_properties(git_docs

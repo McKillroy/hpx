@@ -8,15 +8,16 @@
 
 #if defined(HPX_HAVE_NETWORKING)
 // util
+#include <hpx/assertion.hpp>
+#include <hpx/format.hpp>
 #include <hpx/lcos/local/condition_variable.hpp>
+#include <hpx/preprocessor/stringize.hpp>
 #include <hpx/runtime/threads/thread_data.hpp>
-#include <hpx/util/assert.hpp>
+#include <hpx/timing/high_resolution_timer.hpp>
 #include <hpx/util/bind_front.hpp>
 #include <hpx/util/command_line_handling.hpp>
 #include <hpx/util/deferred_call.hpp>
 #include <hpx/util/detail/pp/stringize.hpp>
-#include <hpx/util/format.hpp>
-#include <hpx/util/high_resolution_timer.hpp>
 #include <hpx/util/runtime_configuration.hpp>
 
 // The memory pool specialization need to be pulled in before encode_parcels
@@ -320,16 +321,15 @@ namespace verbs
         // Constructor : mostly just initializes the superclass with 'here'
         // --------------------------------------------------------------------
         parcelport(util::runtime_configuration const& ini,
-            util::function_nonser<void(std::size_t, char const*)> const& on_start_thread,
-            util::function_nonser<void(std::size_t, char const*)> const& on_stop_thread)
-            : base_type(ini, here(ini), on_start_thread, on_stop_thread)
-            , active_send_count_(0)
-            , immediate_send_allowed_(true)
-            , stopped_(false)
-            , sends_posted(0)
-            , handled_receives(0)
-            , completions_handled(0)
-            , total_reads(0)
+            threads::policies::callback_notifier const& notifier)
+          : base_type(ini, here(ini), notifier)
+          , active_send_count_(0)
+          , immediate_send_allowed_(true)
+          , stopped_(false)
+          , sends_posted(0)
+          , handled_receives(0)
+          , completions_handled(0)
+          , total_reads(0)
         {
             FUNC_START_DEBUG_MSG;
             // we need this for background OS threads to get 'this' pointer
@@ -356,7 +356,7 @@ namespace verbs
             // We only execute work on the IO service while HPX is starting
             while (hpx::is_starting())
             {
-                background_work(0);
+                background_work(0, parcelport_background_mode_all);
             }
             LOG_DEBUG_MSG("io service task completed");
         }
@@ -1547,7 +1547,9 @@ namespace verbs
         // This is called whenever the main thread scheduler is idling,
         // is used to poll for events, messages on the verbs connection
         // --------------------------------------------------------------------
-        bool background_work(std::size_t num_thread) {
+        bool background_work(
+            std::size_t num_thread, parcelport_background_mode mode)
+        {
             if (stopped_ || hpx::is_stopped()) {
                 return false;
             }

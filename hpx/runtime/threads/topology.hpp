@@ -11,20 +11,18 @@
 #define HPX_RUNTIME_THREADS_TOPOLOGY_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/compat/thread.hpp>
-#include <hpx/error_code.hpp>
-#include <hpx/exception_fwd.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/runtime/naming_fwd.hpp>
 #include <hpx/runtime/threads/cpu_mask.hpp>
-#include <hpx/runtime/resource/partitioner_fwd.hpp>
 #include <hpx/runtime/threads/thread_data_fwd.hpp>
 
-#include <hpx/util/spinlock.hpp>
-#include <hpx/util/static.hpp>
+#include <hpx/concurrency/spinlock.hpp>
+#include <hpx/type_support/static.hpp>
 
 #include <cstddef>
 #include <iosfwd>
 #include <string>
+#include <thread>
 #include <vector>
 
 #include <hwloc.h>
@@ -35,6 +33,7 @@
 
 namespace hpx { namespace threads
 {
+
     struct hpx_hwloc_bitmap_wrapper
     {
         HPX_NON_COPYABLE(hpx_hwloc_bitmap_wrapper);
@@ -265,7 +264,7 @@ namespace hpx { namespace threads
             error_code& ec = throws) const;
 
         mask_type get_cpubind_mask(error_code& ec = throws) const;
-        mask_type get_cpubind_mask(compat::thread & handle,
+        mask_type get_cpubind_mask(std::thread & handle,
             error_code& ec = throws) const;
 
         /// convert a cpu mask into a numa node mask in hwloc bitmap form
@@ -308,7 +307,7 @@ namespace hpx { namespace threads
             std::size_t num_numa_node
             ) const;
         mask_type init_core_affinity_mask_from_core(
-            std::size_t num_core, mask_cref_type default_mask = mask_type()
+            std::size_t num_core, mask_cref_type default_mask = empty_mask
             ) const;
         mask_type init_thread_affinity_mask(std::size_t num_thread) const;
         mask_type init_thread_affinity_mask(
@@ -321,6 +320,8 @@ namespace hpx { namespace threads
 
     private:
         static mask_type empty_mask;
+        static std::size_t memory_page_size_;
+        friend std::size_t get_memory_page_size();
 
         std::size_t init_node_number(
             std::size_t num_thread, hwloc_obj_type_t type
@@ -422,32 +423,12 @@ namespace hpx { namespace threads
 
     HPX_API_EXPORT topology const& get_topology();
 
-    HPX_API_EXPORT void parse_affinity_options(std::string const& spec,
-        std::vector<mask_type>& affinities,
-        std::size_t used_cores,
-        std::size_t max_cores,
-        std::size_t num_threads,
-        std::vector<std::size_t>& num_pus,
-        error_code& ec = throws);
-
-    // backwards compatibility helper
-    inline void parse_affinity_options(std::string const& spec,
-        std::vector<mask_type>& affinities, error_code& ec = throws)
-    {
-        std::vector<std::size_t> num_pus;
-        parse_affinity_options(spec, affinities, 1, 1, affinities.size(),
-            num_pus, ec);
-    }
-
     ///////////////////////////////////////////////////////////////////////////
-    // abstract away cache-line size
-    HPX_STATIC_CONSTEXPR std::size_t get_cache_line_size()
+    // abstract away memory page size, calls to system functions are
+    // expensive, so return a value initializaed at startup
+    inline std::size_t get_memory_page_size()
     {
-#if defined(HPX_HAVE_CXX17_HARDWARE_DESTRUCTIVE_INTERFERENCE_SIZE)
-        return std::hardware_destructive_interference_size;
-#else
-        return 64;      // assume 64 byte cache-line size
-#endif
+        return hpx::threads::topology::memory_page_size_;
     }
 }}
 

@@ -89,7 +89,7 @@ for subdir_full, dirs, files in os.walk(hpx_libs_dir):
         for f in files:
             if not file_regex.match(f) is None:
                 skip = False
-                for line in file(subdir_full + '/' + f):
+                for line in open(subdir_full + '/' + f):
                     if '// sphinx:undocumented' in line:
                         skip = True
                         break
@@ -130,11 +130,11 @@ for lib in breathe_projects_source:
     if not os.path.exists(basedir):
         os.makedirs(basedir)
     lib_api_ref = open(basedir + '/api.rst', 'w')
-    lib_name = lib.upper() if len(lib) == 2 else lib.capitalize()
-    lib_api_ref.write(api_ref_header.format(lib_name))
+    lib_api_ref.write(api_ref_header.format(lib))
     for source in lib_sources[1]:
         header = source[len('include/'):]
         lib_api_ref.write(api_ref_file.format(header, lib))
+    lib_api_ref.close()
     api_refs += '   /libs/' + lib + '/api.rst\n'
     print('Generated ' + basedir + '/api.rst')
 
@@ -184,9 +184,9 @@ rst_prolog += '''
 .. |hpx_github_issues| replace:: |hpx| Issues
 .. _hpx_github_issues: https://github.com/STEllAR-GROUP/hpx/issues
 .. |hpx_stackoverflow| replace:: StackOverflow |hpx| questions
-.. _hpx_stackoverflow: https://stackoverflow.com/questions/tagged/hpx>
+.. _hpx_stackoverflow: https://stackoverflow.com/questions/tagged/hpx
 .. |hpx_buildbot| replace:: |hpx| Buildbot Website
-.. _hpx_buildbot: https://rostam.cct.lsu.edu/
+.. _hpx_buildbot: http://rostam.cct.lsu.edu/
 .. |pycicle| replace:: pycicle
 .. _pycicle: https://github.com/biddisco/pycicle/
 .. |circleci| replace:: CircleCI
@@ -562,10 +562,6 @@ html_extra_path = []
 # using the given strftime format.
 html_last_updated_fmt = '%b %d, %Y'
 
-# If true, SmartyPants will be used to convert quotes and dashes to
-# typographically correct entities.
-html_use_smartypants = True
-
 # If false, no module index is generated.
 html_domain_indices = True
 
@@ -595,15 +591,26 @@ htmlhelp_basename = 'HPXdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
-latex_elements = {}
+latex_elements = {
+    'preamble': r'''
+    \usepackage{enumitem}
+    \setlistdepth{2000}
+    \nonstopmode
+    ''',
+    'maxlistdepth': '100',
+    'releasename': ' ', # NOTE: Needs the space. Empty string means default.
+}
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'HPX.tex', u'HPX Documentation',
-     u'The Ste\\textbar{}\\textbar{}ar Group', 'manual'),
+     u'The {STE\\raisebox{.05em}{\\hspace{.1em}$|$\\hspace{0.1em}$|$\\hspace{.02em}}AR} Group',
+     'manual'),
 ]
+
+latex_show_urls = 'footnote'
 
 
 # -- Options for manual page output ---------------------------------------
@@ -614,6 +621,8 @@ man_pages = [
     (master_doc, 'hpx', u'HPX Documentation',
      [author], 1)
 ]
+
+man_show_urls = True
 
 
 # -- Options for Texinfo output -------------------------------------------

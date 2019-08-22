@@ -8,7 +8,7 @@
 #include <hpx/runtime/actions/continuation.hpp>
 #include <hpx/performance_counters/counters.hpp>
 #include <hpx/util/bind.hpp>
-#include <hpx/util/high_resolution_clock.hpp>
+#include <hpx/timing/high_resolution_clock.hpp>
 
 #include <cstdint>
 #include <mutex>
@@ -30,6 +30,7 @@ namespace performance_counters { namespace sine { namespace server
     sine_counter::sine_counter(hpx::performance_counters::counter_info const& info)
       : hpx::performance_counters::base_performance_counter<sine_counter>(info),
         current_value_(0),
+        evaluated_at_(0),
         timer_(hpx::util::bind(&sine_counter::evaluate, this),
             1000000, "sine example performance counter")
     {

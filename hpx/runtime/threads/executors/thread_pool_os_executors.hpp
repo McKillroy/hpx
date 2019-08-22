@@ -7,13 +7,13 @@
 #define HPX_RUNTIME_THREADS_EXECUTORS_THREAD_POOL_OS_EXECUTORS_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/compat/mutex.hpp>
 #include <hpx/runtime/resource/detail/partitioner.hpp>
 #include <hpx/runtime/threads/detail/scheduled_thread_pool.hpp>
+#include <hpx/runtime/threads/policies/affinity_data.hpp>
 #include <hpx/runtime/threads/policies/callback_notifier.hpp>
 #include <hpx/runtime/threads/thread_enums.hpp>
 #include <hpx/runtime/threads/thread_executor.hpp>
-#include <hpx/util/steady_clock.hpp>
+#include <hpx/timing/steady_clock.hpp>
 #include <hpx/util/thread_description.hpp>
 #include <hpx/util/unique_function.hpp>
 
@@ -22,6 +22,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <mutex>
 #include <string>
 
 #include <hpx/config/warnings_prefix.hpp>
@@ -37,7 +38,7 @@ namespace hpx { namespace threads { namespace executors
         {
         public:
             thread_pool_os_executor(std::size_t num_threads,
-                std::string const& affinity_desc = "");
+                policies::detail::affinity_data const& affinity_data);
             ~thread_pool_os_executor();
 
             // Schedule the specified function for execution in this executor.
@@ -101,59 +102,52 @@ namespace hpx { namespace threads { namespace executors
             Scheduler *scheduler_;
             std::string executor_name_;
             threads::policies::callback_notifier notifier_;
-            std::unique_ptr<threads::detail::scheduled_thread_pool<Scheduler>> pool_;
+            std::unique_ptr<threads::detail::scheduled_thread_pool<Scheduler>>
+                pool_;
+            threads::detail::network_background_callback_type
+                network_background_callback_;
 
-            std::size_t num_threads_;
+            threads::thread_pool_init_parameters thread_pool_init_;
 
             static std::atomic<std::size_t> os_executor_count_;
             static std::string get_unique_name();
 
             // protect scheduler initialization
-            typedef compat::mutex mutex_type;
+            typedef std::mutex mutex_type;
             mutable mutex_type mtx_;
         };
     }
 
     ///////////////////////////////////////////////////////////////////////////
 #if defined(HPX_HAVE_LOCAL_SCHEDULER)
-    struct HPX_EXPORT local_queue_os_executor
-      : public scheduled_executor
+    struct HPX_EXPORT local_queue_os_executor : public scheduled_executor
     {
-        local_queue_os_executor();
-
-        explicit local_queue_os_executor(std::size_t num_threads,
-            std::string const& affinity_desc = "");
+        local_queue_os_executor(std::size_t num_threads,
+            policies::detail::affinity_data const& affinity_data);
     };
 #endif
 
 #if defined(HPX_HAVE_STATIC_SCHEDULER)
-    struct HPX_EXPORT static_queue_os_executor
-      : public scheduled_executor
+    struct HPX_EXPORT static_queue_os_executor : public scheduled_executor
     {
-        static_queue_os_executor();
-
-        explicit static_queue_os_executor(std::size_t num_threads,
-            std::string const& affinity_desc = "");
+        static_queue_os_executor(std::size_t num_threads,
+            policies::detail::affinity_data const& affinity_data);
     };
 #endif
 
     struct HPX_EXPORT local_priority_queue_os_executor
       : public scheduled_executor
     {
-        local_priority_queue_os_executor();
-
-        explicit local_priority_queue_os_executor(std::size_t num_threads,
-            std::string const& affinity_desc = "");
+        local_priority_queue_os_executor(std::size_t num_threads,
+            policies::detail::affinity_data const& affinity_data);
     };
 
 #if defined(HPX_HAVE_STATIC_PRIORITY_SCHEDULER)
     struct HPX_EXPORT static_priority_queue_os_executor
       : public scheduled_executor
     {
-        static_priority_queue_os_executor();
-
-        explicit static_priority_queue_os_executor(std::size_t num_threads,
-            std::string const& affinity_desc = "");
+        static_priority_queue_os_executor(std::size_t num_threads,
+            policies::detail::affinity_data const& affinity_data);
     };
 #endif
 }}}

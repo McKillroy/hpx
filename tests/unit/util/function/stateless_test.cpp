@@ -12,7 +12,7 @@
 
 #include <hpx/hpx_main.hpp>
 #include <hpx/include/util.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <cstddef>
 #include <stdexcept>
@@ -31,11 +31,11 @@ struct stateless_integer_add
         return p;
     }
 
-    void operator delete(void*, void*) throw()
+    void operator delete(void*, void*) noexcept
     {
     }
 
-    void operator delete(void*) throw()
+    void operator delete(void*) noexcept
     {
     }
 };

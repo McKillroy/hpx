@@ -8,8 +8,13 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <hpx/config.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/async.hpp>
+#include <hpx/concurrency/register_locks.hpp>
+#include <hpx/errors.hpp>
+#include <hpx/format.hpp>
 #include <hpx/lcos/wait_all.hpp>
+#include <hpx/logging.hpp>
 #include <hpx/performance_counters/counter_creators.hpp>
 #include <hpx/performance_counters/counters.hpp>
 #include <hpx/performance_counters/manage_counter_type.hpp>
@@ -20,17 +25,12 @@
 #include <hpx/runtime/applier/apply.hpp>
 #include <hpx/runtime/components/server/destroy_component.hpp>
 #include <hpx/runtime/naming/resolver_client.hpp>
-#include <hpx/throw_exception.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/assert_owns_lock.hpp>
+#include <hpx/thread_support/assert_owns_lock.hpp>
+#include <hpx/timing/scoped_timer.hpp>
 #include <hpx/util/bind_back.hpp>
 #include <hpx/util/bind_front.hpp>
-#include <hpx/util/format.hpp>
 #include <hpx/util/get_and_reset_value.hpp>
 #include <hpx/util/insert_checked.hpp>
-#include <hpx/util/logging.hpp>
-#include <hpx/util/register_locks.hpp>
-#include <hpx/util/scoped_timer.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -280,17 +280,18 @@ bool primary_namespace::end_migration(naming::gid_type id)
     using hpx::util::get;
 
     migration_table_type::iterator it = migrating_objects_.find(id);
-    HPX_ASSERT(it != migrating_objects_.end() && get<0>(it->second));
-
-    // flag this id as not being migrated anymore
-    get<0>(it->second) = false;
-    if (get<1>(it->second) != 0)
+    if (it != migrating_objects_.end())
     {
-        get<2>(it->second).notify_all(std::move(l), hpx::throws);
-    }
-    else
-    {
-        migrating_objects_.erase(it);
+        // flag this id as not being migrated anymore
+        get<0>(it->second) = false;
+        if (get<1>(it->second) != 0)
+        {
+            get<2>(it->second).notify_all(std::move(l), hpx::throws);
+        }
+        else
+        {
+            migrating_objects_.erase(it);
+        }
     }
 
     return true;

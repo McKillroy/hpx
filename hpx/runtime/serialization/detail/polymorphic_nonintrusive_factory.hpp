@@ -10,17 +10,17 @@
 #define HPX_SERIALIZATION_POLYMORPHIC_NONINTRUSIVE_FACTORY_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/runtime/serialization/serialization_fwd.hpp>
+#include <hpx/assertion.hpp>
+#include <hpx/preprocessor/stringize.hpp>
+#include <hpx/preprocessor/strip_parens.hpp>
 #include <hpx/runtime/serialization/detail/non_default_constructible.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/runtime/serialization/serialization_fwd.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/traits/needs_automatic_registration.hpp>
 #include <hpx/traits/polymorphic_traits.hpp>
-#include <hpx/util/assert.hpp>
 #include <hpx/util/debug/demangle_helper.hpp>
-#include <hpx/util/detail/pp/stringize.hpp>
-#include <hpx/util/detail/pp/strip_parens.hpp>
-#include <hpx/util/jenkins_hash.hpp>
-#include <hpx/util/static.hpp>
+#include <hpx/hashing/jenkins_hash.hpp>
+#include <hpx/type_support/static.hpp>
 
 #include <memory>
 #include <string>

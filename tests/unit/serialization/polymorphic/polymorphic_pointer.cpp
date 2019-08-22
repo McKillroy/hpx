@@ -11,7 +11,7 @@
 #include <hpx/runtime/serialization/input_archive.hpp>
 #include <hpx/runtime/serialization/output_archive.hpp>
 
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <vector>
 
@@ -61,7 +61,7 @@ struct D : B
     void serialize(Archive & ar, unsigned)
     {
         b = 4711;
-        ar & hpx::serialization::base_object<B>(*this);;
+        ar & hpx::serialization::base_object<B>(*this);
         ar & d;
     }
     HPX_SERIALIZATION_POLYMORPHIC(D);

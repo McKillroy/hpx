@@ -7,6 +7,7 @@
 #define HPX_COMPONENTS_SERVER_MIGRATION_SUPPORT_FEB_03_2014_0230PM
 
 #include <hpx/config.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/lcos/local/promise.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
@@ -15,7 +16,6 @@
 #include <hpx/runtime/naming/id_type.hpp>
 #include <hpx/runtime/threads_fwd.hpp>
 #include <hpx/traits/action_decorate_function.hpp>
-#include <hpx/util/assert.hpp>
 #include <hpx/util/bind_front.hpp>
 
 #include <cstdint>
@@ -82,11 +82,20 @@ namespace hpx { namespace components
         }
         bool unpin()
         {
-            // no need to go through AGAS if the object is currently pinned
-            // more than once
             {
+                // no need to go through AGAS if the object is currently pinned
+                // more than once
                 std::unique_lock<mutex_type> l(mtx_);
                 if (pin_count_ != ~0x0u && pin_count_ > 1)
+                {
+                    --pin_count_;
+                    return false;
+                }
+
+                // no need to go through AGAS either if this object is not
+                // currently being migrated (unpin will be called for each
+                // action run on this object)
+                if (!was_marked_for_migration_)
                 {
                     --pin_count_;
                     return false;

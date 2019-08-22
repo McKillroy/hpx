@@ -10,7 +10,7 @@
 #include <hpx/include/threads.hpp>
 #include <hpx/include/local_lcos.hpp>
 #include <hpx/util/bind.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -62,7 +62,7 @@ int hpx_main(variables_map& vm)
         // create the threads which will wait on the barrier
         for (std::size_t i = 0; i < pxthreads; ++i)
         {
-            //call increase to increase number of threads waiting when create a new thread
+            //call count_up to increase number of threads waiting when create a new thread
             b.count_up();
             register_work(
                 hpx::util::bind(&local_barrier_test, std::ref(b), std::ref(c)));

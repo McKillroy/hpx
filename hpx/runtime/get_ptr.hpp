@@ -9,7 +9,7 @@
 #define HPX_RUNTIME_GET_PTR_SEP_18_2013_0622PM
 
 #include <hpx/config.hpp>
-#include <hpx/runtime_fwd.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/runtime/agas/gva.hpp>
 #include <hpx/runtime/components/client_base.hpp>
 #include <hpx/runtime/components/component_type.hpp>
@@ -17,11 +17,10 @@
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/naming/address.hpp>
 #include <hpx/runtime/naming/name.hpp>
-#include <hpx/runtime/launch_policy.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/runtime_fwd.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/traits/component_pin_support.hpp>
 #include <hpx/traits/component_type_is_compatible.hpp>
-#include <hpx/util/assert.hpp>
 #include <hpx/util/bind_back.hpp>
 
 #include <memory>
@@ -42,6 +41,19 @@ namespace hpx
             {
                 id_ = naming::invalid_id;       // release component
                 traits::component_pin_support<Component>::unpin(p);
+            }
+
+            naming::id_type id_;                // holds component alive
+        };
+
+        struct get_ptr_no_unpin_deleter
+        {
+            get_ptr_no_unpin_deleter(naming::id_type const& id) : id_(id) {}
+
+            template <typename Component>
+            void operator()(Component* p)
+            {
+                id_ = naming::invalid_id;       // release component
             }
 
             naming::id_type id_;                // holds component alive
@@ -233,6 +245,16 @@ namespace hpx
     get_ptr(launch::sync_policy, naming::id_type const& id,
         error_code& ec = throws)
     {
+        // shortcut for local, non-migratable objects
+        naming::gid_type gid = id.get_gid();
+        if (naming::refers_to_local_lva(gid) &&
+            naming::get_locality_id_from_gid(gid) == agas::get_locality_id(ec))
+        {
+            return std::shared_ptr<Component>(
+                get_lva<Component>::call(gid.get_lsb()),
+                detail::get_ptr_no_unpin_deleter(id));
+        }
+
         hpx::future<std::shared_ptr<Component> > ptr =
             get_ptr<Component>(id);
         return ptr.get(ec);

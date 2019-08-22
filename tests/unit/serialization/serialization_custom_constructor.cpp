@@ -11,7 +11,7 @@
 #include <hpx/runtime/serialization/input_archive.hpp>
 #include <hpx/runtime/serialization/output_archive.hpp>
 
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <iostream>
 #include <memory>
@@ -23,7 +23,7 @@
  */
 struct A
 {
-    A(int a) : a(a) {}
+    explicit A(int a) : a(a) {}
     virtual ~A() {}
 
     int a;

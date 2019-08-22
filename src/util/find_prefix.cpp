@@ -7,8 +7,8 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <hpx/config.hpp>
-#include <hpx/exception.hpp>
-#include <hpx/util/assert.hpp>
+#include <hpx/assertion.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/util/find_prefix.hpp>
 
 #if defined(HPX_WINDOWS)
@@ -23,11 +23,13 @@
 #elif defined(__FreeBSD__)
 #  include <sys/types.h>
 #  include <sys/sysctl.h>
+#  include <algorithm>
+#  include <iterator>
 #  include <vector>
 #endif
 
 #include <hpx/util/plugin/dll.hpp>
-#include <hpx/util/unused.hpp>
+#include <hpx/type_support/unused.hpp>
 
 #include <boost/filesystem/path.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -235,7 +237,7 @@ namespace hpx { namespace util
         {
             std::vector<char> buf(cb);
             sysctl(mib, 4, &buf[0], &cb, nullptr, 0);
-            r = &buf[0];
+            std::copy(&buf[0], &buf[cb], std::back_inserter(r));
         }
 
 #else

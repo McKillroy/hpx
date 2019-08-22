@@ -9,7 +9,7 @@
 #include <hpx/include/components.hpp>
 #include <hpx/include/actions.hpp>
 #include <hpx/include/iostreams.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <string>
 
@@ -50,7 +50,7 @@ struct B : A, hpx::components::managed_component_base<B>
     B() { b_ctor = true; }
     ~B() { b_dtor = true; }
 
-    std::string test0() const { return "B"; }
+    std::string test0() const override { return "B"; }
 
     std::string test1() const { return "B"; }
     HPX_DEFINE_COMPONENT_ACTION(B, test1, test1_action);

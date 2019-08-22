@@ -6,6 +6,7 @@
 #include <hpx/include/parallel_executors.hpp>
 #include <hpx/runtime/threads/executors/default_executor.hpp>
 #include <hpx/runtime/threads/executors/pool_executor.hpp>
+#define GUIDED_EXECUTOR_DEBUG 1
 #include <hpx/runtime/threads/executors/guided_pool_executor.hpp>
 #include <hpx/runtime/resource/partitioner.hpp>
 //#include <hpx/runtime/threads/cpu_mask.hpp>
@@ -19,9 +20,9 @@
 #include <hpx/lcos/when_all.hpp>
 #include <hpx/util/invoke.hpp>
 #include <hpx/util/invoke_fused.hpp>
-#include <hpx/util/decay.hpp>
+#include <hpx/type_support/decay.hpp>
 #include <hpx/util/result_of.hpp>
-#include <hpx/util/tuple.hpp>
+#include <hpx/datastructures/tuple.hpp>
 #include <hpx/util/deferred_call.hpp>
 #include <hpx/util/pack_traversal.hpp>
 #include <hpx/util/debug/demangle_helper.hpp>
@@ -237,27 +238,23 @@ struct test_async_executor
     }
 
     // --------------------------------------------------------------------
-    // .then() execute specialized for a dataflow dispatch
+    // execute specialized for a dataflow dispatch
     // dataflow unwraps the outer future for us but passes a dataflowframe
     // function type, result type and tuple of futures as arguments
     // --------------------------------------------------------------------
     template <typename F,
-              typename DataFlowFrame,
-              typename Result,
               typename ... InnerFutures,
               typename = enable_if_t<
-                  is_tuple_of_futures<util::tuple<InnerFutures...>>::value>
+                  traits::is_future_tuple<util::tuple<InnerFutures...>>::value>
               >
     auto
     async_execute(F && f,
-                  DataFlowFrame && df,
-                  Result && r,
                   util::tuple<InnerFutures... > && predecessor)
     ->  future<typename util::detail::invoke_deferred_result<
-        F, DataFlowFrame, Result, util::tuple<InnerFutures... >>::type>
+        F, util::tuple<InnerFutures... >>::type>
     {
         typedef typename util::detail::invoke_deferred_result<
-            F, DataFlowFrame, Result, util::tuple<InnerFutures... >>::type
+            F, util::tuple<InnerFutures... >>::type
                 result_type;
 
         auto unwrapped_futures_tuple = util::map_pack(
@@ -272,7 +269,7 @@ struct test_async_executor
         std::cout << "dataflow      : unwrapped   : "
                   << print_type<decltype(unwrapped_futures_tuple)>(" | ") << "\n";
         std::cout << "dataflow-frame: Result      : "
-                  << print_type<Result>() << "\n";
+                  << print_type<result_type>() << "\n";
 
         // invoke a function with the unwrapped tuple future types to demonstrate
         // that we can access them
@@ -282,12 +279,10 @@ struct test_async_executor
         }, unwrapped_futures_tuple);
 
         // forward the task execution on to the real internal executor
+        // forward the task execution on to the real internal executor
         lcos::local::futures_factory<result_type()> p(
-            executor_,
             util::deferred_call(
                 std::forward<F>(f),
-                std::forward<DataFlowFrame>(df),
-                std::forward<Result>(r),
                 std::forward<util::tuple<InnerFutures...>>(predecessor)
             )
         );
@@ -319,9 +314,11 @@ namespace hpx { namespace parallel { namespace execution
 // test various execution modes
 // --------------------------------------------------------------------
 template <typename Executor>
-int test(Executor &exec)
+int test(const std::string &message, Executor &exec)
 {
     // test 1
+    std::cout << "============================" << std::endl;
+    std::cout << message << std::endl;
     std::cout << "============================" << std::endl;
     std::cout << "Test 1 : async()" << std::endl;
     auto fa = async(exec, [](int a, double b, const char *c)
@@ -371,7 +368,7 @@ int test(Executor &exec)
         {
             auto tup = f.get();
             auto cmplx = std::complex<double>(
-                util::get<0>(tup).get(), util::get<1>(tup).get());
+                double(util::get<0>(tup).get()), util::get<1>(tup).get());
             std::cout << "Inside when_all : " << cmplx << std::endl;
             return std::string("when_all");
         }
@@ -389,8 +386,8 @@ int test(Executor &exec)
         [](future<util::tuple<future<std::uint64_t>, shared_future<float>>> && f)
         {
             auto tup = f.get();
-            auto cmplx = std::complex<double>(
-                util::get<0>(tup).get(), util::get<1>(tup).get());
+            auto cmplx = std::complex<double>(double(util::get<0>(tup).get()),
+                double(util::get<1>(tup).get()));
             std::cout << "Inside when_all(shared) : " << cmplx << std::endl;
             return cmplx;
         }
@@ -402,12 +399,13 @@ int test(Executor &exec)
     std::cout << "============================" << std::endl;
     std::cout << "Test 4a : dataflow()" << std::endl;
     future<std::uint16_t> f1 = make_ready_future(std::uint16_t(255));
-    future<double>   f2 = make_ready_future(127.890);
+    future<double>        f2 = make_ready_future(127.890);
     //
     auto fd = dataflow(exec,
         [](future<std::uint16_t> && f1, future<double> && f2)
         {
-            auto cmplx = std::complex<std::uint64_t>(f1.get(), f2.get());
+            auto cmplx = std::complex<std::uint64_t>(f1.get(),
+                            static_cast<std::uint64_t>(f2.get()));
             std::cout << "Inside dataflow : " << cmplx << std::endl;
             return cmplx;
         }
@@ -419,22 +417,22 @@ int test(Executor &exec)
     // test 4b
     std::cout << "============================" << std::endl;
     std::cout << "Test 4b : dataflow(shared)" << std::endl;
-    future<std::uint16_t>      fs1 = make_ready_future(std::uint16_t(255));
-    shared_future<double> fs2 = make_ready_future(127.890).share();
+    future<std::uint32_t>      fs1 = make_ready_future(std::uint32_t(65535));
+    shared_future<double> fs2 = make_ready_future(2.178).share();
     //
     auto fds = dataflow(exec,
-        [](future<std::uint16_t> && f1, shared_future<double> && f2)
-        {
-            auto cmplx = std::complex<std::uint64_t>(f1.get(), f2.get());
+        [](future<std::uint32_t>&& f1, shared_future<double>&& f2) {
+            auto cmplx = std::complex<std::uint64_t>(
+                std::uint64_t(f1.get()), std::uint64_t(f2.get()));
             std::cout << "Inside dataflow(shared) : " << cmplx << std::endl;
             return cmplx;
-        }
-        , fs1, fs2
-    );
+        },
+        fs1, fs2);
     fds.get();
+
     std::cout << "============================" << std::endl;
     std::cout << "Complete" << std::endl;
-    std::cout << "============================" << std::endl;
+    std::cout << "============================" << std::endl << std::endl;
     return 0;
 }
 
@@ -447,39 +445,49 @@ namespace hpx { namespace threads { namespace executors
     {
       int operator()(const int, const double, const char *) const {
           std::cout << "Hint 1 \n";
-          return 0;
+          return 1;
       }
       int operator()(const int ) const {
           std::cout << "Hint 2 \n";
-          return 0;
+          return 2;
       }
-      int operator()(const std::uint16_t, const double) const {
-          std::cout << "Hint 3 \n";
-          return 0;
-      }
-      int operator()(const util::tuple<future<int>, future<double>> &) const {
-          return 0;
+      int operator()(const util::tuple<future<int>,
+                     future<double>> &) const
+      {
+          std::cout << "Hint 3(a) \n";
+          return 3;
       }
       int operator()(const util::tuple<future<std::uint64_t>,
                      shared_future<float>> &) const
       {
-          return 0;
+          std::cout << "Hint 3(b) \n";
+          return 3;
+      }
+      int operator()(const std::uint16_t, const double) const {
+          std::cout << "Hint 4(a) \n";
+          return 4;
+      }
+      int operator()(const std::uint32_t, const double&) const {
+          std::cout << "Hint 4(b) \n";
+          return 4;
       }
     };
 }}}
 
 int hpx_main()
 {
-    int val = 0;
 
     test_async_executor exec;
-    val = test(exec);
+    test("Testing async custom executor", exec);
 
     typedef hpx::threads::executors::pool_numa_hint<dummy_tag> dummy_hint;
-    hpx::threads::executors::guided_pool_executor_shim<dummy_hint> exec2(true, "default");
-    val = test(exec2);
+    hpx::threads::executors::guided_pool_executor<dummy_hint> exec2("default");
+    test("Testing guided_pool_executor<dummy_hint>", exec2);
 
-    return hpx::finalize(val);
+    hpx::threads::executors::guided_pool_executor_shim<dummy_hint> exec3(true, "default");
+    test("Testing guided_pool_executor_shim<dummy_hint>", exec3);
+
+    return hpx::finalize(0);
 }
 
 int main(int argc, char** argv)
@@ -494,27 +502,22 @@ int main(int argc, char** argv)
         hpx::threads::policies::example::shared_priority_queue_scheduler<>;
     using hpx::threads::policies::scheduler_mode;
     // setup the default pool with our custom priority scheduler
-    rp.create_thread_pool(
-        "custom",
-        [](hpx::threads::policies::callback_notifier& notifier, std::size_t num_threads,
-          std::size_t thread_offset, std::size_t pool_index,
-          std::string const& pool_name) -> std::unique_ptr<hpx::threads::thread_pool_base>
-          {
+    rp.create_thread_pool("custom",
+        [](hpx::threads::thread_pool_init_parameters init)
+            -> std::unique_ptr<hpx::threads::thread_pool_base> {
             std::cout << "User defined scheduler creation callback " << std::endl;
-            std::unique_ptr<high_priority_sched> scheduler(new high_priority_sched(
-                num_threads, {6, 6, 64}, "shared-priority-scheduler"));
+            std::unique_ptr<high_priority_sched> scheduler(
+                new high_priority_sched(init.num_threads_, {6, 6, 64},
+                    "shared-priority-scheduler", init.affinity_data_));
 
-            scheduler_mode mode = scheduler_mode(
-                scheduler_mode::do_background_work |
+            init.mode_ = scheduler_mode(scheduler_mode::do_background_work |
                 scheduler_mode::delay_exit);
 
             std::unique_ptr<hpx::threads::thread_pool_base> pool(
-              new hpx::threads::detail::scheduled_thread_pool<high_priority_sched>(
-                  std::move(scheduler), notifier, pool_index, pool_name,
-                  mode, thread_offset)
-            );
+                new hpx::threads::detail::scheduled_thread_pool<
+                    high_priority_sched>(std::move(scheduler), init));
             return pool;
-            });
+        });
 
     std::cout << "[main] "
               << "thread_pools created \n";

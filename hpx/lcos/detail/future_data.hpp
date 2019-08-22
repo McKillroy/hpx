@@ -7,35 +7,27 @@
 #define HPX_LCOS_DETAIL_FUTURE_DATA_MAR_06_2012_1055AM
 
 #include <hpx/config.hpp>
-#include <hpx/error_code.hpp>
+#include <hpx/assertion.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/lcos/local/detail/condition_variable.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/threads/coroutines/detail/get_stack_pointer.hpp>
 #include <hpx/runtime/threads/thread_executor.hpp>
 #include <hpx/runtime/threads/thread_helpers.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/timing/steady_clock.hpp>
 #include <hpx/traits/future_access.hpp>
 #include <hpx/traits/get_remote_result.hpp>
+#include <hpx/type_support/decay.hpp>
+#include <hpx/type_support/unused.hpp>
 #include <hpx/util/annotated_function.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/assert_owns_lock.hpp>
-#include <hpx/util/atomic_count.hpp>
+#include <hpx/thread_support/assert_owns_lock.hpp>
+#include <hpx/thread_support/atomic_count.hpp>
 #include <hpx/util/bind.hpp>
-#include <hpx/util/decay.hpp>
-#include <hpx/util/steady_clock.hpp>
 #include <hpx/util/unique_function.hpp>
-#include <hpx/util/unused.hpp>
 
-#include <boost/intrusive_ptr.hpp>
-
-// NOTE: small_vector was introduced in 1.58 but seems to be buggy in that
-// version, so use only from 1.59 onwards.
-#if BOOST_VERSION < 105900
-#include <vector>
-#else
 #include <boost/container/small_vector.hpp>
-#endif
+#include <boost/intrusive_ptr.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -77,13 +69,8 @@ namespace detail
     {
     public:
         typedef util::unique_function_nonser<void()> completed_callback_type;
-#if BOOST_VERSION < 105900
-        typedef std::vector<completed_callback_type>
-            completed_callback_vector_type;
-#else
         typedef boost::container::small_vector<completed_callback_type, 3>
             completed_callback_vector_type;
-#endif
 
         typedef void has_future_data_refcnt_base;
 
@@ -306,6 +293,8 @@ namespace detail
         local::detail::condition_variable cond_;    // threads waiting in read
     };
 
+    struct in_place {};
+
     template <typename Result>
     struct future_data_base
       : future_data_base<traits::detail::future_data_void>
@@ -341,18 +330,8 @@ namespace detail
           : base_type(no_addref)
         {}
 
-        struct default_construct {};
-
-        future_data_base(init_no_addref no_addref, default_construct)
-          : base_type(no_addref)
-        {
-            result_type* value_ptr = reinterpret_cast<result_type*>(&storage_);
-            construct(value_ptr);
-            state_.store(value, std::memory_order_relaxed);
-        }
-
         template <typename ... Ts>
-        future_data_base(init_no_addref no_addref, Ts&&... ts)
+        future_data_base(init_no_addref no_addref, in_place, Ts&&... ts)
           : base_type(no_addref)
         {
             result_type* value_ptr = reinterpret_cast<result_type*>(&storage_);
@@ -636,8 +615,8 @@ namespace detail
         {}
 
         template <typename ... Ts>
-        future_data(init_no_addref no_addref, Ts&&... ts)
-          : future_data_base<Result>(no_addref, std::forward<Ts>(ts)...)
+        future_data(init_no_addref no_addref, in_place in_place, Ts&&... ts)
+          : future_data_base<Result>(no_addref, in_place, std::forward<Ts>(ts)...)
         {}
 
         future_data(init_no_addref no_addref, std::exception_ptr const& e)
@@ -664,9 +643,6 @@ namespace detail
                     rebind_alloc<future_data_allocator>
             other_allocator;
 
-        typedef typename future_data_base<Result>::default_construct
-            default_construct;
-
         future_data_allocator(other_allocator const& alloc)
           : future_data<Result>()
           , alloc_(alloc)
@@ -674,16 +650,8 @@ namespace detail
 
         template <typename... T>
         future_data_allocator(init_no_addref no_addref,
-                other_allocator const& alloc, T&&... ts)
-          : future_data<Result>(no_addref, std::forward<T>(ts)...)
-          , alloc_(alloc)
-        {}
-
-        template <typename... T>
-        future_data_allocator(init_no_addref no_addref,
-                default_construct defctr,
-                other_allocator const& alloc, T&&... ts)
-          : future_data<Result>(no_addref, defctr, std::forward<T>(ts)...)
+                in_place in_place, other_allocator const& alloc, T&&... ts)
+          : future_data<Result>(no_addref, in_place, std::forward<T>(ts)...)
           , alloc_(alloc)
         {}
 
@@ -749,7 +717,7 @@ namespace detail
 
             // start new thread at given point in time
             threads::set_thread_state(id, abs_time, threads::pending,
-                threads::wait_timeout, threads::thread_priority_boost, ec);
+                threads::wait_timeout, threads::thread_priority_boost, true, ec);
             if (ec) {
                 // thread scheduling failed, report error to the new future
                 this->base_type::set_exception(hpx::detail::access_exception(ec));

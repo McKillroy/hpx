@@ -7,14 +7,14 @@
 // #define HPX_USE_WINDOWS_PERFORMANCE_COUNTERS 1
 
 #include <hpx/hpx_init.hpp>
-#include <hpx/exception.hpp>
+#include <hpx/errors/exception.hpp>
 #include <hpx/include/performance_counters.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/runtime/actions/plain_action.hpp>
 #include <hpx/runtime/threads/thread_helpers.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/state.hpp>
-#include <hpx/util/format.hpp>
+#include <hpx/format.hpp>
 
 #include <cstdint>
 #include <iostream>

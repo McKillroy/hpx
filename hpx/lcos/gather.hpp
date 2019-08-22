@@ -192,10 +192,18 @@ namespace hpx { namespace lcos
 #else
 
 #include <hpx/config.hpp>
+
+#if !defined(HPX_COMPUTE_DEVICE_CODE)
+
+#include <hpx/config.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/dataflow.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/lcos/local/and_gate.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/preprocessor/cat.hpp>
+#include <hpx/preprocessor/expand.hpp>
+#include <hpx/preprocessor/nargs.hpp>
 #include <hpx/runtime/basename_registration.hpp>
 #include <hpx/runtime/components/new.hpp>
 #include <hpx/runtime/components/server/simple_component_base.hpp>
@@ -203,14 +211,10 @@ namespace hpx { namespace lcos
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/naming/id_type.hpp>
 #include <hpx/runtime/naming/unmanaged.hpp>
-#include <hpx/util/assert.hpp>
 #include <hpx/util/bind_back.hpp>
 #include <hpx/util/bind_front.hpp>
-#include <hpx/util/decay.hpp>
-#include <hpx/util/detail/pp/cat.hpp>
-#include <hpx/util/detail/pp/expand.hpp>
-#include <hpx/util/detail/pp/nargs.hpp>
-#include <hpx/util/unused.hpp>
+#include <hpx/type_support/decay.hpp>
+#include <hpx/type_support/unused.hpp>
 
 #include <cstddef>
 #include <mutex>
@@ -246,6 +250,7 @@ namespace hpx { namespace lcos
 
         public:
             gather_server() //-V730
+              : num_sites_(0), site_(0)
             {
                 HPX_ASSERT(false);  // shouldn't ever be called
             }
@@ -265,7 +270,7 @@ namespace hpx { namespace lcos
             {
                 std::unique_lock<mutex_type> l(mtx_);
 
-                hpx::future<std::vector<T> > f = gate_.get_future().then(
+                hpx::future<std::vector<T> > f = gate_.get_future(l).then(
                         util::bind_front(&gather_server::on_ready, this));
 
                 set_result_locked(which, std::move(t), l);
@@ -322,7 +327,7 @@ namespace hpx { namespace lcos
                     {
                         HPX_THROW_EXCEPTION(bad_parameter,
                             "hpx::lcos::detail::register_gather_name",
-                            "the given base name for gather opration was "
+                            "the given base name for the gather operation was "
                             "already registered: " + basename);
                     }
                     return target;
@@ -330,6 +335,25 @@ namespace hpx { namespace lcos
         }
 
         ///////////////////////////////////////////////////////////////////////
+        template <typename T>
+        hpx::future<std::vector<typename std::decay<T>::type> >
+        gather_data_direct(hpx::future<hpx::id_type> f, T&& result,
+            std::size_t site)
+        {
+            typedef typename std::decay<T>::type result_type;
+            typedef typename gather_server<result_type>::get_result_action
+                action_type;
+
+            // make sure id is kept alive as long as the returned future
+            hpx::id_type id = f.get();
+            return async(action_type(), id, site, std::forward<T>(result)).then(
+                [id](hpx::future<std::vector<result_type> > && f)
+                {
+                    HPX_UNUSED(id);
+                    return f.get();
+                });
+        }
+
         template <typename T>
         hpx::future<std::vector<T> >
         gather_data(hpx::future<hpx::id_type> f, hpx::future<T> result,
@@ -345,6 +369,17 @@ namespace hpx { namespace lcos
                     HPX_UNUSED(id);
                     return f.get();
                 });
+        }
+
+        template <typename T>
+        hpx::future<void> set_data_direct(
+            hpx::future<hpx::id_type> f, T&& result, std::size_t which)
+        {
+            typedef typename std::decay<T>::type result_type;
+            typedef typename gather_server<result_type>::set_result_action
+                action_type;
+
+            return async(action_type(), f.get(), which, std::forward<T>(result));
         }
 
         template <typename T>
@@ -429,11 +464,9 @@ namespace hpx { namespace lcos
         if (this_site == std::size_t(-1))
             this_site = static_cast<std::size_t>(hpx::get_locality_id());
 
-        typedef typename util::decay<T>::type result_type;
         return dataflow(
-                util::bind_back(&detail::gather_data<result_type>, this_site),
-                std::move(f), std::forward<T>(result)
-            );
+            util::bind_back(&detail::gather_data_direct<T>, this_site),
+            std::move(f), std::forward<T>(result));
     }
 
     template <typename T>
@@ -462,10 +495,8 @@ namespace hpx { namespace lcos
         if (this_site == std::size_t(-1))
             this_site = static_cast<std::size_t>(hpx::get_locality_id());
 
-        return dataflow(
-                util::bind_back(&detail::set_data<T>, this_site),
-                std::move(id), std::move(result)
-            );
+        return dataflow(util::bind_back(&detail::set_data<T>, this_site),
+            std::move(id), std::move(result));
     }
 
     template <typename T>
@@ -490,17 +521,14 @@ namespace hpx { namespace lcos
     // gather plain values
     template <typename T>
     hpx::future<void>
-    gather_there(hpx::future<hpx::id_type> id, T && result,
+    gather_there(hpx::future<hpx::id_type> id, T&& result,
         std::size_t this_site = std::size_t(-1))
     {
         if (this_site == std::size_t(-1))
             this_site = static_cast<std::size_t>(hpx::get_locality_id());
 
-        typedef typename util::decay<T>::type result_type;
-        return dataflow(
-                util::bind_back(&detail::set_data<result_type>, this_site),
-                std::move(id), std::forward<T>(result)
-            );
+        return dataflow(util::bind_back(&detail::set_data_direct<T>, this_site),
+            std::move(id), std::forward<T>(result));
     }
 
     template <typename T>
@@ -574,5 +602,6 @@ namespace hpx { namespace lcos
     HPX_REGISTER_COMPONENT(HPX_PP_CAT(gather_, name))                         \
     /**/
 
+#endif // COMPUTE_HOST_CODE
 #endif // DOXYGEN
 #endif

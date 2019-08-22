@@ -10,7 +10,7 @@
 
 #include <hpx/config.hpp>
 #include <hpx/async.hpp>
-#include <hpx/exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/lcos/dataflow.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
@@ -18,7 +18,7 @@
 #include <hpx/traits/is_future.hpp>
 #include <hpx/util/bind.hpp>
 #include <hpx/util/bind_back.hpp>
-#include <hpx/util/decay.hpp>
+#include <hpx/type_support/decay.hpp>
 
 #include <hpx/parallel/exception_list.hpp>
 #include <hpx/parallel/execution_policy.hpp>

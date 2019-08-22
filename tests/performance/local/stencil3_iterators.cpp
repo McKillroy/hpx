@@ -5,11 +5,11 @@
 
 #include <hpx/hpx_init.hpp>
 #include <hpx/hpx.hpp>
-#include <hpx/traits/is_iterator.hpp>
-#include <hpx/util/high_resolution_clock.hpp>
-#include <hpx/util/transform_iterator.hpp>
 #include <hpx/include/iostreams.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/testing.hpp>
+#include <hpx/timing/high_resolution_clock.hpp>
+#include <hpx/util/transform_iterator.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -498,7 +498,7 @@ std::uint64_t bench_stencil3_iterator_explicit()
     // handle all elements explicitly
     int result = values.back() + values.front() + values[1];
 
-    auto range = boost::irange(0, partition_size);
+    auto range = boost::irange(1, partition_size - 1);
 
     std::for_each(std::begin(range), std::end(range),
         [&result, &values](std::size_t i)

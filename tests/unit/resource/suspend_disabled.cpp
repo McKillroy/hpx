@@ -8,7 +8,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/resource_partitioner.hpp>
 #include <hpx/include/threads.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <cstddef>
 #include <stdexcept>
@@ -27,7 +27,7 @@ int hpx_main(int argc, char* argv[])
             hpx::resource::get_thread_pool("default");
 
         // Use .get() to throw exception
-        tp.suspend_processing_unit(0).get();
+        hpx::threads::suspend_processing_unit(tp, 0).get();
         HPX_TEST_MSG(false, "Suspending should not be allowed with "
             "elasticity disabled");
     }
@@ -51,7 +51,8 @@ int main(int argc, char* argv[])
     hpx::resource::partitioner rp(argc, argv, std::move(cfg));
 
     // Explicitly disable elasticity if it is in defaults
-    rp.create_thread_pool("default", hpx::resource::scheduling_policy::local,
+    rp.create_thread_pool("default",
+        hpx::resource::scheduling_policy::local_priority_fifo,
         hpx::threads::policies::scheduler_mode(
             hpx::threads::policies::default_mode &
             ~hpx::threads::policies::enable_elasticity));

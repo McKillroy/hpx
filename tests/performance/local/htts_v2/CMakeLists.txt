@@ -3,9 +3,7 @@
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-if((NOT MSVC) OR HPX_WITH_VCPKG)
-  set(boost_library_dependencies ${Boost_LIBRARIES})
-endif()
+set(boost_library_dependencies ${Boost_LIBRARIES})
 
 set(benchmarks
     htts2_payload_precision
@@ -13,25 +11,25 @@ set(benchmarks
     htts2_hpx
    )
 
-set(htts2_payload_precision_FLAGS NOLIBS DEPENDENCIES ${boost_library_dependencies})
+set(htts2_payload_precision_FLAGS NOLIBS DEPENDENCIES ${boost_library_dependencies} hpx_assertion hpx_config hpx_format)
 
 if(HPX_WITH_EXAMPLES_OPENMP)
   set(benchmarks ${benchmarks} htts2_omp)
-  set(htts2_omp_FLAGS NOLIBS DEPENDENCIES ${boost_library_dependencies})
+  set(htts2_omp_FLAGS NOLIBS DEPENDENCIES ${boost_library_dependencies} hpx_assertion hpx_config hpx_format)
 endif()
 
 if(HPX_WITH_EXAMPLES_QTHREADS)
   include_directories(${QTHREADS_INCLUDE_DIR})
 
   set(benchmarks ${benchmarks} htts2_qthreads)
-  set(htts2_qthreads_FLAGS NOLIBS DEPENDENCIES ${boost_library_dependencies} ${QTHREADS_LIBRARY})
+  set(htts2_qthreads_FLAGS NOLIBS DEPENDENCIES ${boost_library_dependencies} ${QTHREADS_LIBRARY} hpx_assertion hpx_config hpx_format)
 endif()
 
 if(HPX_WITH_EXAMPLES_TBB)
   include_directories(${TBB_INCLUDE_DIR})
 
   set(benchmarks ${benchmarks} htts2_tbb)
-  set(htts2_tbb_FLAGS NOLIBS DEPENDENCIES ${boost_library_dependencies} ${TBB_LIBRARY})
+  set(htts2_tbb_FLAGS NOLIBS DEPENDENCIES ${boost_library_dependencies} ${TBB_LIBRARY} hpx_assertion hpx_config hpx_format)
 endif()
 
 foreach(benchmark ${benchmarks})

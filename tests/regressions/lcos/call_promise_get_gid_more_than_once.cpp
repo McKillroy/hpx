@@ -6,7 +6,7 @@
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
 
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <cstdint>
 
@@ -35,6 +35,9 @@ int hpx_main()
 
         HPX_TEST_EQ(msb1, msb2);
         HPX_TEST_EQ(id1.get_lsb(), id2.get_lsb());
+
+        promise.set_value();
+        future.get();
     }
 
     return hpx::finalize();

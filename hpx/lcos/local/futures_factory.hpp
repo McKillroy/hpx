@@ -14,11 +14,11 @@
 #include <hpx/runtime/threads/thread_data_fwd.hpp>
 #include <hpx/runtime/threads/thread_enums.hpp>
 #include <hpx/runtime/threads/thread_helpers.hpp>
-#include <hpx/throw_exception.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/traits/future_access.hpp>
-#include <hpx/util/allocator_deleter.hpp>
+#include <hpx/allocator_support/allocator_deleter.hpp>
 #include <hpx/util/deferred_call.hpp>
-#include <hpx/util/internal_allocator.hpp>
+#include <hpx/allocator_support/internal_allocator.hpp>
 #include <hpx/util/thread_description.hpp>
 
 #include <hpx/parallel/executors/execution.hpp>

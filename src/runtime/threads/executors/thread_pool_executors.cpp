@@ -16,14 +16,14 @@
 #if defined(HPX_HAVE_STATIC_PRIORITY_SCHEDULER)
 #include <hpx/runtime/threads/policies/static_priority_queue_scheduler.hpp>
 #endif
-#include <hpx/runtime/threads/detail/scheduling_loop.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/runtime/threads/detail/create_thread.hpp>
+#include <hpx/runtime/threads/detail/scheduling_loop.hpp>
 #include <hpx/runtime/threads/detail/set_thread_state.hpp>
 #include <hpx/runtime/threads/executors/manage_thread_executor.hpp>
 #include <hpx/runtime/threads/thread_enums.hpp>
-#include <hpx/util/assert.hpp>
 #include <hpx/util/deferred_call.hpp>
-#include <hpx/util/steady_clock.hpp>
+#include <hpx/timing/steady_clock.hpp>
 #include <hpx/util/thread_description.hpp>
 #include <hpx/util/unique_function.hpp>
 
@@ -46,18 +46,22 @@ namespace hpx { namespace threads { namespace executors { namespace detail
     ///////////////////////////////////////////////////////////////////////////
     template <typename Scheduler>
     thread_pool_executor<Scheduler>::thread_pool_executor(
-            std::size_t max_punits, std::size_t min_punits,
-            char const* description)
-      : scheduler_(
-            typename Scheduler::init_parameter_type(max_punits, description),
-            false
-        ),
-        shutdown_sem_(0),
-        current_concurrency_(0), max_current_concurrency_(0),
-        tasks_scheduled_(0), tasks_completed_(0),
-        max_punits_(max_punits), min_punits_(min_punits), curr_punits_(0),
-        cookie_(0),
-        self_(max_punits)
+        std::size_t max_punits, std::size_t min_punits, char const* description,
+        policies::detail::affinity_data const& affinity_data)
+      : scheduler_(typename Scheduler::init_parameter_type(
+                       max_punits, affinity_data, description),
+            false)
+      , shutdown_sem_(0)
+      , current_concurrency_(0)
+      , max_current_concurrency_(0)
+      , tasks_scheduled_(0)
+      , tasks_completed_(0)
+      , max_punits_(max_punits)
+      , min_punits_(min_punits)
+      , curr_punits_(0)
+      , cookie_(0)
+      , self_(max_punits)
+      , affinity_data_(affinity_data)
     {
         if (max_punits < min_punits)
         {
@@ -74,6 +78,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
                 "OS-threads");
             return;
         }
+
         scheduler_.set_parent_pool(this_thread::get_pool());
 
         // Inform the resource manager about this new executor. This causes the
@@ -207,9 +212,10 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         ++tasks_scheduled_;
 
         // now schedule new thread for execution
-        threads::detail::set_thread_state_timed(scheduler_, abs_time, id,
-            nullptr, ec);
-        if (ec) {
+        threads::detail::set_thread_state_timed(
+            scheduler_, abs_time, id, nullptr, true, ec);
+        if (ec)
+        {
             --tasks_scheduled_;
             return;
         }
@@ -327,13 +333,6 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         {
             ++max_current_concurrency_;
 
-//             {
-//                 std::lock_guard<mutex_type> l(mtx_);
-//                 resource::get_partitioner().get_affinity_data().add_punit(
-//                     virt_core, thread_num);
-//                 scheduler_.on_start_thread(virt_core);
-//             }
-
             self_[virt_core] = threads::get_self_ptr();
 
             on_run_exit on_exit(current_concurrency_, shutdown_sem_,
@@ -347,10 +346,12 @@ namespace hpx { namespace threads { namespace executors { namespace detail
 
 #if defined(HPX_HAVE_BACKGROUND_THREAD_COUNTERS) && defined(HPX_HAVE_THREAD_IDLE_RATES)
             std::int64_t bg_work = 0;
+            std::int64_t bg_send = 0;
+            std::int64_t bg_receive = 0;
             threads::detail::scheduling_counters counters(
                 executed_threads, executed_thread_phases,
                 overall_times, thread_times, idle_loop_count, busy_loop_count,
-                task_active, bg_work);
+                task_active, bg_work, bg_send, bg_receive);
 #else
             threads::detail::scheduling_counters counters(
                 executed_threads, executed_thread_phases,
@@ -454,6 +455,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         HPX_ASSERT(oldstate == state_starting ||
             oldstate == state_running || oldstate == state_suspended ||
             oldstate == state_stopped);
+        HPX_UNUSED(oldstate);
         --curr_punits_;
     }
 }}}}

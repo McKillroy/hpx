@@ -3,7 +3,7 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#include <hpx/state.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/lcos/barrier.hpp>
 #include <hpx/lcos/detail/barrier_node.hpp>
 #include <hpx/lcos/when_all.hpp>
@@ -12,15 +12,16 @@
 #include <hpx/runtime/components/server/component_heap.hpp>
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/threads/run_as_hpx_thread.hpp>
-#include <hpx/util/assert.hpp>
+#include <hpx/state.hpp>
 #include <hpx/util/runtime_configuration.hpp>
-#include <hpx/util/unused.hpp>
+#include <hpx/type_support/unused.hpp>
 
 #include <boost/intrusive_ptr.hpp>
 
 #include <cstddef>
 #include <string>
 #include <utility>
+#include <vector>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace hpx
@@ -56,7 +57,26 @@ namespace hpx { namespace lcos {
     {
         if ((*node_)->num_ >= (*node_)->cut_off_ || (*node_)->rank_ == 0)
             register_with_basename(
-                base_name, node_->get_unmanaged_id(), (*node_)->rank_).get();
+                base_name, node_->get_unmanaged_id(), (*node_)->rank_)
+                .get();
+    }
+
+    barrier::barrier(std::string const& base_name,
+        std::vector<std::size_t> const& ranks, std::size_t rank)
+    {
+        auto rank_it = std::find(ranks.begin(), ranks.end(), rank);
+        HPX_ASSERT(rank_it != ranks.end());
+
+        std::size_t barrier_rank = std::distance(ranks.begin(), rank_it);
+        node_.reset(
+            new (hpx::components::component_heap<wrapping_type>().alloc())
+                wrapping_type(
+                    new wrapped_type(base_name, ranks.size(), barrier_rank)));
+
+        if ((*node_)->num_ >= (*node_)->cut_off_ || (*node_)->rank_ == 0)
+            register_with_basename(
+                base_name, node_->get_unmanaged_id(), (*node_)->rank_)
+                .get();
     }
 
     barrier::barrier()
@@ -103,8 +123,7 @@ namespace hpx { namespace lcos {
                 // make sure this runs as an HPX thread
                 if (hpx::threads::get_self_ptr() == nullptr)
                 {
-                    return hpx::threads::run_as_hpx_thread(
-                        &barrier::release, this);
+                    hpx::threads::run_as_hpx_thread(&barrier::release, this);
                 }
 
                 hpx::future<void> f;
@@ -126,6 +145,7 @@ namespace hpx { namespace lcos {
                     }
                 ).get();
             }
+            intrusive_ptr_release(node_->get());
             node_.reset();
         }
     }
@@ -142,6 +162,7 @@ namespace hpx { namespace lcos {
                     hpx::unregister_with_basename(
                         (*node_)->base_name_, (*node_)->rank_);
             }
+            intrusive_ptr_release(node_->get());
             node_.reset();
         }
     }

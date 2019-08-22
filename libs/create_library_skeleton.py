@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 '''
 Copyright (c) 2018 Thomas Heller
 
@@ -29,24 +29,28 @@ cmake_header = f'''# Copyright (c) 2019 The STE||AR-Group
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 '''
 
-readme_template = f'''<!-- Copyright (c) 2019 The STE||AR-Group                                         -->
-<!--                                                                              -->
-<!-- Distributed under the Boost Software License, Version 1.0. (See accompanying -->
-<!-- file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)        -->
+readme_template = f'''
+..
+   Copyright (c) 2019 The STE||AR-Group
 
-# {lib_name}
+   Distributed under the Boost Software License, Version 1.0. (See accompanying
+   file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+{header_str}
+{lib_name}
+{header_str}
 
 This library is part of HPX.
 
-Extensive documentation can be found at
-https://stellar-group.github.io/hpx/docs/sphinx/latest/html/libs/{lib_name}/docs/index.html
+Documentation can be found `here
+<https://stellar-group.github.io/hpx/docs/sphinx/latest/html/libs/{lib_name}/docs/index.html>`__.
 '''
 
 index_rst = f'''..
-    Copyright (c) 2019 The STE||AR-Group
+   Copyright (c) 2019 The STE||AR-Group
 
-    Distributed under the Boost Software License, Version 1.0. (See accompanying
-    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+   Distributed under the Boost Software License, Version 1.0. (See accompanying
+   file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 .. _libs_{lib_name}:
 
@@ -57,34 +61,44 @@ index_rst = f'''..
 '''
 
 root_cmakelists_template = cmake_header + f'''
-# We require at least CMake V{cmake_version}
 cmake_minimum_required(VERSION {cmake_version} FATAL_ERROR)
 
-project(HPX.{lib_name} CXX)
+set({lib_name}_headers)
 
-list(APPEND CMAKE_MODULE_PATH "${{CMAKE_CURRENT_SOURCE_DIR}}/cmake")
+set({lib_name}_compat_headers)
 
-option(HPX_{lib_name_upper}_WITH_TESTS "Include tests for {lib_name}" On)
+set({lib_name}_sources)
 
-message(STATUS "{lib_name}: Configuring")
-
-add_subdirectory(examples)
-add_subdirectory(src)
-add_subdirectory(tests)
-
-message(STATUS "{lib_name}: Configuring done")
+include(HPX_AddModule)
+add_hpx_module({lib_name}
+  COMPATIBILITY_HEADERS OFF
+  DEPRECATION_WARNINGS
+  FORCE_LINKING_GEN
+  GLOBAL_HEADER_GEN OFF
+  SOURCES ${{{lib_name}_sources}}
+  HEADERS ${{{lib_name}_headers}}
+  COMPAT_HEADERS ${{{lib_name}_compat_headers}}
+  DEPENDENCIES
+  CMAKE_SUBDIRS examples tests
+)
 '''
 
 examples_cmakelists_template = cmake_header + f'''
-if (HPX_WITH_TESTS_EXAMPLES)
-  add_hpx_pseudo_target(tests.examples.{lib_name})
-  add_hpx_pseudo_dependencies(tests.examples tests.examples.{lib_name})
+if (HPX_WITH_EXAMPLES)
+  add_hpx_pseudo_target(examples.modules.{lib_name})
+  add_hpx_pseudo_dependencies(examples.modules examples.modules.{lib_name})
+  if (HPX_WITH_TESTS AND HPX_WITH_TESTS_EXAMPLES AND HPX_{lib_name_upper}_WITH_TESTS)
+    add_hpx_pseudo_target(tests.examples.modules.{lib_name})
+    add_hpx_pseudo_dependencies(tests.examples.modules tests.examples.modules.{lib_name})
+  endif()
 endif()
-
 '''
 
 tests_cmakelists_template = cmake_header + f'''
+include(HPX_Option)
+
 if (NOT HPX_WITH_TESTS AND HPX_TOP_LEVEL)
+  hpx_set_option(HPX_{lib_name_upper}_WITH_TESTS VALUE OFF FORCE)
   return()
 endif()
 if (NOT HPX_{lib_name_upper}_WITH_TESTS)
@@ -93,25 +107,30 @@ if (NOT HPX_{lib_name_upper}_WITH_TESTS)
 endif()
 
 if (HPX_WITH_TESTS_UNIT)
-  add_hpx_pseudo_target(tests.unit.{lib_name})
-  add_hpx_pseudo_dependencies(tests.unit tests.unit.{lib_name})
+  add_hpx_pseudo_target(tests.unit.modules.{lib_name})
+  add_hpx_pseudo_dependencies(tests.unit.modules tests.unit.modules.{lib_name})
   add_subdirectory(unit)
 endif()
 
 if (HPX_WITH_TESTS_REGRESSIONS)
-  add_hpx_pseudo_target(tests.regressions.{lib_name})
-  add_hpx_pseudo_dependencies(tests.regressions tests.regressions.{lib_name})
+  add_hpx_pseudo_target(tests.regressions.modules.{lib_name})
+  add_hpx_pseudo_dependencies(tests.regressions.modules tests.regressions.modules.{lib_name})
   add_subdirectory(regressions)
 endif()
 
 if (HPX_WITH_TESTS_BENCHMARKS)
-  add_hpx_pseudo_target(tests.performance.{lib_name})
-  add_hpx_pseudo_dependencies(tests.performance tests.performance.{lib_name})
+  add_hpx_pseudo_target(tests.performance.modules.{lib_name})
+  add_hpx_pseudo_dependencies(tests.performance.modules tests.performance.modules.{lib_name})
   add_subdirectory(performance)
 endif()
 
 if (HPX_WITH_TESTS_HEADERS)
-  add_hpx_lib_header_tests({lib_name})
+  add_hpx_header_tests(
+    modules.{lib_name}
+    HEADERS ${{{lib_name}_headers}}
+    HEADER_ROOT ${{PROJECT_SOURCE_DIR}}/include
+    NOLIBS
+    DEPENDENCIES hpx_{lib_name})
 endif()
 '''
 
@@ -141,8 +160,8 @@ if lib_name != '--recreate-index':
     ################################################################################
 
     ################################################################################
-    # Generate Readme skeleton
-    f = open(os.path.join(lib_name, 'Readme.md'), 'w')
+    # Generate README skeleton
+    f = open(os.path.join(lib_name, 'README.rst'), 'w')
     f.write(readme_template)
     ################################################################################
 
@@ -191,54 +210,104 @@ libs = sorted([ lib for lib in os.listdir(cwd) if os.path.isdir(lib) ])
 
 # Adapting top level CMakeLists.txt
 libs_cmakelists = cmake_header + f'''
-# This file is auto generated. Please do not edit manually
-
-include(HPX_CreateSymbolicLink)
-
-# We create a special directory to collect all our modular headers, to make
-# it easier to include those files. The directory is created from scratch if
-# changes occured to avoid dangling links
-execute_process(COMMAND "${{CMAKE_COMMAND}}" -E remove_directory ${{CMAKE_BINARY_DIR}}/include/hpx)
-execute_process(COMMAND "${{CMAKE_COMMAND}}" -E make_directory ${{CMAKE_BINARY_DIR}}/include/hpx)
+# This file is auto generated. Please do not edit manually.
 '''
 
-libs_cmake_dir_add = '''
-add_subdirectory({lib})
-file(GLOB PP_INCLUDE_LIST
-  LIST_DIRECTORIES true ${{DO_CONFIGURE_DEPENDS}}
-  RELATIVE ${{CMAKE_CURRENT_SOURCE_DIR}}/{lib}/include/hpx/
-  ${{CMAKE_CURRENT_SOURCE_DIR}}/{lib}/include/hpx/*)
-foreach(include ${{PP_INCLUDE_LIST}})
-  create_symbolic_link(
-    ${{CMAKE_CURRENT_SOURCE_DIR}}/{lib}/include/hpx/${{include}}
-    ${{CMAKE_BINARY_DIR}}/include/hpx/${{include}})
-endforeach()
-'''
+libs_cmakelists += '''
+include(HPX_Message)
+include(HPX_AddPseudoDependencies)
+include(HPX_AddPseudoTarget)
 
+set(HPX_LIBS
+'''
 for lib in libs:
-    # Ignore subdirectories starting with _
     if not lib.startswith('_'):
-        libs_cmakelists += libs_cmake_dir_add.format(lib = lib)
+        libs_cmakelists += f'  {lib}\n'
+libs_cmakelists += '  CACHE INTERNAL "list of HPX modules" FORCE\n)\n\n'
+
+libs_cmakelists += '''
+# add example pseudo targets needed for modules
+if(HPX_WITH_EXAMPLES)
+  add_hpx_pseudo_target(examples.modules)
+  add_hpx_pseudo_dependencies(examples examples.modules)
+endif()
+
+# add test pseudo targets needed for modules
+if(HPX_WITH_TESTS)
+  if (HPX_WITH_TESTS_UNIT)
+    add_hpx_pseudo_target(tests.unit.modules)
+    add_hpx_pseudo_dependencies(tests.unit tests.unit.modules)
+  endif()
+
+  if (HPX_WITH_EXAMPLES AND HPX_WITH_TESTS_EXAMPLES)
+    add_hpx_pseudo_target(tests.examples.modules)
+    add_hpx_pseudo_dependencies(tests.examples tests.examples.modules)
+  endif()
+
+  if (HPX_WITH_TESTS_REGRESSIONS)
+    add_hpx_pseudo_target(tests.regressions.modules)
+    add_hpx_pseudo_dependencies(tests.regressions tests.regressions.modules)
+  endif()
+
+  if (HPX_WITH_TESTS_BENCHMARKS)
+    add_hpx_pseudo_target(tests.performance.modules)
+    add_hpx_pseudo_dependencies(tests.performance tests.performance.modules)
+  endif()
+
+  if (HPX_WITH_TESTS_HEADERS)
+    add_custom_target(tests.headers.modules)
+    add_hpx_pseudo_dependencies(tests.headers tests.headers.modules)
+  endif()
+endif()
+
+'''
+
+libs_cmakelists += '''
+hpx_info("Configuring modules:")
+
+set(MODULE_FORCE_LINKING_INCLUDES)
+set(MODULE_FORCE_LINKING_CALLS)
+foreach(lib ${HPX_LIBS})
+  add_subdirectory(${lib})
+
+  set(MODULE_FORCE_LINKING_INCLUDES
+    "${MODULE_FORCE_LINKING_INCLUDES}\\n#include <hpx/${lib}/force_linking.hpp>\\n")
+
+  set(MODULE_FORCE_LINKING_CALLS
+    "${MODULE_FORCE_LINKING_CALLS}\\n        ${lib}::force_linking();")
+endforeach()
+
+configure_file(
+    "${PROJECT_SOURCE_DIR}/cmake/templates/modules.cpp.in"
+    "${CMAKE_BINARY_DIR}/libs/modules.cpp"
+    @ONLY)
+'''
+
 f = open(os.path.join(cwd, 'CMakeLists.txt'), 'w')
 f.write(libs_cmakelists)
 
-# Adapting top level index.rst
-index_rst = f'''..
-    Copyright (c) 2018-2019 The STE||AR-Group
+# Adapting all_modules.rst
+all_modules_rst = f'''..
+   Copyright (c) 2018-2019 The STE||AR-Group
 
-    Distributed under the Boost Software License, Version 1.0. (See accompanying
-    file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+   Distributed under the Boost Software License, Version 1.0. (See accompanying
+   file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+.. _all_modules:
+
+===========
+All modules
+===========
 
 .. toctree::
-   :caption: Libraries
    :maxdepth: 2
 
 '''
 for lib in libs:
-    index_rst += f'   /libs/{lib}/docs/index.rst\n'
+    all_modules_rst += f'   /libs/{lib}/docs/index.rst\n'
 
-f = open(os.path.join(cwd, 'index.rst'), 'w')
-f.write(index_rst)
+f = open(os.path.join(cwd, 'all_modules.rst'), 'w')
+f.write(all_modules_rst)
 
 ################################################################################
 

@@ -7,6 +7,7 @@
 
 #include <hpx/config.hpp>
 #include <hpx/apply.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/async.hpp>
 #include <hpx/lcos/base_lco_with_value.hpp>
 #include <hpx/runtime/actions/continuation.hpp>
@@ -15,9 +16,8 @@
 #include <hpx/runtime/applier/apply_callback.hpp>
 #include <hpx/runtime/components/component_factory.hpp>
 #include <hpx/runtime/serialization/vector.hpp>
-#include <hpx/throw_exception.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/format.hpp>
+#include <hpx/errors.hpp>
+#include <hpx/format.hpp>
 
 #include <cstdint>
 #include <string>

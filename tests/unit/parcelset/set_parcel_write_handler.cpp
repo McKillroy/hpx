@@ -5,7 +5,7 @@
 
 #include <hpx/hpx_main.hpp>
 #include <hpx/hpx.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -43,7 +43,7 @@ int main()
 
     // test that handler is called for every parcel
     hpx::parcel_write_handler_type f1 = hpx::set_parcel_write_handler(wh);
-    HPX_TEST(!hpx::util::is_empty_function(f1));
+    HPX_TEST(!f1.empty());
 
     std::vector<hpx::id_type> localities = hpx::find_remote_localities();
 

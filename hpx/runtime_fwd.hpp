@@ -10,7 +10,7 @@
 #define HPX_RUNTIME_FWD_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/exception_fwd.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/runtime/basename_registration_fwd.hpp>
 #include <hpx/runtime/config_entry.hpp>
 #include <hpx/runtime/find_localities.hpp>
@@ -264,14 +264,6 @@ namespace hpx
         char const* binary_filter_type, bool compress,
         serialization::binary_filter* next_filter = nullptr,
         error_code& ec = throws);
-
-    /// Return true if networking is enabled.
-    ///
-    /// \note Networking is enabled if `-DHPX_WITH_NETWORKING=On` was used at
-    ///       configuration time and more than one locality is used or the
-    ///       command line option `--hpx:expect-connecting-localities` was
-    ///       specified
-    HPX_API_EXPORT bool is_networking_enabled();
 }
 
 #endif

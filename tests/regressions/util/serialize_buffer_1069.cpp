@@ -8,7 +8,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/hpx.hpp>
 #include <hpx/runtime/serialization/serialize_buffer.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -46,9 +46,9 @@ public:
         return std::allocator<T>::deallocate(p, n);
     }
 
-    test_allocator() throw(): std::allocator<T>() {}
-    test_allocator(const test_allocator &a) throw(): std::allocator<T>(a) {}
-    ~test_allocator() throw() {}
+    test_allocator() noexcept: std::allocator<T>() {}
+    test_allocator(const test_allocator &a) noexcept: std::allocator<T>(a) {}
+    ~test_allocator() noexcept {}
 };
 
 //----------------------------------------------------------------------------

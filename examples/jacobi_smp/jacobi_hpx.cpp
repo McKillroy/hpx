@@ -9,7 +9,7 @@
 #include <hpx/hpx.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/dataflow.hpp>
-#include <hpx/util/high_resolution_timer.hpp>
+#include <hpx/timing/high_resolution_timer.hpp>
 
 #include <cstddef>
 #include <functional>
@@ -38,7 +38,7 @@ namespace jacobi_smp {
     void jacobi(
         std::size_t n
       , std::size_t iterations, std::size_t block_size
-      , std::string output_filename)
+      , std::string const& output_filename)
     {
         typedef std::vector<double> vector;
 

@@ -8,19 +8,19 @@
 #define HPX_UTIL_BIND_HPP
 
 #include <hpx/config.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/traits/get_function_address.hpp>
 #include <hpx/traits/get_function_annotation.hpp>
 #include <hpx/traits/is_action.hpp>
 #include <hpx/traits/is_bind_expression.hpp>
 #include <hpx/traits/is_placeholder.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/decay.hpp>
-#include <hpx/util/detail/pack.hpp>
+#include <hpx/type_support/decay.hpp>
+#include <hpx/datastructures/detail/pack.hpp>
 #include <hpx/util/invoke.hpp>
 #include <hpx/util/invoke_fused.hpp>
 #include <hpx/util/one_shot.hpp>
 #include <hpx/util/result_of.hpp>
-#include <hpx/util/tuple.hpp>
+#include <hpx/datastructures/tuple.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -199,7 +199,7 @@ namespace hpx { namespace util
 
             template <typename F_, typename ...Ts_, typename =
                 typename std::enable_if<
-                    !std::is_same<typename std::decay<F_>::type, bound>::value
+                    std::is_constructible<F, F_>::value
                 >::type>
             HPX_CONSTEXPR explicit bound(F_&& f, Ts_&&... vs)
               : base_type{

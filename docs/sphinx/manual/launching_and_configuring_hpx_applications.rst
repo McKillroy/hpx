@@ -1163,7 +1163,7 @@ categories at the console instance of an application.
 Levels
 ------
 
-All |hpx| logging output have seven different logging levels. These levels can
+All |hpx| logging output has seven different logging levels. These levels can
 be set explicitly or through environmental variables in the main |hpx| ini file
 as shown below. The logging levels and their associated integral values are
 shown in the table below, ordered from most verbose to least verbose. By
@@ -1467,6 +1467,11 @@ The predefined command line options for any application using
    :option:`--hpx:affinity` options. Implies :option:`--hpx:numa-sensitive`
    (:option:`--hpx:bind`\ ``=none``) disables defining thread affinities).
 
+.. option:: --hpx:use-process-mask
+
+   use the process mask to restrict available hardware resources (implies
+   :option:`--hpx:ignore-batch-env`)
+
 .. option:: --hpx:print-bind
 
    print to the console the bit masks calculated from the arguments specified to
@@ -1733,7 +1738,7 @@ ignore the option. For instance, the following PBS script passes the option
    #
    #PBS -l nodes=2:ppn=4
 
-   APP_PATH=~/packages/hpx/bin/hello_world
+   APP_PATH=~/packages/hpx/bin/hello_world_distributed
    APP_OPTIONS=
 
    pbsdsh -u $APP_PATH $APP_OPTIONS --hpx:1:pu-offset=4 --hpx:nodes=`cat $PBS_NODEFILE`
@@ -1833,13 +1838,14 @@ Here is a full grammar describing the possible format of mappings:
    type: "socket" | "numanode" | "core" | "pu"
 
 The following example assumes a system with at least 4 cores, where each core
-has more than 1 processing unit (hardware threads). Running hello_world with 4
-OS-threads (on 4 processing units), where each of those threads is bound to the
-first processing unit of each of the cores, can be achieved by invoking:
+has more than 1 processing unit (hardware threads). Running
+``hello_world_distributed`` with 4 OS-threads (on 4 processing units), where
+each of those threads is bound to the first processing unit of each of the
+cores, can be achieved by invoking:
 
 .. code-block:: bash
 
-   hello_world -t4 --hpx:bind=thread:0-3=core:0-3.pu:0
+   hello_world_distributed -t4 --hpx:bind=thread:0-3=core:0-3.pu:0
 
 Here ``thread:0-3`` specifies the OS threads for which to define affinity
 bindings, and ``core:0-3.pu:`` defines that for each of the cores (``core:0-3``)
@@ -1854,7 +1860,7 @@ only their first processing unit ``pu:0`` should be used.
 
    .. code-block:: bash
 
-      hello_world -t4 --hpx:bind=thread:0-3=core:0-3.pu:0 --hpx:print-bind
+      hello_world_distributed -t4 --hpx:bind=thread:0-3=core:0-3.pu:0 --hpx:print-bind
 
    will cause this output to be printed:
 
@@ -1879,9 +1885,20 @@ using the ``scatter`` or ``balanced``/``numa-balanced`` options in most cases.
 
 .. _commandline_affinities:
 
-.. figure:: /_static/images/affinities.png
+.. figure:: ../_static/images/affinities.png
 
    Schematic of thread affinity type distributions.
+
+In addition to the predefined distributions it is possible to restrict the
+resources used by |hpx| to the process CPU mask. The CPU mask is typically set
+by e.g. |mpi|_ and batch environments. Using the command line option
+:option:`--hpx:use-process-mask` makes |hpx| act as if only the processing units
+in the CPU mask are available for use by |hpx|. The number of threads is
+automatically determined from the CPU mask. The number of threads can still be
+changed manually using this option, but only to a number less than or equal to
+the number of processing units in the CPU mask. The option
+:option:`--hpx:print-bind` is useful in conjunction with
+:option:`--hpx:use-process-mask` to make sure threads are placed as expected.
 
 .. [#] The phase of a |hpx|-thread counts how often this thread has been
        activated.

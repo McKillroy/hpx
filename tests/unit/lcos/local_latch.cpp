@@ -6,7 +6,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/include/local_lcos.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -90,6 +90,54 @@ int hpx_main()
         hpx::wait_all(results);
 
         l.wait();
+
+        HPX_TEST(l.is_ready());
+        HPX_TEST_EQ(num_threads.load(), NUM_THREADS);
+    }
+
+    // count_up
+    {
+        num_threads.store(0);
+
+        hpx::lcos::local::latch l(1);
+        HPX_TEST(!l.is_ready());
+
+        std::vector<hpx::future<void> > results;
+        for (std::ptrdiff_t i = 0; i != NUM_THREADS; ++i){
+            l.count_up(1);
+            results.push_back(hpx::async(&test_count_down_and_wait, std::ref(l)));
+        }
+
+        HPX_TEST(!l.is_ready());
+
+        // Wait for all threads to reach this point.
+        l.count_down_and_wait();
+
+        hpx::wait_all(results);
+
+        HPX_TEST(l.is_ready());
+        HPX_TEST_EQ(num_threads.load(), NUM_THREADS);
+    }
+
+    // reset
+    {
+        num_threads.store(0);
+
+        hpx::lcos::local::latch l(0);
+        l.reset(NUM_THREADS+1);
+        HPX_TEST(!l.is_ready());
+
+        std::vector<hpx::future<void> > results;
+        for (std::ptrdiff_t i = 0; i != NUM_THREADS; ++i){
+            results.push_back(hpx::async(&test_count_down_and_wait, std::ref(l)));
+        }
+
+        HPX_TEST(!l.is_ready());
+
+        // Wait for all threads to reach this point.
+        l.count_down_and_wait();
+
+        hpx::wait_all(results);
 
         HPX_TEST(l.is_ready());
         HPX_TEST_EQ(num_threads.load(), NUM_THREADS);

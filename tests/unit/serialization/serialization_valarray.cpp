@@ -13,7 +13,7 @@
 #include <hpx/runtime/serialization/input_archive.hpp>
 #include <hpx/runtime/serialization/output_archive.hpp>
 
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 
 #include <array>
 #include <cstddef>
@@ -25,7 +25,7 @@ struct A
 {
     A() {}
 
-    A(T t) : t_(t) {}
+    explicit A(T t) : t_(t) {}
     T t_;
 
     A & operator=(T t) { t_ = t; return *this; }
@@ -67,7 +67,7 @@ void test(T minval, T maxval)
         std::vector<A<T> > os;
         for(T c = minval; c < maxval; ++c)
         {
-            os.push_back(c);
+            os.emplace_back(c);
         }
         oarchive << hpx::serialization::make_array(&os[0], os.size());
 
@@ -92,7 +92,7 @@ void test_fp(T minval, T maxval)
         std::vector<T> os;
         for(T c = minval; c < maxval; c += static_cast<T>(0.5))
         {
-            os.push_back(c);
+            os.emplace_back(c);
         }
         oarchive << hpx::serialization::make_array(&os[0], os.size());
 
@@ -112,7 +112,7 @@ void test_fp(T minval, T maxval)
         std::vector<A<T> > os;
         for(T c = minval; c < maxval; c += static_cast<T>(0.5))
         {
-            os.push_back(c);
+            os.emplace_back(c);
         }
         oarchive << hpx::serialization::make_array(&os[0], os.size());
 

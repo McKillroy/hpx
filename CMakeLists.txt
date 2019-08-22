@@ -46,9 +46,9 @@ endif()
 project(HPX CXX C)
 
 set(HPX_VERSION_MAJOR 1)
-set(HPX_VERSION_MINOR 3)
+set(HPX_VERSION_MINOR 4)
 set(HPX_VERSION_SUBMINOR 0)
-set(HPX_VERSION_DATE 20181112)
+set(HPX_VERSION_DATE 20190523)
 set(HPX_VERSION_TAG "-trunk")
 
 set(HPX_VERSION "${HPX_VERSION_MAJOR}.${HPX_VERSION_MINOR}.${HPX_VERSION_SUBMINOR}")
@@ -249,6 +249,19 @@ hpx_option(HPX_WITH_DOCUMENTATION BOOL
   "Build the HPX documentation (default OFF)."
   OFF CATEGORY "Build Targets")
 
+if(HPX_WITH_DOCUMENTATION)
+  set(valid_output_formats html singlehtml latexpdf man)
+  hpx_option(HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS STRING
+    "List of documentation output formats to generate. Valid options are ${valid_output_formats}. Multiple values can be separated with semicolons. (default html)."
+    "html" CATEGORY "Build Targets")
+
+  foreach(output_format ${HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS})
+    if(NOT ${output_format} IN_LIST valid_output_formats)
+      hpx_error("${output_format} is not a valid value for HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS. Valid output format are: ${valid_output_formats}.")
+    endif()
+  endforeach()
+endif()
+
 if(MSVC)
   hpx_option(HPX_WITH_PSEUDO_DEPENDENCIES BOOL
     "Force creating pseudo targets and pseudo dependencies (default OFF)."
@@ -310,6 +323,16 @@ hpx_option(HPX_WITH_FAIL_COMPILE_TESTS BOOL
   "Create build system support for fail compile HPX tests (default ON)"
   ON CATEGORY "Build Targets")
 
+  # disable all tests if HPX_WITH_TESTS=OFF
+if(NOT HPX_WITH_TESTS)
+  hpx_set_option(HPX_WITH_TESTS_BENCHMARKS VALUE OFF FORCE)
+  hpx_set_option(HPX_WITH_TESTS_REGRESSIONS VALUE OFF FORCE)
+  hpx_set_option(HPX_WITH_TESTS_UNIT VALUE OFF FORCE)
+  hpx_set_option(HPX_WITH_TESTS_HEADERS VALUE OFF FORCE)
+  hpx_set_option(HPX_WITH_TESTS_EXTERNAL_BUILD VALUE OFF FORCE)
+  hpx_set_option(HPX_WITH_TESTS_EXAMPLES VALUE OFF FORCE)
+endif()
+
 # Enable IO-counters on linux systems only
 set(HPX_WITH_IO_COUNTERS_DEFAULT OFF)
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
@@ -343,24 +366,9 @@ if(HPX_WITH_CUDA)
   set(HPX_WITH_COMPUTE On)
   hpx_add_config_define(HPX_HAVE_CUDA)
   hpx_add_config_define(HPX_HAVE_COMPUTE)
-  if(NOT HPX_WITH_CUDA_ARCH)
-    hpx_info("HPX_WITH_CUDA_ARCH has not been defined, default value is sm_20")
-    set(HPX_WITH_CUDA_ARCH sm_20)
-  endif()
-  foreach(arch ${HPX_WITH_CUDA_ARCH})
-    string(REGEX MATCHALL "sm_[0-9][0-9]" arch ${arch})
-    if(NOT arch)
-      hpx_error("Each architecture defined in HPX_WITH_CUDA_ARCH should be a list of items, each of the form sm_XX")
-    endif()
-    string(APPEND HPX_CUDA_CLANG_FLAGS " --cuda-gpu-arch=${arch}")
-  endforeach()
-  string(REGEX REPLACE ";" " " HPX_WITH_CUDA_ARCH_INFO "${HPX_WITH_CUDA_ARCH}")
   # keywords for target_link_libraries (cuda)
   set(CUDA_LINK_LIBRARIES_KEYWORD "PRIVATE")
 endif()
-# keywords for target_link_libraries (hpx)
-set(HPX_TLL_PUBLIC "PUBLIC")
-set(HPX_TLL_PRIVATE "PRIVATE")
 if(HPX_WITH_CUDA_CLANG AND NOT (CMAKE_CXX_COMPILER_ID STREQUAL "Clang"))
   hpx_error("To use Cuda Clang, please select Clang as your default C++ compiler")
 endif()
@@ -474,12 +482,14 @@ endif()
 
 set(HPX_MAX_CPU_COUNT_DEFAULT "64")
 hpx_option(HPX_WITH_MAX_CPU_COUNT STRING
-  "HPX applications will not use more that this number of OS-Threads (default: ${HPX_MAX_CPU_COUNT_DEFAULT})"
-  ${HPX_MAX_CPU_COUNT_DEFAULT}
+  "HPX applications will not use more that this number of OS-Threads (empty string means dynamic) (default: ${HPX_MAX_CPU_COUNT_DEFAULT})"
+  "${HPX_MAX_CPU_COUNT_DEFAULT}"
   CATEGORY "Thread Manager" ADVANCED)
-hpx_add_config_define(HPX_HAVE_MAX_CPU_COUNT ${HPX_WITH_MAX_CPU_COUNT})
+if(HPX_WITH_MAX_CPU_COUNT)
+  hpx_add_config_define(HPX_HAVE_MAX_CPU_COUNT ${HPX_WITH_MAX_CPU_COUNT})
+endif()
 
-set(HPX_MAX_NUMA_DOMAIN_COUNT_DEFAULT "4")
+set(HPX_MAX_NUMA_DOMAIN_COUNT_DEFAULT "8")
 hpx_option(HPX_WITH_MAX_NUMA_DOMAIN_COUNT STRING
   "HPX applications will not run on machines with more NUMA domains (default: ${HPX_MAX_NUMA_DOMAIN_COUNT_DEFAULT})"
   ${HPX_MAX_NUMA_DOMAIN_COUNT_DEFAULT}
@@ -487,7 +497,7 @@ hpx_option(HPX_WITH_MAX_NUMA_DOMAIN_COUNT STRING
 hpx_add_config_define(HPX_HAVE_MAX_NUMA_DOMAIN_COUNT ${HPX_WITH_MAX_NUMA_DOMAIN_COUNT})
 
 set(HPX_MORE_THAN_64_THREADS_DEFAULT OFF)
-if(HPX_WITH_MAX_CPU_COUNT GREATER 64)
+if((NOT HPX_WITH_MAX_CPU_COUNT) OR (HPX_WITH_MAX_CPU_COUNT GREATER 64))
   set(HPX_MORE_THAN_64_THREADS_DEFAULT ON)
 endif()
 hpx_option(HPX_WITH_MORE_THAN_64_THREADS BOOL
@@ -585,8 +595,8 @@ if(HPX_WITH_THREAD_CUMULATIVE_COUNTS)
 endif()
 
 hpx_option(HPX_WITH_THREAD_STEALING_COUNTS BOOL
-  "Enable keeping track of counts of thread stealing incidents in the schedulers (default: ON)"
-  ON CATEGORY "Thread Manager" ADVANCED)
+  "Enable keeping track of counts of thread stealing incidents in the schedulers (default: OFF)"
+  OFF CATEGORY "Thread Manager" ADVANCED)
 
 if(HPX_WITH_THREAD_STEALING_COUNTS)
   hpx_add_config_define(HPX_HAVE_THREAD_STEALING_COUNTS)
@@ -645,7 +655,7 @@ if(HPX_WITH_APEX)
   hpx_option(HPX_WITH_APEX_NO_UPDATE BOOL
     "Do not update code from remote APEX repository." OFF CATEGORY "Profiling")
   hpx_option(HPX_WITH_APEX_TAG STRING
-    "APEX repository tag or branch" "v2.0.1" CATEGORY "Profiling")
+    "APEX repository tag or branch" "v2.1.4" CATEGORY "Profiling")
 endif()
 hpx_option(HPX_WITH_PAPI BOOL
   "Enable the PAPI based performance counter." OFF CATEGORY "Profiling")
@@ -670,6 +680,8 @@ if(HPX_WITH_HPXMP)
     OR ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")))
     hpx_option(HPX_WITH_HPXMP_NO_UPDATE BOOL
       "Do not update code from remote hpxMP repository." OFF CATEGORY "OpenMP")
+    hpx_option(HPX_WITH_HPXMP_TAG STRING
+      "hpxMP repository tag or branch" "v0.2.0" CATEGORY "OpenMP")
   else()
     hpx_warn("hpxMP can be used only when compiling with clang or gcc")
     set(HPX_WITH_HPXMP OFF)
@@ -684,7 +696,7 @@ hpx_option(HPX_WITH_THREAD_SCHEDULERS STRING
   "all"
   CATEGORY "Thread Manager" ADVANCED)
 
-string(TOUPPER ${HPX_WITH_THREAD_SCHEDULERS} HPX_WITH_THREAD_SCHEDULERS_UC)
+string(TOUPPER "${HPX_WITH_THREAD_SCHEDULERS}" HPX_WITH_THREAD_SCHEDULERS_UC)
 foreach(_scheduler ${HPX_WITH_THREAD_SCHEDULERS_UC})
   if(_scheduler STREQUAL "ALL")
     set(_all On)
@@ -779,8 +791,8 @@ if(HPX_WITH_NETWORKING)
 
   ## mpi parcelport settings
   hpx_option(HPX_WITH_PARCELPORT_MPI_ENV STRING
-    "List of environment variables checked to detect MPI (default: MV2_COMM_WORLD_RANK;PMI_RANK;OMPI_COMM_WORLD_SIZE;ALPS_APP_PE)."
-    "MV2_COMM_WORLD_RANK;PMI_RANK;OMPI_COMM_WORLD_SIZE;ALPS_APP_PE" CATEGORY "Parcelport" ADVANCED)
+    "List of environment variables checked to detect MPI (default: MV2_COMM_WORLD_RANK;PMI_RANK;OMPI_COMM_WORLD_SIZE;ALPS_APP_PE;PMIX_RANK)."
+    "MV2_COMM_WORLD_RANK;PMI_RANK;OMPI_COMM_WORLD_SIZE;ALPS_APP_PE;PMIX_RANK" CATEGORY "Parcelport" ADVANCED)
   hpx_option(HPX_WITH_PARCELPORT_MPI_MULTITHREADED BOOL
     "Turn on MPI multithreading support (default: ON)."
     ON CATEGORY "Parcelport" ADVANCED)
@@ -839,6 +851,9 @@ endif()
 
 ## Debugging related build options
 hpx_option(HPX_WITH_VALGRIND BOOL "Enable Valgrind instrumentation support."
+  OFF CATEGORY "Debugging")
+
+hpx_option(HPX_WITH_SANITIZERS BOOL "Configure with sanitizer instrumentation support."
   OFF CATEGORY "Debugging")
 
 hpx_option(HPX_WITH_VERIFY_LOCKS BOOL
@@ -966,22 +981,6 @@ hpx_option(HPX_WITH_VIM_YCM BOOL
 ################################################################################
 # Backwards compatibility options (edit for each release)
 
-# HPX_WITH_QUEUE_COMPATIBILITY: introduced in V1.1.0
-hpx_option(HPX_WITH_QUEUE_COMPATIBILITY BOOL
-    "Enable old style queue components in API (default: OFF)"
-    OFF ADVANCED)
-if(HPX_WITH_QUEUE_COMPATIBILITY)
-  hpx_add_config_define(HPX_HAVE_QUEUE_COMPATIBILITY)
-endif()
-
-# HPX_WITH_SCOPED_UNLOCK_COMPATIBILITY: introduced in V1.1.0
-hpx_option(HPX_WITH_SCOPED_UNLOCK_COMPATIBILITY BOOL
-    "Enable backwards compatibility for scoped_unlock utility (default: OFF)"
-    OFF ADVANCED)
-if(HPX_WITH_SCOPED_UNLOCK_COMPATIBILITY)
-  hpx_add_config_define(HPX_HAVE_SCOPED_UNLOCK_COMPATIBILITY)
-endif()
-
 # BADBAD: This enables an overload of swap which is necessary to work around the
 #         problems caused by zip_iterator not being a real random access iterator.
 #         Dereferencing zip_iterator does not yield a true reference but
@@ -997,35 +996,29 @@ if(HPX_WITH_TUPLE_RVALUE_SWAP)
   hpx_add_config_define(HPX_HAVE_TUPLE_RVALUE_SWAP)
 endif()
 
-# HPX_WITH_INCLUSIVE_SCAN_COMPATIBILITY: introduced in V1.1.0
+# HPX_WITH_INCLUSIVE_SCAN_COMPATIBILITY: turned off in V1.3.0
 hpx_option(HPX_WITH_INCLUSIVE_SCAN_COMPATIBILITY BOOL
-    "Enable old overloads for inclusive_scan (default: ON)"
-    ON ADVANCED)
+    "Enable old overloads for inclusive_scan (default: OFF)"
+    OFF ADVANCED)
 if(HPX_WITH_INCLUSIVE_SCAN_COMPATIBILITY)
   hpx_add_config_define(HPX_HAVE_INCLUSIVE_SCAN_COMPATIBILITY)
 endif()
 
-# HPX_WITH_ALGORITHM_INPUT_ITERATOR_SUPPORT: introduced in V1.1.0
-hpx_option(HPX_WITH_ALGORITHM_INPUT_ITERATOR_SUPPORT BOOL
-    "Enable weaker (non-conforming) iterator requirements for parallel algorithms (default: OFF)"
-    OFF ADVANCED)
-if(HPX_WITH_ALGORITHM_INPUT_ITERATOR_SUPPORT)
-  hpx_add_config_define(HPX_HAVE_ALGORITHM_INPUT_ITERATOR_SUPPORT)
-endif()
-
-# HPX_WITH_UNWRAPPED_COMPATIBILITY: introduced in V1.1.0
+# HPX_WITH_UNWRAPPED_COMPATIBILITY: turned off in V1.3.0
 hpx_option(HPX_WITH_UNWRAPPED_COMPATIBILITY BOOL
-    "Enable the deprecated unwrapped function (default: ON)"
-    ON ADVANCED)
+    "Enable the deprecated unwrapped function (default: OFF)"
+    OFF ADVANCED)
 if(HPX_WITH_UNWRAPPED_COMPATIBILITY)
   hpx_add_config_define(HPX_HAVE_UNWRAPPED_COMPATIBILITY)
 endif()
 
-################################################################################
-# Set basic search paths for HPX
-################################################################################
-include_directories("${PROJECT_SOURCE_DIR}")
-link_directories(${CMAKE_BINARY_DIR}/lib)
+# HPX_WITH_ACTION_BASE_COMPATIBILITY: introduced in V1.4.0
+hpx_option(HPX_WITH_ACTION_BASE_COMPATIBILITY BOOL
+    "Enable deprecated action bases (default: ON)"
+    ON ADVANCED)
+if(HPX_WITH_ACTION_BASE_COMPATIBILITY)
+  hpx_add_config_define(HPX_HAVE_ACTION_BASE_COMPATIBILITY)
+endif()
 
 ################################################################################
 # Check for compiler compatibility
@@ -1033,8 +1026,8 @@ link_directories(${CMAKE_BINARY_DIR}/lib)
 
 # Check if the selected compiler versions are supposed to work with our codebase
 if(CMAKE_COMPILER_IS_GNUCXX AND HPX_WITH_GCC_VERSION_CHECK)
-  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 4.9)
-    hpx_error("GCC 4.9 or higher is required. Specify HPX_GCC_VERSION_CHECK=OFF to ignore this error.")
+  if(CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5.0)
+    hpx_error("GCC 5.0 or higher is required. Specify HPX_GCC_VERSION_CHECK=OFF to ignore this error.")
   endif()
 endif()
 
@@ -1117,9 +1110,7 @@ hpx_detect_cpp_dialect()
 # CUDA features
 ################################################################################
 if(HPX_WITH_CUDA)
-  hpx_info("HPX_WITH_CUDA_ARCH has been set with values: ${HPX_WITH_CUDA_ARCH_INFO}")
   if(NOT HPX_WITH_CUDA_CLANG)
-    hpx_libraries(cudadevrt)
     if(NOT MSVC)
       hpx_library_dir(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
       link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
@@ -1138,19 +1129,12 @@ if(HPX_WITH_CUDA)
       set(CUDA_NVCC_FLAGS_RELEASE ${CUDA_NVCC_FLAGS_RELEASE};-DNDEBUG;-O2;-Xcompiler=-MD,-Ox;-Xcompiler=-bigobj)
     endif()
     set(CUDA_SEPARABLE_COMPILATION ON)
-    foreach(arch ${HPX_WITH_CUDA_ARCH})
-      string(REPLACE "sm_" "" arch ${arch})
-      set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-gencode=arch=compute_${arch},code=sm_${arch})
-    endforeach()
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};${CXX_FLAG})
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--expt-relaxed-constexpr)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--expt-extended-lambda)
     set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};--default-stream per-thread)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-lcudadevrt)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-rdc=true)
   else()
     hpx_add_target_compile_option(-DBOOST_THREAD_USES_MOVE PUBLIC)
-    hpx_add_target_compile_option(--cuda-path=${CUDA_TOOLKIT_ROOT_DIR} PUBLIC)
     hpx_libraries(cudart)
     hpx_library_dir(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
     link_directories(${CUDA_TOOLKIT_ROOT_DIR}/lib64)
@@ -1188,18 +1172,6 @@ hpx_option(HPX_WITH_CXX14_RETURN_TYPE_DEDUCTION BOOL
   ${HPX_WITH_CXX14_RETURN_TYPE_DEDUCTION_ADVANCED})
 if(HPX_WITH_CXX14_RETURN_TYPE_DEDUCTION)
   hpx_add_config_define(HPX_HAVE_CXX14_RETURN_TYPE_DEDUCTION)
-endif()
-
-# HPX_WITH_THREAD_COMPATIBILITY
-hpx_option(HPX_WITH_THREAD_COMPATIBILITY BOOL
-    "Use a compatibility implementation of std::thread, i.e. fall back to Boost.Thread (default: OFF)"
-    OFF ADVANCED)
-if(HPX_WITH_THREAD_COMPATIBILITY)
-  hpx_add_config_define(HPX_HAVE_THREAD_COMPATIBILITY)
-else()
-  if(NOT HPX_WITH_CXX11_THREAD)
-    hpx_error("HPX needs support for C++11 std::thread which is not available on this platform. Please enable HPX_WITH_THREAD_COMPATIBILITY to use Boost.Thread instead.")
-  endif()
 endif()
 
 ################################################################################
@@ -1368,13 +1340,17 @@ if(HPX_WITH_COMPILER_WARNINGS)
     hpx_add_compile_flag(-W3 LANGUAGES C CXX)
     # According to the ifort Windows manual, W3 isn't supported
     hpx_add_compile_flag(-W1 LANGUAGES Fortran)
-    # Boost.Lockfree triggers 'warning C4307: '+' : integral constant overflow'
-    # which is benign
-    hpx_add_compile_flag(-wd4307)
 
     # MSVC2012/2013 are overeager to report 'qualifier applied to function type
     # has no meaning; ignored'
     hpx_add_compile_flag(-wd4180)
+
+    # Boost.Lockfree triggers 'warning C4307: '+' : integral constant overflow'
+    # which is benign
+    hpx_add_compile_flag(-wd4307)
+
+    # object allocated on the heap may not be aligned
+    hpx_add_compile_flag(-wd4316)
 
     # max symbol length exceeded
     hpx_add_compile_flag(-wd4503)
@@ -1620,6 +1596,11 @@ hpx_libraries(${HWLOC_LIBRARIES})
 include_directories(${HWLOC_INCLUDE_DIR})
 
 ################################################################################
+# Set search paths for generated headers.
+################################################################################
+include_directories("${CMAKE_BINARY_DIR}")
+
+################################################################################
 # Enable integration with Intel Amplifier
 ################################################################################
 if((NOT HPX_WITH_APEX) AND HPX_WITH_ITTNOTIFY)
@@ -1646,27 +1627,28 @@ if(HPX_WITH_APEX)
   if(HPX_WITH_APEX_NO_UPDATE)
     set(_hpx_apex_no_update NO_UPDATE)
   endif()
-  set(_hpx_apex_tag "v2.1.0")
-  if(HPX_WITH_APEX_TAG)
-    message("Overriding APEX git tag ${_hpx_apex_tag} with ${HPX_WITH_APEX_TAG}")
-    set(_hpx_apex_tag ${HPX_WITH_APEX_TAG})
-  endif()
 
   # We want to track parent dependencies
   hpx_add_config_define(HPX_HAVE_THREAD_PARENT_REFERENCE)
-  # handle APEX library
-  include(GitExternal)
-  git_external(apex
-    https://github.com/khuck/xpress-apex.git
-    ${_hpx_apex_tag}
-    ${_hpx_apex_no_update}
-    VERBOSE)
 
-  LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/apex/cmake/Modules")
-  add_subdirectory(apex/src/apex)
-  if(NOT APEX_FOUND)
-    hpx_error("Apex could not be found and HPX_WITH_APEX=On")
-  endif()
+  # If APEX_ROOT not specified, local clone into hpx source dir
+  if (NOT APEX_ROOT)
+    # handle APEX library
+    include(GitExternal)
+    git_external(apex
+      https://github.com/khuck/xpress-apex.git
+      ${HPX_WITH_APEX_TAG}
+      ${_hpx_apex_no_update}
+      VERBOSE)
+    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/apex)
+      set(APEX_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/apex)
+    else()
+      hpx_error("Apex could not be found and HPX_WITH_APEX=On")
+    endif()
+  endif(NOT APEX_ROOT)
+
+  LIST(APPEND CMAKE_MODULE_PATH "${APEX_ROOT}/cmake/Modules")
+  add_subdirectory(${APEX_ROOT}/src/apex ${CMAKE_BINARY_DIR}/apex/src/apex)
   if(AMPLIFIER_FOUND)
     hpx_error("AMPLIFIER_FOUND has been set. Please disable the use of the Intel Amplifier (WITH_AMPLIFIER=Off) in order to use Apex")
   endif()
@@ -1689,7 +1671,7 @@ if(HPX_WITH_APEX)
 
   # handle optional ITTNotify library
   if(HPX_WITH_ITTNOTIFY)
-    add_subdirectory(apex/src/ITTNotify)
+    add_subdirectory(${APEX_ROOT}/src/ITTNotify)
     if(NOT ITTNOTIFY_FOUND)
       hpx_error("ITTNotify could not be found and HPX_WITH_ITTNOTIFY=On")
     endif()
@@ -1710,21 +1692,23 @@ if(HPX_WITH_HPXMP)
   if(HPX_WITH_HPXMP_NO_UPDATE)
     set(_hpxmp_no_update NO_UPDATE)
   endif()
-  set(_hpx_hpxmp_tag "v0.1.0")
-  if(HPX_WITH_HPXMP_TAG)
-    message("Overriding hpxMP git tag ${_hpx_hpxmp_tag} with ${HPX_WITH_HPXMP_TAG}")
-    set(_hpx_hpxmp_tag ${HPX_WITH_HPXMP_TAG})
-  endif()
 
-  # handle hpxMP library
-  include(GitExternal)
-  git_external(hpxmp
-    https://github.com/STEllAR-GROUP/hpxMP.git
-    ${_hpx_hpxmp_tag}
-    ${_hpxmp_no_update}
-    VERBOSE)
+  if (NOT HPXMP_ROOT)
+    # handle hpxMP library
+    include(GitExternal)
+    git_external(hpxmp
+      https://github.com/STEllAR-GROUP/hpxMP.git
+      ${HPX_WITH_HPXMP_TAG}
+      ${_hpxmp_no_update}
+      VERBOSE)
+    if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/hpxmp)
+      set(HPXMP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/hpxmp)
+    else()
+      hpx_error("hpxMP could not be found and HPX_WITH_HPXMP=On")
+    endif()
+  endif(NOT HPXMP_ROOT)
 
-  add_subdirectory(hpxmp)
+  add_subdirectory(${HPXMP_ROOT})
 
   # make sure thread-local storage is supported
   hpx_add_config_define(HPX_HAVE_THREAD_LOCAL_STORAGE)
@@ -1748,6 +1732,10 @@ if(HPX_WITH_VALGRIND)
   hpx_add_config_define(HPX_HAVE_VALGRIND)
 endif()
 
+if(HPX_WITH_SANITIZERS)
+  hpx_add_config_define(HPX_HAVE_SANITIZERS)
+endif()
+
 if(HPX_WITH_VIM_YCM)
   SET(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 endif()
@@ -1761,11 +1749,6 @@ if(HPX_WITH_GENERIC_CONTEXT_COROUTINES)
   # Check if we can use generic coroutine contexts without any problems
   if(NOT Boost_CONTEXT_FOUND)
     hpx_error("The usage of Boost.Context was selected but Boost.Context was not found.")
-  endif()
-  if("${HPX_PLATFORM_UC}" STREQUAL "BLUEGENEQ")
-    if(Boost_VERSION LESS 105600)
-      hpx_error("On BlueGene/Q, Boost.Context can only be used with a Boost >=1.56")
-    endif()
   endif()
   hpx_add_config_define(HPX_HAVE_GENERIC_CONTEXT_COROUTINES)
 endif()
@@ -1828,11 +1811,6 @@ function(generate_config_defines_header TARGET_DIRECTORY)
 endfunction()
 
 ################################################################################
-# Set basic search paths for the generated HPX headers
-################################################################################
-include_directories("${CMAKE_BINARY_DIR}")
-
-################################################################################
 # Add custom targets for tests
 ################################################################################
 if (HPX_WITH_TESTS)
@@ -1853,7 +1831,7 @@ if (HPX_WITH_TESTS)
     add_hpx_pseudo_target(tests.headers)
     add_hpx_pseudo_dependencies(tests tests.headers)
   endif()
-  if (HPX_WITH_TESTS_EXAMPLES)
+  if (HPX_WITH_EXAMPLES AND HPX_WITH_TESTS_EXAMPLES)
     add_hpx_pseudo_target(tests.examples)
     add_hpx_pseudo_dependencies(tests tests.examples)
   endif()
@@ -1862,18 +1840,24 @@ if (HPX_WITH_TESTS)
   include(CTest)
 endif()
 
+if(HPX_WITH_EXAMPLES)
+  add_hpx_pseudo_target(examples)
+endif()
+
+################################################################################
+# Debug library postfix
+################################################################################
+set(CMAKE_DEBUG_POSTFIX "d")
+set(HPX_DEBUG_POSTFIX "d")
+
+################################################################################
+# Set up dummy compiler flags target
+################################################################################
+include(HPX_CompilerFlagsTarget)
+
 ################################################################################
 # Add libraries
 ################################################################################
-if(HPX_WITH_STATIC_LINKING)
-  if(MSVC)
-    # The MSVC linker can't handle a static library as large as we get when
-    # statically linking the main HPX library
-    set(hpx_libs_link_mode SHARED)
-  else()
-    set(hpx_libs_link_mode ${hpx_library_link_mode})
-  endif()
-endif()
 add_subdirectory(libs)
 
 ################################################################################
@@ -1898,10 +1882,6 @@ endif()
 ################################################################################
 hpx_include(Documentation)
 
-# Debug library postfix
-set(CMAKE_DEBUG_POSTFIX "d")
-set(HPX_DEBUG_POSTFIX "d")
-
 ################################################################################
 # Target specification
 ################################################################################
@@ -1915,6 +1895,11 @@ endif()
 
 add_hpx_pseudo_target(core)
 add_subdirectory(src)
+
+################################################################################
+# Add components
+################################################################################
+add_subdirectory(components)
 
 ###############################################################################
 # Tests
@@ -1931,7 +1916,6 @@ if(HPX_WITH_TESTS)
 endif()
 
 if(HPX_WITH_EXAMPLES)
-  add_hpx_pseudo_target(examples)
   include_directories(examples)
   add_subdirectory(examples)
 endif()
@@ -2074,17 +2058,40 @@ install(
   COMPONENT license)
 
 if(HPX_WITH_DOCUMENTATION)
-  # Install HPX documentation files
   install(
     FILES "${PROJECT_SOURCE_DIR}/docs/index.html"
     DESTINATION ${CMAKE_INSTALL_DATADIR}/hpx/
     COMPONENT docs)
 
-  install(
-    DIRECTORY "${CMAKE_BINARY_DIR}/share/hpx/docs/html/"
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/hpx/docs/html
-    COMPONENT docs
-    PATTERN ".git" EXCLUDE)
+  if("html" IN_LIST HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS)
+    install(
+      DIRECTORY "${CMAKE_BINARY_DIR}/share/hpx/docs/html/"
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/hpx/docs/html
+      COMPONENT docs
+      PATTERN "*.buildinfo" EXCLUDE)
+  endif()
+
+  if("singlehtml" IN_LIST HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS)
+    install(
+      DIRECTORY "${CMAKE_BINARY_DIR}/share/hpx/docs/singlehtml/"
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/hpx/docs/singlehtml
+      COMPONENT docs
+      PATTERN "*.buildinfo" EXCLUDE)
+  endif()
+
+  if("latexpdf" IN_LIST HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS)
+    install(
+      FILES "${CMAKE_BINARY_DIR}/share/hpx/docs/latexpdf/latex/HPX.pdf"
+      DESTINATION ${CMAKE_INSTALL_DATADIR}/hpx/docs/pdf/
+      COMPONENT docs)
+  endif()
+
+  if("man" IN_LIST HPX_WITH_DOCUMENTATION_OUTPUT_FORMATS)
+    install(
+      FILES "${CMAKE_BINARY_DIR}/share/hpx/docs/man/hpx.1"
+      DESTINATION ${CMAKE_INSTALL_MANDIR}/
+      COMPONENT docs)
+  endif()
 endif()
 
 if(HPX_WITH_VIM_YCM)

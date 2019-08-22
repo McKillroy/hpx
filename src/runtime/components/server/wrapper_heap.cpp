@@ -5,17 +5,17 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/config.hpp>
+#include <hpx/concurrency/itt_notify.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/logging.hpp>
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/runtime/applier/bind_naming_wrappers.hpp>
 #include <hpx/runtime/components/server/wrapper_heap.hpp>
 #include <hpx/runtime/naming/name.hpp>
 #include <hpx/runtime_fwd.hpp>
-#include <hpx/util/assert.hpp>
+#include <hpx/thread_support/unlock_guard.hpp>
 #include <hpx/util/generate_unique_ids.hpp>
-#include <hpx/util/itt_notify.hpp>
-#include <hpx/util/logging.hpp>
-#include <hpx/util/unlock_guard.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -352,10 +352,10 @@ namespace hpx { namespace components { namespace detail
 
         free_size_ = parameters_.capacity;
 
-        LOSH_(info) //-V128
+        LOSH_(info)    //-V128
             << "wrapper_heap ("
             << (!class_name_.empty() ? class_name_.c_str() : "<Unknown>")
-            << "): init_pool (" << std::hex << pool_ << ")"
+            << "): init_pool (" << std::hex << static_cast<void*>(pool_) << ")"
             << " size: " << total_num_bytes << ".";
 
         return true;
@@ -381,10 +381,12 @@ namespace hpx { namespace components { namespace detail
 #endif
                 )
             {
-                LOSH_(warning) //-V128
+                LOSH_(warning)    //-V128
                     << "wrapper_heap ("
-                    << (!class_name_.empty() ? class_name_.c_str() : "<Unknown>")
-                    << "): releasing heap (" << std::hex << pool_ << ")"
+                    << (!class_name_.empty() ? class_name_.c_str() :
+                                               "<Unknown>")
+                    << "): releasing heap (" << std::hex
+                    << static_cast<void*>(pool_) << ")"
                     << " with " << size() << " allocated object(s)!";
             }
 

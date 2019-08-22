@@ -12,7 +12,7 @@
 #define HPX_15D904C7_CD18_46E1_A54A_65059966A34F
 
 #include <hpx/config.hpp>
-#include <hpx/exception_fwd.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
 #include <hpx/runtime/runtime_mode.hpp>
 #include <hpx/runtime/agas_fwd.hpp>
@@ -26,8 +26,8 @@
 #include <hpx/runtime/naming/name.hpp>
 #include <hpx/runtime/parcelset_fwd.hpp>
 #include <hpx/state.hpp>
-#include <hpx/util/cache/lru_cache.hpp>
-#include <hpx/util/cache/statistics/local_full_statistics.hpp>
+#include <hpx/cache/lru_cache.hpp>
+#include <hpx/cache/statistics/local_full_statistics.hpp>
 #include <hpx/util_fwd.hpp>
 #include <hpx/util/function.hpp>
 

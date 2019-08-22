@@ -10,7 +10,8 @@
 #include <hpx/include/apply.hpp>
 #include <hpx/include/threadmanager.hpp>
 #include <hpx/include/threads.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
+#include <hpx/timing.hpp>
 #include <hpx/util/yield_while.hpp>
 
 #include <cstddef>
@@ -39,7 +40,9 @@ void test_scheduler(int argc, char* argv[],
 
     hpx::suspend();
 
-    for (std::size_t i = 0; i < 100; ++i)
+    hpx::util::high_resolution_timer t;
+
+    while (t.elapsed() < 2)
     {
         hpx::resume();
 
@@ -61,27 +64,28 @@ void test_scheduler(int argc, char* argv[],
 
 int main(int argc, char* argv[])
 {
-    std::vector<hpx::resource::scheduling_policy> schedulers =
-        {
+    std::vector<hpx::resource::scheduling_policy> schedulers = {
 #if defined(HPX_HAVE_LOCAL_SCHEDULER)
-            hpx::resource::scheduling_policy::local,
-            hpx::resource::scheduling_policy::local_priority_fifo,
-            hpx::resource::scheduling_policy::local_priority_lifo,
+        hpx::resource::scheduling_policy::local,
+        hpx::resource::scheduling_policy::local_priority_fifo,
+#if defined(HPX_HAVE_CXX11_STD_ATOMIC_128BIT)
+        hpx::resource::scheduling_policy::local_priority_lifo,
 #endif
-#if defined(HPX_HAVE_ABP_SCHEDULER)
-            hpx::resource::scheduling_policy::abp_priority_fifo,
-            hpx::resource::scheduling_policy::abp_priority_lifo,
+#endif
+#if defined(HPX_HAVE_ABP_SCHEDULER) && defined(HPX_HAVE_CXX11_STD_ATOMIC_128BIT)
+        hpx::resource::scheduling_policy::abp_priority_fifo,
+        hpx::resource::scheduling_policy::abp_priority_lifo,
 #endif
 #if defined(HPX_HAVE_STATIC_SCHEDULER)
-            hpx::resource::scheduling_policy::static_,
+        hpx::resource::scheduling_policy::static_,
 #endif
 #if defined(HPX_HAVE_STATIC_PRIORITY_SCHEDULER)
-            hpx::resource::scheduling_policy::static_priority,
+        hpx::resource::scheduling_policy::static_priority,
 #endif
 #if defined(HPX_HAVE_SHARED_PRIORITY_SCHEDULER)
-            hpx::resource::scheduling_policy::shared_priority,
+        hpx::resource::scheduling_policy::shared_priority,
 #endif
-        };
+    };
 
     for (auto const scheduler : schedulers)
     {

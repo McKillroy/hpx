@@ -30,11 +30,16 @@ if(HPX_WITH_THREAD_LOCAL_STORAGE)
   set(tests ${tests} tss)
 endif()
 
-if((NOT MSVC) OR HPX_WITH_VCPKG)
-  set(lockfree_fifo_FLAGS NOLIBS DEPENDENCIES ${Boost_LIBRARIES})
-else()
-  set(lockfree_fifo_FLAGS NOLIBS)
-endif()
+set(lockfree_fifo_FLAGS NOLIBS)
+set(lockfree_fifo_LIBRARIES
+  DEPENDENCIES
+    ${Boost_LIBRARIES}
+    hpx_assertion
+    hpx_config
+    hpx_concurrency
+    hpx_testing
+    hpx_datastructures
+    hpx_type_support)
 
 set(resource_manager_PARAMETERS THREADS_PER_LOCALITY 4)
 
@@ -65,26 +70,19 @@ foreach(test ${tests})
   add_hpx_executable(${test}_test
                      SOURCES ${sources}
                      ${${test}_FLAGS}
+                     ${${test}_LIBRARIES}
                      EXCLUDE_FROM_ALL
                      HPX_PREFIX ${HPX_BUILD_PREFIX}
                      FOLDER "Tests/Unit/Threads")
 
   add_hpx_unit_test("threads" ${test} ${${test}_PARAMETERS})
 
-  # add a custom target for this example
-  add_hpx_pseudo_target(tests.unit.threads.${test})
-
-  # make pseudo-targets depend on master pseudo-target
-  add_hpx_pseudo_dependencies(tests.unit.threads
-                              tests.unit.threads.${test})
-
-  # add dependencies to pseudo-target
-  add_hpx_pseudo_dependencies(tests.unit.threads.${test}
-                              ${test}_test)
 endforeach()
 
 set_property(TARGET lockfree_fifo_test APPEND
     PROPERTY COMPILE_DEFINITIONS "HPX_NO_VERSION_CHECK")
+
+target_include_directories(lockfree_fifo_test PRIVATE ${HPX_SOURCE_DIR})
 
 if(HPX_WITH_THREAD_STACKOVERFLOW_DETECTION)
   set_tests_properties(tests.unit.threads.thread_stacksize_overflow PROPERTIES

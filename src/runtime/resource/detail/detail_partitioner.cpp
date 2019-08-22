@@ -4,17 +4,19 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/config.hpp>
-#include <hpx/exception.hpp>
+#include <hpx/assertion.hpp>
+#include <hpx/errors.hpp>
+#include <hpx/runtime/config_entry.hpp>
 #include <hpx/runtime/resource/detail/partitioner.hpp>
 #include <hpx/runtime/resource/partitioner.hpp>
 #include <hpx/runtime/runtime_fwd.hpp>
 #include <hpx/runtime/threads/detail/scheduled_thread_pool.hpp>
 #include <hpx/runtime/threads/thread_pool_base.hpp>
 #include <hpx/runtime/threads/topology.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/format.hpp>
+#include <hpx/format.hpp>
+#include <hpx/util/command_line_handling.hpp>
 #include <hpx/util/function.hpp>
-#include <hpx/util/static.hpp>
+#include <hpx/type_support/static.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -36,7 +38,7 @@ namespace hpx { namespace resource { namespace detail
         }
         else
         {
-            throw std::runtime_error(func + ": " +  message);
+            throw std::runtime_error(func + ": " + message);
         }
     }
 
@@ -49,7 +51,7 @@ namespace hpx { namespace resource { namespace detail
         }
         else
         {
-            throw std::invalid_argument(func + ": " +  message);
+            throw std::invalid_argument(func + ": " + message);
         }
     }
 
@@ -216,7 +218,7 @@ namespace hpx { namespace resource { namespace detail
     ////////////////////////////////////////////////////////////////////////
     partitioner::partitioner()
       : first_core_(std::size_t(-1))
-      , cores_needed_(std::size_t(-1))
+      , pus_needed_(std::size_t(-1))
       , mode_(mode_default)
       , topo_(threads::create_topology())
     {
@@ -227,6 +229,7 @@ namespace hpx { namespace resource { namespace detail
                 "Cannot instantiate more than one resource partitioner");
         }
 
+#if defined(HPX_HAVE_MAX_CPU_COUNT)
         if(HPX_HAVE_MAX_CPU_COUNT < topo_.get_number_of_pus())
         {
             throw_runtime_error("partitioner::partioner",
@@ -238,6 +241,7 @@ namespace hpx { namespace resource { namespace detail
                     "HPX.",
                     HPX_HAVE_MAX_CPU_COUNT, topo_.get_number_of_pus()));
         }
+#endif
 
         // Create the default pool
         initial_thread_pools_.push_back(init_pool_data("default"));
@@ -252,6 +256,7 @@ namespace hpx { namespace resource { namespace detail
     bool partitioner::pu_exposed(std::size_t pu_num)
     {
         threads::mask_type pu_mask = threads::mask_type();
+        threads::resize(pu_mask, threads::hardware_concurrency());
         threads::set(pu_mask, pu_num);
         threads::topology& topo = get_topology();
 
@@ -358,8 +363,8 @@ namespace hpx { namespace resource { namespace detail
         }
 
         // should have been initialized by now
-        HPX_ASSERT(cores_needed_ != std::size_t(-1));
-        return cores_needed_;
+        HPX_ASSERT(pus_needed_ != std::size_t(-1));
+        return pus_needed_;
     }
 
     // This function is called in hpx_init, before the instantiation of the
@@ -913,7 +918,15 @@ namespace hpx { namespace resource { namespace detail
         cfg_.parse_result_ = cfg_.call(desc_cmdline, argc, argv);
 
         // set all parameters related to affinity data
-        cores_needed_ = affinity_data_.init(cfg_);
+        std::string affinity_description;
+        get_affinity_description(cfg_, affinity_description);
+
+        pus_needed_ = affinity_data_.init(cfg_.num_threads_,
+            hpx::util::safe_lexical_cast<std::size_t>(
+                get_config_entry("hpx.cores", 0), 0),
+            get_pu_offset(cfg_), get_pu_step(cfg_),
+            cfg_.rtcfg_.get_first_used_core(), get_affinity_domain(cfg_),
+            affinity_description, cfg_.use_process_mask_);
 
         if (fill_internal_topology)
         {

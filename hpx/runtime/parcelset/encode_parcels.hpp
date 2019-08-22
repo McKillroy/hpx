@@ -11,8 +11,8 @@
 #define HPX_PARCELSET_ENCODE_PARCEL_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/exception.hpp>
-#include <hpx/exception_info.hpp>
+#include <hpx/assertion.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/runtime/actions/basic_action.hpp>
 #include <hpx/runtime/parcelset/parcel.hpp>
 #include <hpx/runtime/parcelset/parcel_buffer.hpp>
@@ -20,10 +20,9 @@
 #include <hpx/runtime/parcelset_fwd.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
 #include <hpx/runtime_fwd.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/high_resolution_timer.hpp>
+#include <hpx/timing/high_resolution_timer.hpp>
 #include <hpx/util/integer/endian.hpp>
-#include <hpx/util/logging.hpp>
+#include <hpx/logging.hpp>
 
 #include <boost/exception/exception.hpp>
 

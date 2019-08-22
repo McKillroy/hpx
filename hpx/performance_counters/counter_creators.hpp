@@ -7,11 +7,9 @@
 #define HPX_PERFORMANCE_COUNTERS_CREATORS_FEB_12_2012_0401PM
 
 #include <hpx/config.hpp>
-#include <hpx/exception_fwd.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/performance_counters/counters_fwd.hpp>
 #include <hpx/util/function.hpp>
-
-#include <cstdint>
 
 #include <cstdint>
 #include <string>

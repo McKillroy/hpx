@@ -13,8 +13,8 @@
 #include <hpx/runtime/serialization/detail/preprocess.hpp>
 #include <hpx/runtime/parcelset/parcel.hpp>
 #include <hpx/lcos/base_lco_with_value.hpp>
-#include <hpx/util/high_resolution_timer.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/timing/high_resolution_timer.hpp>
+#include <hpx/testing.hpp>
 
 #include <boost/predef/other/endian.h>
 
@@ -31,7 +31,7 @@ template <typename T>
 struct data_buffer
 {
     data_buffer() : flag_(false) {}
-    data_buffer(std::size_t size) : data_(size, 0), flag_(false) {}
+    explicit data_buffer(std::size_t size) : data_(size, 0), flag_(false) {}
 
     std::vector<T> data_;
     bool flag_;

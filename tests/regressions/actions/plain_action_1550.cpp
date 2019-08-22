@@ -8,7 +8,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/actions.hpp>
 #include <hpx/include/async.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/testing.hpp>
 #include <utility>
 
 bool called_test_action = false;
@@ -47,6 +47,8 @@ int hpx_main(int argc, char* argv[])
     }
 
     // Same test with lambdas
+    // action lambdas inhibit undefined behavior...
+#if !defined(HPX_HAVE_SANITIZERS)
     {
         {
             hpx::async(std::move(mynamespace::t),hpx::find_here()).get();
@@ -54,6 +56,7 @@ int hpx_main(int argc, char* argv[])
 
         HPX_TEST(called_t);
     }
+#endif
 
     return hpx::finalize();
 }

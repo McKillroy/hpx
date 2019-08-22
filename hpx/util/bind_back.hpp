@@ -10,12 +10,12 @@
 #include <hpx/config.hpp>
 #include <hpx/traits/get_function_address.hpp>
 #include <hpx/traits/get_function_annotation.hpp>
-#include <hpx/util/decay.hpp>
-#include <hpx/util/detail/pack.hpp>
+#include <hpx/type_support/decay.hpp>
+#include <hpx/datastructures/detail/pack.hpp>
 #include <hpx/util/invoke.hpp>
 #include <hpx/util/one_shot.hpp>
 #include <hpx/util/result_of.hpp>
-#include <hpx/util/tuple.hpp>
+#include <hpx/datastructures/tuple.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -109,7 +109,7 @@ namespace hpx { namespace util
 
             template <typename F_, typename ...Ts_, typename =
                 typename std::enable_if<
-                    !std::is_same<typename std::decay<F_>::type, bound_back>::value
+                    std::is_constructible<F, F_>::value
                 >::type>
             HPX_CONSTEXPR explicit bound_back(F_&& f, Ts_&&... vs)
               : base_type{

@@ -105,7 +105,7 @@ namespace
   long file_count = 0;
   long directory_count = 0;
   long error_count = 0;
-  const int max_offenders = 5;  // maximum "worst offenders" to display
+  //const int max_offenders = 5;  // maximum "worst offenders" to display
 
   boost::inspect::string_set content_signatures;
 
@@ -432,33 +432,6 @@ namespace
       out << "</blockquote>\n";
   }
 
-//  html_encode  -------------------------------------------------------------//
-
-  std::string html_encode(std::string const& text)
-  {
-    std::string result;
-
-    for(std::string::const_iterator it = text.begin(),
-        end = text.end(); it != end; ++it)
-    {
-      switch(*it) {
-      case '<':
-        result += "&lt;";
-        break;
-      case '>':
-        result += "&gt;";
-        break;
-      case '&':
-        result += "&amp;";
-        break;
-      default:
-        result += *it;
-      }
-    }
-
-    return result;
-  }
-
 //  display_details  ---------------------------------------------------------//
 
   void display_details(std::ostream& out)
@@ -490,9 +463,9 @@ namespace
           {
             path current_rel_path(current.rel_path);
             path this_rel_path(itr->rel_path);
-            if (current_rel_path.branch_path() != this_rel_path.branch_path())
+            if (current_rel_path.parent_path() != this_rel_path.parent_path())
             {
-              out << "\n  " << this_rel_path.branch_path().string() << '/';
+              out << "\n  " << this_rel_path.parent_path().string() << '/';
             }
             out << "\n    " << this_rel_path.leaf() << ':';
           }

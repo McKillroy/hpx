@@ -14,13 +14,12 @@
 #include <hpx/util/io_service_pool.hpp>
 #include <hpx/util/runtime_configuration.hpp>
 #include <hpx/util/safe_lexical_cast.hpp>
-#include <hpx/exception.hpp>
+#include <hpx/errors.hpp>
 #if defined(HPX_HAVE_APEX)
 #include <hpx/util/apex.hpp>
 #endif
-#include <hpx/util/assert.hpp>
+#include <hpx/assertion.hpp>
 
-#include <cstdint>
 #include <cstddef>
 #include <cstdint>
 #include <exception>

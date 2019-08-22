@@ -32,7 +32,7 @@ foreach(lib ${HPX_LIBRARIES})
     set(_is_debug FALSE)
     set(_is_release FALSE)
   else()
-    if(NOT EXISTS "${lib}")
+    if(NOT EXISTS "${lib}" AND NOT "${lib}" MATCHES "^-")
       set(lib "-l${lib}")
     endif()
     if(_is_debug)
@@ -95,6 +95,9 @@ endif()
 # Get the include directories we need ...
 get_directory_property(_INCLUDE_DIRS INCLUDE_DIRECTORIES)
 
+# Add core HPX library include directory
+set(_INCLUDE_DIRS ${_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR})
+
 # replace all characters with special regex meaning
 set(special_chars "^;+;*;?;$;.;-;|;(;);]")
 set(binarydir_escaped ${CMAKE_BINARY_DIR})
@@ -126,13 +129,16 @@ endif()
 
 # Configure config for the install dir ...
 set(HPX_CONF_INCLUDE_DIRS
-  "-I${CMAKE_INSTALL_FULL_INCLUDEDIR} -I${CMAKE_INSTALL_FULL_INCLUDEDIR}/hpx/external ${_NEEDED_INCLUDE_DIRS}"
+  "-I${CMAKE_INSTALL_FULL_INCLUDEDIR} ${_NEEDED_INCLUDE_DIRS}"
 )
 set(HPX_CMAKE_CONF_INCLUDE_DIRS
   "${CMAKE_INSTALL_FULL_INCLUDEDIR}"
-  "${CMAKE_INSTALL_FULL_INCLUDEDIR}/hpx/external"
   "${_NEEDED_CMAKE_INCLUDE_DIRS}"
 )
+if("${HPX_PLATFORM_UC}" STREQUAL "XEONPHI")
+  set(HPX_CONF_INCLUDE_DIRS "${HPX_CONF_INCLUDE_DIRS} -I${CMAKE_INSTALL_FULL_INCLUDEDIR}/hpx/external")
+  set(HPX_CMAKE_CONF_INCLUDE_DIRS "${HPX_CMAKE_CONF_INCLUDE_DIRS} ${CMAKE_INSTALL_FULL_INCLUDEDIR}/hpx/external")
+endif()
 set(HPX_CONF_PREFIX ${CMAKE_INSTALL_PREFIX})
 set(HPX_CONF_LIBDIR "${CMAKE_INSTALL_LIBDIR}")
 set(HPX_CONF_INCLUDEDIR "${CMAKE_INSTALL_INCLUDEDIR}")
@@ -170,6 +176,15 @@ set(HPX_CONF_INCLUDEDIR "include")
 set(HPX_CONF_INCLUDE_DIRS
   "${_NEEDED_BUILD_DIR_INCLUDE_DIRS} ${_NEEDED_INCLUDE_DIRS} -I${CMAKE_BINARY_DIR}/include"
 )
+foreach(lib ${HPX_LIBS})
+  set(HPX_CONF_INCLUDE_DIRS
+    "${HPX_CONF_INCLUDE_DIRS} -I${PROJECT_SOURCE_DIR}/libs/${lib}/include \
+    -I${CMAKE_BINARY_DIR}/libs/${lib}/include")
+endforeach()
+foreach(component ${HPX_COMPONENTS})
+  set(HPX_CONF_INCLUDE_DIRS
+    "${HPX_CONF_INCLUDE_DIRS} -I${PROJECT_SOURCE_DIR}/components/${component}/include")
+endforeach()
 set(HPX_CMAKE_CONF_INCLUDE_DIRS
   ${_NEEDED_CMAKE_BUILD_DIR_INCLUDE_DIRS}
   ${_NEEDED_CMAKE_INCLUDE_DIRS}

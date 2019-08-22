@@ -9,18 +9,18 @@
 #define HPX_PARCELSET_PARCELHANDLER_MAY_18_2008_0935AM
 
 #include <hpx/config.hpp>
-#include <hpx/exception_fwd.hpp>
+#include <hpx/assertion.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/logging.hpp>
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/runtime/naming/address.hpp>
 #include <hpx/runtime/naming/name.hpp>
 #include <hpx/runtime/parcelset/locality.hpp>
 #include <hpx/runtime/parcelset/parcelport.hpp>
 #include <hpx/runtime_fwd.hpp>
-#include <hpx/util/assert.hpp>
+#include <hpx/timing/high_resolution_timer.hpp>
 #include <hpx/util/bind_front.hpp>
-#include <hpx/util/high_resolution_timer.hpp>
-#include <hpx/util/logging.hpp>
 #include <hpx/util_fwd.hpp>
 
 #include <hpx/plugins/parcelport_factory_base.hpp>
@@ -88,10 +88,7 @@ namespace hpx { namespace parcelset
         ///                 transport operations the parcelhandler carries out.
         parcelhandler(util::runtime_configuration& cfg,
             threads::threadmanager* tm,
-            util::function_nonser<void(std::size_t, char const*)> const&
-                on_start_thread,
-            util::function_nonser<void(std::size_t, char const*)> const&
-                on_stop_thread);
+            threads::policies::callback_notifier const& notifer);
 
         ~parcelhandler() {}
 
@@ -108,7 +105,8 @@ namespace hpx { namespace parcelset
         ///
         /// \returns Whether any work has been performed
         bool do_background_work(std::size_t num_thread = 0,
-            bool stop_buffering = false);
+            bool stop_buffering = false,
+            parcelport_background_mode mode = parcelport_background_mode_all);
 
         /// \brief Allow access to AGAS resolver instance.
         ///
@@ -196,10 +194,13 @@ namespace hpx { namespace parcelset
         ///                 id (if not already set).
         HPX_FORCEINLINE void put_parcel(parcel p)
         {
-            put_parcel(std::move(p), [=](
-                boost::system::error_code const& ec, parcel const & p) -> void {
-                    return invoke_write_handler(ec, p);
-                });
+            auto f =
+                [=](boost::system::error_code const& ec, parcel const& p) -> void
+                {
+                    invoke_write_handler(ec, p);
+                };
+
+            put_parcel(std::move(p), std::move(f));
         }
 
         /// A parcel is submitted for transport at the source locality site to

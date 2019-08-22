@@ -10,16 +10,16 @@
 #include <hpx/config.hpp>
 
 #if defined(HPX_HAVE_STATIC_SCHEDULER)
-#include <hpx/compat/mutex.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/runtime/threads/policies/local_queue_scheduler.hpp>
 #include <hpx/runtime/threads/policies/lockfree_queue_backends.hpp>
 #include <hpx/runtime/threads/policies/thread_queue.hpp>
 #include <hpx/runtime/threads/thread_data.hpp>
 #include <hpx/runtime/threads/topology.hpp>
 #include <hpx/runtime/threads_fwd.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/logging.hpp>
+#include <hpx/logging.hpp>
 
+#include <mutex>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -42,17 +42,24 @@ namespace hpx { namespace threads { namespace policies
 #endif
 
     ///////////////////////////////////////////////////////////////////////////
+#if defined(HPX_HAVE_CXX11_STD_ATOMIC_128BIT)
+    using default_static_queue_scheduler_terminated_queue = lockfree_lifo;
+#else
+    using default_static_queue_scheduler_terminated_queue = lockfree_fifo;
+#endif
+
+    ///////////////////////////////////////////////////////////////////////////
     /// The local_queue_scheduler maintains exactly one queue of work
     /// items (threads) per OS thread, where this OS thread pulls its next work
     /// from.
-    template <typename Mutex = compat::mutex,
+    template <typename Mutex = std::mutex,
         typename PendingQueuing = lockfree_fifo,
         typename StagedQueuing = lockfree_fifo,
-        typename TerminatedQueuing = lockfree_lifo>
+        typename TerminatedQueuing =
+            default_static_queue_scheduler_terminated_queue>
     class static_queue_scheduler
-        : public local_queue_scheduler<
-            Mutex, PendingQueuing, StagedQueuing, TerminatedQueuing
-          >
+      : public local_queue_scheduler<Mutex, PendingQueuing, StagedQueuing,
+            TerminatedQueuing>
     {
     public:
         typedef local_queue_scheduler<
@@ -65,7 +72,10 @@ namespace hpx { namespace threads { namespace policies
           : base_type(init, deferred_initialization)
         {}
 
-        virtual bool has_thread_stealing() const override { return false; }
+        virtual bool has_thread_stealing(std::size_t num_thread) const override
+        {
+            return false;
+        }
 
         static std::string get_scheduler_name()
         {
@@ -75,14 +85,12 @@ namespace hpx { namespace threads { namespace policies
         /// Return the next thread to be executed, return false if none is
         /// available
         bool get_next_thread(std::size_t num_thread, bool,
-            std::int64_t& idle_loop_count, threads::thread_data*& thrd) override
+            threads::thread_data*& thrd, bool /*enable_stealing*/) override
         {
             typedef typename base_type::thread_queue_type thread_queue_type;
 
-            std::size_t queues_size = this->queues_.size();
-
             {
-                HPX_ASSERT(num_thread < queues_size);
+                HPX_ASSERT(num_thread < this->queues_.size());
 
                 thread_queue_type* q = this->queues_[num_thread];
                 bool result = q->get_next_thread(thrd);
@@ -101,16 +109,18 @@ namespace hpx { namespace threads { namespace policies
         /// scheduler. Returns true if the OS thread calling this function
         /// has to be terminated (i.e. no more work has to be done).
         bool wait_or_add_new(std::size_t num_thread, bool running,
-            std::int64_t& idle_loop_count) override
+            std::int64_t& idle_loop_count, bool /*enable_stealing*/,
+            std::size_t& added) override
         {
-            std::size_t queues_size = this->queues_.size();
-            HPX_ASSERT(num_thread < queues_size);
+            HPX_ASSERT(num_thread < this->queues_.size());
 
-            std::size_t added = 0;
+            added = 0;
+
             bool result = true;
 
-            result = this->queues_[num_thread]->wait_or_add_new(running,
-                idle_loop_count, added) && result;
+            result =
+                this->queues_[num_thread]->wait_or_add_new(running, added) &&
+                result;
             if (0 != added) return result;
 
             // Check if we have been disabled
@@ -126,7 +136,7 @@ namespace hpx { namespace threads { namespace policies
                 bool suspended_only = true;
 
                 for (std::size_t i = 0;
-                     suspended_only && i != queues_size; ++i)
+                     suspended_only && i != this->queues_.size(); ++i)
                 {
                     suspended_only = this->queues_[i]->dump_suspended_threads(
                         i, idle_loop_count, running);

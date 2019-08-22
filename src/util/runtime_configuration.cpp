@@ -6,17 +6,16 @@
 
 #include <hpx/util/runtime_configuration.hpp>
 
-#include <hpx/config/defaults.hpp>
 // TODO: move parcel ports into plugins
+#include <hpx/assertion.hpp>
+#include <hpx/preprocessor/expand.hpp>
+#include <hpx/preprocessor/stringize.hpp>
 #include <hpx/runtime/parcelset/parcelhandler.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/detail/pp/expand.hpp>
-#include <hpx/util/detail/pp/stringize.hpp>
-#include <hpx/util/filesystem_compatibility.hpp>
 #include <hpx/util/find_prefix.hpp>
 #include <hpx/util/init_ini_data.hpp>
-#include <hpx/util/itt_notify.hpp>
-#include <hpx/util/register_locks.hpp>
+#include <hpx/util/init_logging.hpp>
+#include <hpx/concurrency/itt_notify.hpp>
+#include <hpx/concurrency/register_locks.hpp>
 #include <hpx/util/register_locks_globally.hpp>
 #include <hpx/util/safe_lexical_cast.hpp>
 #include <hpx/version.hpp>
@@ -201,13 +200,14 @@ namespace hpx { namespace util
             "max_idle_backoff_time = ${HPX_MAX_IDLE_BACKOFF_TIME:"
             HPX_PP_STRINGIZE(HPX_PP_EXPAND(HPX_IDLE_BACKOFF_TIME_MAX)) "}",
 #endif
+            "default_scheduler_mode = ${HPX_DEFAULT_SCHEDULER_MODE}",
 
             /// If HPX_HAVE_ATTACH_DEBUGGER_ON_TEST_FAILURE is set,
             /// then apply the test-failure value as default.
 #if defined(HPX_HAVE_ATTACH_DEBUGGER_ON_TEST_FAILURE)
-            "attach-debugger = ${HPX_ATTACH_DEBUGGER:test-failure}",
+            "attach_debugger = ${HPX_ATTACH_DEBUGGER:test-failure}",
 #else
-            "attach-debugger = ${HPX_ATTACH_DEBUGGER}",
+            "attach_debugger = ${HPX_ATTACH_DEBUGGER}",
 #endif
 
             // arity for collective operations implemented in a tree fashion
@@ -269,6 +269,10 @@ namespace hpx { namespace util
 
             // allow for unknown options to be passed through
             "allow_unknown = ${HPX_COMMANDLINE_ALLOW_UNKNOWN:0}",
+
+            // allow for command line options to to be passed through the
+            // environment
+            "prepend_options = ${HPX_COMMANDLINE_OPTIONS}",
 
             // predefine command line aliases
             "[hpx.commandline.aliases]",
@@ -422,18 +426,18 @@ namespace hpx { namespace util
         {
             fs::path this_p(path);
             boost::system::error_code fsec;
-            fs::path canonical_p = util::canonical_path(this_p, fsec);
+            fs::path canonical_p =
+                fs::canonical(this_p, fs::initial_path(), fsec);
             if (fsec)
                 canonical_p = this_p;
 
             std::pair<std::set<std::string>::iterator, bool> p =
-                component_paths.insert(
-                    util::native_file_string(canonical_p));
+                component_paths.insert(canonical_p.string());
 
             if (p.second)
             {
                 // have all path elements, now find ini files in there...
-                fs::path this_path (hpx::util::create_path(*p.first));
+                fs::path this_path (*p.first);
                 if (fs::exists(this_path, fsec) && !fsec)
                 {
                     plugin_list_type tmp_regs =

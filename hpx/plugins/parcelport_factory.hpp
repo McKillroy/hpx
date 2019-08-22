@@ -13,9 +13,9 @@
 #include <hpx/plugins/parcelport_factory_base.hpp>
 #include <hpx/plugins/plugin_factory_base.hpp>
 #include <hpx/plugins/unique_plugin_name.hpp>
+#include <hpx/preprocessor/cat.hpp>
 #include <hpx/runtime/parcelset/parcelhandler.hpp>
 #include <hpx/traits/plugin_config_data.hpp>
-#include <hpx/util/detail/pp/cat.hpp>
 #include <hpx/util/find_prefix.hpp>
 #include <hpx/util/runtime_configuration.hpp>
 
@@ -131,12 +131,9 @@ namespace hpx { namespace plugins
         ///        supported by this factory
         parcelset::parcelport* create(
             hpx::util::runtime_configuration const& cfg,
-            hpx::util::function_nonser<void(std::size_t, char const*)> const&
-                on_start_thread,
-            hpx::util::function_nonser<void(std::size_t, char const*)> const&
-                on_stop_thread) override
+            threads::policies::callback_notifier const& notifier) override
         {
-            return new Parcelport(cfg, on_start_thread, on_stop_thread);
+            return new Parcelport(cfg, notifier);
         }
     };
 }}

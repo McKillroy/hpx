@@ -11,16 +11,15 @@
 #define HPX_PARCELSET_PARCELPORT_IMPL_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/error_code.hpp>
+#include <hpx/assertion.hpp>
+#include <hpx/errors.hpp>
 #include <hpx/runtime/config_entry.hpp>
 #include <hpx/runtime/parcelset/detail/call_for_each.hpp>
 #include <hpx/runtime/parcelset/detail/parcel_await.hpp>
 #include <hpx/runtime/parcelset/encode_parcels.hpp>
 #include <hpx/runtime/parcelset/parcelport.hpp>
 #include <hpx/runtime/threads/thread.hpp>
-#include <hpx/throw_exception.hpp>
-#include <hpx/util/assert.hpp>
-#include <hpx/util/atomic_count.hpp>
+#include <hpx/thread_support/atomic_count.hpp>
 #include <hpx/util/bind_front.hpp>
 #include <hpx/util/connection_cache.hpp>
 #include <hpx/util/deferred_call.hpp>
@@ -106,13 +105,10 @@ namespace hpx { namespace parcelset
         /// Construct the parcelport on the given locality.
         parcelport_impl(util::runtime_configuration const& ini,
             locality const& here,
-            util::function_nonser<void(std::size_t, char const*)> const&
-                on_start_thread,
-            util::function_nonser<void(std::size_t, char const*)> const&
-                on_stop_thread)
+            threads::policies::callback_notifier const& notifier)
           : parcelport(ini, here, connection_handler_type())
-          , io_service_pool_(thread_pool_size(ini), on_start_thread,
-                on_stop_thread, pool_name(), pool_name_postfix())
+          , io_service_pool_(thread_pool_size(ini), notifier, pool_name(),
+                pool_name_postfix())
           , connection_cache_(
                 max_connections(ini), max_connections_per_loc(ini))
           , archive_flags_(0)
@@ -196,15 +192,19 @@ namespace hpx { namespace parcelset
         {
             flush_parcels();
 
-            io_service_pool_.stop();
             if (blocking) {
                 connection_cache_.shutdown();
                 connection_handler().do_stop();
+                io_service_pool_.wait();
+                io_service_pool_.stop();
                 io_service_pool_.join();
                 connection_cache_.clear();
                 io_service_pool_.clear();
             }
-
+            else
+            {
+                io_service_pool_.stop();
+            }
         }
 
     public:
@@ -295,10 +295,11 @@ namespace hpx { namespace parcelset
             return nullptr;
         }
 
-        bool do_background_work(std::size_t num_thread) override
+        bool do_background_work(
+            std::size_t num_thread, parcelport_background_mode mode) override
         {
             trigger_pending_work();
-            return do_background_work_impl<ConnectionHandler>(num_thread);
+            return do_background_work_impl<ConnectionHandler>(num_thread, mode);
         }
 
         /// support enable_shared_from_this
@@ -352,9 +353,9 @@ namespace hpx { namespace parcelset
                     ec);
             if (ec) return;
 
-            threads::set_thread_state(id,
-                std::chrono::milliseconds(100), threads::pending,
-                threads::wait_signaled, threads::thread_priority_boost, ec);
+            threads::set_thread_state(id, std::chrono::milliseconds(100),
+                threads::pending, threads::wait_signaled,
+                threads::thread_priority_boost, true, ec);
         }
 
         /// Return the name of this locality
@@ -441,9 +442,10 @@ namespace hpx { namespace parcelset
             >::do_background_work::value,
             bool
         >::type
-        do_background_work_impl(std::size_t num_thread)
+        do_background_work_impl(std::size_t num_thread,
+            parcelport_background_mode mode)
         {
-            return connection_handler().background_work(num_thread);
+            return connection_handler().background_work(num_thread, mode);
         }
 
         template <typename ConnectionHandler_>
@@ -453,7 +455,7 @@ namespace hpx { namespace parcelset
             >::do_background_work::value,
             bool
         >::type
-        do_background_work_impl(std::size_t)
+        do_background_work_impl(std::size_t, parcelport_background_mode)
         {
             return false;
         }
@@ -907,6 +909,7 @@ namespace hpx { namespace parcelset
             else
             {
                 ++operations_in_flight_;
+                // NOLINTNEXTLINE(bugprone-use-after-move)
                 HPX_ASSERT(num_parcels < parcels.size());
 
                 std::vector<write_handler_type> handled_handlers;

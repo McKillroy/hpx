@@ -9,8 +9,8 @@
 #include <hpx/include/lcos.hpp>
 #include <hpx/include/components.hpp>
 #include <hpx/include/serialization.hpp>
-#include <hpx/util/format.hpp>
-#include <hpx/util/lightweight_test.hpp>
+#include <hpx/format.hpp>
+#include <hpx/testing.hpp>
 
 #include <cstddef>
 
@@ -144,6 +144,9 @@ int hpx_main()
             cout << "registered everything at this id" << endl;
         }
     }
+
+    // Unregister everything again to avoid memory leaks
+    hpx::unregister_with_basename("Listener").get();
 
     return hpx::finalize();
 }
