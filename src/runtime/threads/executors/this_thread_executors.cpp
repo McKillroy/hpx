@@ -15,7 +15,6 @@
 #endif
 
 #include <hpx/assertion.hpp>
-#include <hpx/runtime/get_worker_thread_num.hpp>
 #include <hpx/runtime/threads/detail/create_thread.hpp>
 #include <hpx/runtime/threads/detail/scheduling_loop.hpp>
 #include <hpx/runtime/threads/detail/set_thread_state.hpp>
@@ -24,11 +23,11 @@
 #include <hpx/runtime/threads/policies/affinity_data.hpp>
 #include <hpx/runtime/threads/resource_manager.hpp>
 #include <hpx/runtime/threads/thread_enums.hpp>
-#include <hpx/util/bind.hpp>
-#include <hpx/util/deferred_call.hpp>
+#include <hpx/functional/bind.hpp>
+#include <hpx/functional/deferred_call.hpp>
 #include <hpx/timing/steady_clock.hpp>
 #include <hpx/util/thread_description.hpp>
-#include <hpx/util/unique_function.hpp>
+#include <hpx/functional/unique_function.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -434,7 +433,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         HPX_ASSERT(std::size_t(-1) == orig_thread_num_);
 
         thread_num_ = thread_num;
-        orig_thread_num_ = hpx::get_worker_thread_num();
+        orig_thread_num_ = threads::detail::get_thread_num_tss();
 
         std::atomic<hpx::state>& state = scheduler_.get_state(0);
         hpx::state expected = state_initialized;

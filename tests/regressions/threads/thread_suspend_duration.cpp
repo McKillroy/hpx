@@ -6,7 +6,7 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
-#include <hpx/util/bind.hpp>
+#include <hpx/functional/bind.hpp>
 #include <hpx/testing.hpp>
 #include <hpx/lcos/local/barrier.hpp>
 
@@ -16,9 +16,9 @@
 #include <string>
 #include <vector>
 
-using boost::program_options::variables_map;
-using boost::program_options::options_description;
-using boost::program_options::value;
+using hpx::program_options::variables_map;
+using hpx::program_options::options_description;
+using hpx::program_options::value;
 
 using hpx::applier::register_work;
 

@@ -7,7 +7,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/iostreams.hpp>
 #include <hpx/lcos/local/barrier.hpp>
-#include <hpx/util/bind.hpp>
+#include <hpx/functional/bind.hpp>
 #include <hpx/format.hpp>
 #include <boost/lockfree/queue.hpp>
 
@@ -18,9 +18,9 @@
 
 using boost::lockfree::queue;
 
-using boost::program_options::variables_map;
-using boost::program_options::options_description;
-using boost::program_options::value;
+using hpx::program_options::variables_map;
+using hpx::program_options::options_description;
+using hpx::program_options::value;
 
 using hpx::lcos::local::barrier;
 

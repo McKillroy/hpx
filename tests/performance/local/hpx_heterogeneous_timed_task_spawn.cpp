@@ -5,10 +5,10 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/format.hpp>
+#include <hpx/functional/bind.hpp>
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/iostreams.hpp>
 #include <hpx/timing/high_resolution_timer.hpp>
-#include <hpx/util/bind.hpp>
 
 
 #include <cstdint>
@@ -22,9 +22,9 @@
 
 #include "worker_timed.hpp"
 
-using boost::program_options::variables_map;
-using boost::program_options::options_description;
-using boost::program_options::value;
+using hpx::program_options::variables_map;
+using hpx::program_options::options_description;
+using hpx::program_options::value;
 
 using hpx::init;
 using hpx::finalize;

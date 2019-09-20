@@ -13,17 +13,17 @@
 
 #include <hpx/compute/host/block_executor.hpp>
 #include <hpx/compute/host/target.hpp>
+#include <hpx/datastructures/tuple.hpp>
+#include <hpx/functional/invoke_fused.hpp>
+#include <hpx/iterator_support/range.hpp>
 #include <hpx/parallel/algorithms/for_each.hpp>
 #include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/executors/static_chunk_size.hpp>
 #include <hpx/parallel/util/cancellation_token.hpp>
 #include <hpx/parallel/util/partitioner_with_cleanup.hpp>
 #include <hpx/runtime/threads/executors/thread_pool_attached_executors.hpp>
-#include <hpx/runtime/threads/topology.hpp>
+#include <hpx/topology/topology.hpp>
 #include <hpx/util/functional/new.hpp>
-#include <hpx/util/invoke_fused.hpp>
-#include <hpx/iterator_support/range.hpp>
-#include <hpx/datastructures/tuple.hpp>
 
 #include <boost/range/irange.hpp>
 

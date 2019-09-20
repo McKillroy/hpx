@@ -11,7 +11,7 @@
 #include <hpx/lcos/local/mutex.hpp>
 #include <hpx/runtime/threads/thread.hpp>
 #include <hpx/runtime/threads/threadmanager.hpp>
-#include <hpx/util/bind.hpp>
+#include <hpx/functional/bind.hpp>
 #include <hpx/testing.hpp>
 
 
@@ -305,8 +305,8 @@ void test_timed_mutex()
 //}
 
 ///////////////////////////////////////////////////////////////////////////////
-using boost::program_options::variables_map;
-using boost::program_options::options_description;
+using hpx::program_options::variables_map;
+using hpx::program_options::options_description;
 
 int hpx_main(variables_map&)
 {

@@ -8,7 +8,8 @@
 #include <hpx/assertion.hpp>
 #include <hpx/concurrency/register_locks.hpp>
 #include <hpx/errors.hpp>
-#include <hpx/runtime/get_worker_thread_num.hpp>
+#include <hpx/functional/bind.hpp>
+#include <hpx/runtime/threads/detail/thread_num_tss.hpp>
 #include <hpx/runtime/threads/detail/create_thread.hpp>
 #include <hpx/runtime/threads/detail/set_thread_state.hpp>
 #include <hpx/runtime/threads/policies/scheduler_base.hpp>
@@ -16,7 +17,6 @@
 #include <hpx/runtime/threads/thread_enums.hpp>
 #include <hpx/state.hpp>
 #include <hpx/timing/steady_clock.hpp>
-#include <hpx/util/bind.hpp>
 
 #include <boost/intrusive_ptr.hpp>
 
@@ -62,7 +62,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         thread_init_data data(util::one_shot(util::bind(
             &current_executor::thread_function_nullary,
             std::move(f))), desc);
-        data.stacksize = threads::get_stack_size(stacksize);
+        data.stacksize = scheduler_base_->get_stack_size(stacksize);
 
         threads::thread_id_type id = threads::invalid_thread_id;
         threads::detail::create_thread(scheduler_base_, data, id, //-V601
@@ -82,7 +82,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         thread_init_data data(util::one_shot(util::bind(
             &current_executor::thread_function_nullary,
             std::move(f))), desc);
-        data.stacksize = threads::get_stack_size(stacksize);
+        data.stacksize = scheduler_base_->get_stack_size(stacksize);
 
         threads::thread_id_type id = threads::invalid_thread_id;
         threads::detail::create_thread( //-V601
@@ -147,7 +147,8 @@ namespace hpx { namespace threads { namespace executors { namespace detail
 
     hpx::state current_executor::get_state() const
     {
-        return scheduler_base_->get_state(hpx::get_worker_thread_num());
+        return scheduler_base_->get_state(
+            threads::detail::get_thread_num_tss());
     }
 
     void current_executor::set_scheduler_mode(

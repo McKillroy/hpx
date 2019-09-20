@@ -12,6 +12,8 @@
 #include <hpx/async.hpp>
 #include <hpx/concurrency/barrier.hpp>
 #include <hpx/errors.hpp>
+#include <hpx/functional/invoke.hpp>
+#include <hpx/runtime/resource/detail/partitioner.hpp>
 #include <hpx/runtime/threads/detail/create_thread.hpp>
 #include <hpx/runtime/threads/detail/create_work.hpp>
 #include <hpx/runtime/threads/detail/scheduled_thread_pool.hpp>
@@ -24,12 +26,9 @@
 #include <hpx/runtime/threads/policies/schedulers.hpp>
 #include <hpx/runtime/threads/thread_data.hpp>
 #include <hpx/runtime/threads/thread_helpers.hpp>
-#include <hpx/runtime/threads/threadmanager.hpp>
-#include <hpx/runtime/threads/topology.hpp>
+#include <hpx/topology/topology.hpp>
 #include <hpx/state.hpp>
-#include <hpx/util/deferred_call.hpp>
-#include <hpx/util/invoke.hpp>
-#include <hpx/thread_support/unlock_guard.hpp>
+#include <hpx/functional/deferred_call.hpp>
 #include <hpx/util/yield_while.hpp>
 
 #include <boost/system/system_error.hpp>
@@ -338,14 +337,6 @@ namespace hpx { namespace threads { namespace detail
     template <typename Scheduler>
     void scheduled_thread_pool<Scheduler>::resume_direct(error_code& ec)
     {
-        if (threads::get_self_ptr() && hpx::this_thread::get_pool() == this)
-        {
-            HPX_THROWS_IF(ec, bad_parameter,
-                "scheduled_thread_pool<Scheduler>::resume_direct",
-                "cannot suspend a pool from itself");
-            return;
-        }
-
         this->resume_internal(true, ec);
     }
 

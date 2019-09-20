@@ -22,10 +22,10 @@
 #include <hpx/runtime/threads/detail/set_thread_state.hpp>
 #include <hpx/runtime/threads/executors/manage_thread_executor.hpp>
 #include <hpx/runtime/threads/thread_enums.hpp>
-#include <hpx/util/deferred_call.hpp>
+#include <hpx/functional/deferred_call.hpp>
 #include <hpx/timing/steady_clock.hpp>
 #include <hpx/util/thread_description.hpp>
-#include <hpx/util/unique_function.hpp>
+#include <hpx/functional/unique_function.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -170,7 +170,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         thread_init_data data(util::one_shot(util::bind(
             &thread_pool_executor::thread_function_nullary,
             this, std::move(f))), desc);
-        data.stacksize = threads::get_stack_size(stacksize);
+        data.stacksize = scheduler_.get_stack_size(stacksize);
 
         // update statistics
         ++tasks_scheduled_;
@@ -200,7 +200,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         thread_init_data data(util::one_shot(util::bind(
             &thread_pool_executor::thread_function_nullary,
             this, std::move(f))), desc);
-        data.stacksize = threads::get_stack_size(stacksize);
+        data.stacksize = scheduler_.get_stack_size(stacksize);
 
         threads::thread_id_type id = threads::invalid_thread_id;
         threads::detail::create_thread( //-V601

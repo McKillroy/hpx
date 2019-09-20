@@ -9,23 +9,23 @@
 #define GUIDED_EXECUTOR_DEBUG 1
 #include <hpx/runtime/threads/executors/guided_pool_executor.hpp>
 #include <hpx/runtime/resource/partitioner.hpp>
-//#include <hpx/runtime/threads/cpu_mask.hpp>
+//#include <hpx/topology/cpu_mask.hpp>
 //#include <hpx/include/parallel_executors.hpp>
 #include <hpx/async.hpp>
 
 // we should not need these
 #include <hpx/runtime/threads/detail/scheduled_thread_pool_impl.hpp>
 
+#include <hpx/datastructures/tuple.hpp>
+#include <hpx/functional/invoke.hpp>
+#include <hpx/functional/invoke_fused.hpp>
+#include <hpx/functional/result_of.hpp>
 #include <hpx/lcos/dataflow.hpp>
 #include <hpx/lcos/when_all.hpp>
-#include <hpx/util/invoke.hpp>
-#include <hpx/util/invoke_fused.hpp>
 #include <hpx/type_support/decay.hpp>
-#include <hpx/util/result_of.hpp>
-#include <hpx/datastructures/tuple.hpp>
-#include <hpx/util/deferred_call.hpp>
+#include <hpx/functional/deferred_call.hpp>
 #include <hpx/util/pack_traversal.hpp>
-#include <hpx/util/debug/demangle_helper.hpp>
+#include <hpx/debugging/demangle_helper.hpp>
 //
 #include "shared_priority_queue_scheduler.hpp"
 //
@@ -503,12 +503,15 @@ int main(int argc, char** argv)
     using hpx::threads::policies::scheduler_mode;
     // setup the default pool with our custom priority scheduler
     rp.create_thread_pool("custom",
-        [](hpx::threads::thread_pool_init_parameters init)
+        [](hpx::threads::thread_pool_init_parameters init,
+            hpx::threads::policies::thread_queue_init_parameters
+                thread_queue_init)
             -> std::unique_ptr<hpx::threads::thread_pool_base> {
-            std::cout << "User defined scheduler creation callback " << std::endl;
+            high_priority_sched::init_parameter_type scheduler_init(
+                init.num_threads_, {6, 6, 64}, init.affinity_data_,
+                thread_queue_init, "shared-priority-scheduler");
             std::unique_ptr<high_priority_sched> scheduler(
-                new high_priority_sched(init.num_threads_, {6, 6, 64},
-                    "shared-priority-scheduler", init.affinity_data_));
+                new high_priority_sched(scheduler_init));
 
             init.mode_ = scheduler_mode(scheduler_mode::do_background_work |
                 scheduler_mode::delay_exit);

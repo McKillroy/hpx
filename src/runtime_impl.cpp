@@ -11,6 +11,7 @@
 #include <hpx/concurrency/thread_name.hpp>
 #include <hpx/custom_exception_info.hpp>
 #include <hpx/errors.hpp>
+#include <hpx/functional/bind.hpp>
 #include <hpx/lcos/barrier.hpp>
 #include <hpx/lcos/latch.hpp>
 #include <hpx/logging.hpp>
@@ -30,7 +31,6 @@
 #include <hpx/state.hpp>
 #include <hpx/thread_support/set_thread_name.hpp>
 #include <hpx/util/apex.hpp>
-#include <hpx/util/bind.hpp>
 #include <hpx/util/safe_lexical_cast.hpp>
 #include <hpx/util/thread_mapper.hpp>
 #include <hpx/util/yield_while.hpp>
@@ -415,10 +415,9 @@ namespace hpx
         lbt_ << "(1st stage) runtime_impl::start: launching run_helper "
                       "HPX thread";
 
-        threads::thread_init_data data(
-            util::bind(&runtime_impl::run_helper, this, func,
-                std::ref(result_)),
-            "run_helper", 0,
+        threads::thread_init_data data(util::bind(&runtime_impl::run_helper,
+                                           this, func, std::ref(result_)),
+            "run_helper",
             threads::thread_priority_normal,
             threads::thread_schedule_hint(0),
             threads::get_stack_size(threads::thread_stacksize_large));

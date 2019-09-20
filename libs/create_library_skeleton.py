@@ -63,6 +63,8 @@ index_rst = f'''..
 root_cmakelists_template = cmake_header + f'''
 cmake_minimum_required(VERSION {cmake_version} FATAL_ERROR)
 
+list(APPEND CMAKE_MODULE_PATH "${{CMAKE_CURRENT_SOURCE_DIR}}/cmake")
+
 set({lib_name}_headers)
 
 set({lib_name}_compat_headers)
@@ -95,6 +97,7 @@ endif()
 '''
 
 tests_cmakelists_template = cmake_header + f'''
+include(HPX_Message)
 include(HPX_Option)
 
 if (NOT HPX_WITH_TESTS AND HPX_TOP_LEVEL)
@@ -102,7 +105,7 @@ if (NOT HPX_WITH_TESTS AND HPX_TOP_LEVEL)
   return()
 endif()
 if (NOT HPX_{lib_name_upper}_WITH_TESTS)
-  message(STATUS "Tests for {lib_name} disabled")
+  hpx_info("    Tests for {lib_name} disabled")
   return()
 endif()
 
@@ -179,10 +182,6 @@ if lib_name != '--recreate-index':
     # Generate examples/CMakeLists.txt
     f = open(os.path.join(lib_name, 'examples', 'CMakeLists.txt'), 'w')
     f.write(examples_cmakelists_template)
-
-    # Generate src/CMakeLists.txt
-    f = open(os.path.join(lib_name, 'src', 'CMakeLists.txt'), 'w')
-    f.write(cmake_header)
 
     # Generate tests/CMakeLists.txt
     f = open(os.path.join(lib_name, 'tests', 'CMakeLists.txt'), 'w')

@@ -5,17 +5,13 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 set(tests
-    command_line_arguments_706
-    command_line_required_arguments_2990
     configuration_1572
     function_argument
     function_serialization_728
     iarchive_1237
-    optional_swap_3200
     protect_with_nullary_pfo
     serialize_buffer_1069
     set_config_entry_deadlock
-    tuple_serialization_803
     unwrapped_1528
     use_all_cores_2262
    )
