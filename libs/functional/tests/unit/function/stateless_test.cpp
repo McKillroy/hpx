@@ -3,6 +3,7 @@
 //  Copyright Douglas Gregor 2001-2003.
 //  Copyright 2013 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Use, modification and
 //  distribution is subject to the Boost Software License, Version
 //  1.0. (See accompanying file LICENSE_1_0.txt or copy at
@@ -18,7 +19,10 @@
 
 struct stateless_integer_add
 {
-    int operator()(int x, int y) const { return x+y; }
+    int operator()(int x, int y) const
+    {
+        return x + y;
+    }
 
     void* operator new(std::size_t)
     {
@@ -30,13 +34,9 @@ struct stateless_integer_add
         return p;
     }
 
-    void operator delete(void*, void*) noexcept
-    {
-    }
+    void operator delete(void*, void*) noexcept {}
 
-    void operator delete(void*) noexcept
-    {
-    }
+    void operator delete(void*) noexcept {}
 };
 
 int main(int, char*[])

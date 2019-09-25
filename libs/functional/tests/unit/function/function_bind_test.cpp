@@ -3,6 +3,7 @@
 //  Copyright Douglas Gregor 2002-2003.
 //  Copyright 2013 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Use, modification and
 //  distribution is subject to the Boost Software License, Version
 //  1.0. (See accompanying file LICENSE_1_0.txt or copy at
@@ -10,8 +11,8 @@
 
 // For more information, see http://www.boost.org
 
-#include <hpx/functional/function.hpp>
 #include <hpx/functional/bind.hpp>
+#include <hpx/functional/function.hpp>
 #include <hpx/testing.hpp>
 
 #include <cstdlib>
@@ -37,4 +38,3 @@ int main(int, char*[])
 
     return hpx::util::report_errors();
 }
-

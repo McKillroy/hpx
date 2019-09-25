@@ -1,5 +1,6 @@
 //  Copyright (c) 2007-2016 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -14,17 +15,15 @@
 #include <boost/simd.hpp>
 #include <boost/simd/function/sum.hpp>
 
-namespace hpx { namespace parallel { namespace traits
-{
+namespace hpx { namespace parallel { namespace traits {
     ///////////////////////////////////////////////////////////////////////////
     template <typename T, std::size_t N, typename Abi>
-    HPX_HOST_DEVICE HPX_FORCEINLINE std::size_t
-    count_bits(boost::simd::pack<boost::simd::logical<T>, N, Abi> const& mask)
+    HPX_HOST_DEVICE HPX_FORCEINLINE std::size_t count_bits(
+        boost::simd::pack<boost::simd::logical<T>, N, Abi> const& mask)
     {
         return boost::simd::sum(mask);
     }
-}}}
+}}}    // namespace hpx::parallel::traits
 
 #endif
 #endif
-

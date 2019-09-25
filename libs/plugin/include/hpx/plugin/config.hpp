@@ -1,4 +1,5 @@
 // Copyright (c) 2005-2014 Hartmut Kaiser
+//  SPDX-License-Identifier: BSL-1.0
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -36,7 +37,7 @@ namespace hpx { namespace util { namespace plugin {
     template <typename T>
     using shared_ptr = boost::shared_ptr<T>;
 
-}}}
+}}}    // namespace hpx::util::plugin
 
 #endif
 

@@ -3,6 +3,7 @@
 //  Copyright (c) 2019 Adrian Serio
 //  Copyright (c) 2019 Nikunj Gupta
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -110,8 +111,8 @@ struct validate_exception : std::exception
 {
 };
 
-chk_vector update(subdomain_future left_input,
-    subdomain_future center_input, subdomain_future right_input)
+chk_vector update(subdomain_future left_input, subdomain_future center_input,
+    subdomain_future right_input)
 {
     const auto left = left_input.get();
     const auto center = center_input.get();

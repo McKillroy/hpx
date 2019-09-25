@@ -3,6 +3,7 @@
 //  Copyright Douglas Gregor 2001-2003.
 //  Copyright 2013 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Use, modification and
 //  distribution is subject to the Boost Software License, Version
 //  1.0. (See accompanying file LICENSE_1_0.txt or copy at
@@ -13,11 +14,17 @@
 
 #include <functional>
 
-static int forty_two() { return 42; }
+static int forty_two()
+{
+    return 42;
+}
 
 struct Seventeen
 {
-    int operator()() const { return 17; }
+    int operator()() const
+    {
+        return 17;
+    }
 };
 
 //struct ReturnInt
@@ -172,8 +179,8 @@ static void target_test()
 int main(int, char*[])
 {
     target_test();
-//    equal_test();
-//    ref_equal_test();
+    //    equal_test();
+    //    ref_equal_test();
 
     return hpx::util::report_errors();
 }

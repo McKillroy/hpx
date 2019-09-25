@@ -1,5 +1,6 @@
 //  Copyright (c) 2007-2015 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -10,9 +11,9 @@
 
 #include <hpx/config.hpp>
 #include <hpx/runtime/serialization/serialize.hpp>
-#include <hpx/traits/is_executor_parameters.hpp>
 #include <hpx/timing/high_resolution_clock.hpp>
 #include <hpx/timing/steady_clock.hpp>
+#include <hpx/traits/is_executor_parameters.hpp>
 
 #include <hpx/parallel/executors/execution_parameters.hpp>
 
@@ -21,8 +22,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace hpx { namespace parallel { namespace execution
-{
+namespace hpx { namespace parallel { namespace execution {
     ///////////////////////////////////////////////////////////////////////////
     /// Loop iterations are divided into pieces and then assigned to threads.
     /// The number of loop iterations combined is determined based on
@@ -42,7 +42,8 @@ namespace hpx { namespace parallel { namespace execution
         ///
         HPX_CONSTEXPR auto_chunk_size()
           : min_time_(80000)
-        {}
+        {
+        }
 
         /// Construct an \a auto_chunk_size executor parameters object
         ///
@@ -52,15 +53,16 @@ namespace hpx { namespace parallel { namespace execution
         ///
         explicit auto_chunk_size(hpx::util::steady_duration const& rel_time)
           : min_time_(rel_time.value().count())
-        {}
+        {
+        }
 
         /// \cond NOINTERNAL
         // Estimate a chunk size based on number of cores used.
         template <typename Executor, typename F>
-        std::size_t get_chunk_size(Executor && exec, F && f, std::size_t cores,
-            std::size_t count)
+        std::size_t get_chunk_size(
+            Executor&& exec, F&& f, std::size_t cores, std::size_t count)
         {
-            if (count > 100*cores)
+            if (count > 100 * cores)
             {
                 using hpx::util::high_resolution_clock;
                 std::uint64_t t = high_resolution_clock::now();
@@ -87,27 +89,27 @@ namespace hpx { namespace parallel { namespace execution
         friend class hpx::serialization::access;
 
         template <typename Archive>
-        void serialize(Archive & ar, const unsigned int version)
+        void serialize(Archive& ar, const unsigned int version)
         {
-            ar & min_time_;
+            ar& min_time_;
         }
         /// \endcond
 
     private:
         /// \cond NOINTERNAL
-        std::uint64_t min_time_;      // nanoseconds
+        std::uint64_t min_time_;    // nanoseconds
         /// \endcond
     };
-}}}
+}}}    // namespace hpx::parallel::execution
 
-namespace hpx { namespace parallel { namespace execution
-{
+namespace hpx { namespace parallel { namespace execution {
     /// \cond NOINTERNAL
     template <>
     struct is_executor_parameters<parallel::execution::auto_chunk_size>
-        : std::true_type
-    {};
+      : std::true_type
+    {
+    };
     /// \endcond
-}}}
+}}}    // namespace hpx::parallel::execution
 
 #endif

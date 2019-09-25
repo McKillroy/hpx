@@ -1,5 +1,6 @@
 //  Copyright (c) 2016-2017 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -13,42 +14,40 @@
 
 #include <type_traits>
 
-namespace hpx { namespace parallel { namespace execution
-{
-    namespace detail
-    {
+namespace hpx { namespace parallel { namespace execution {
+    namespace detail {
         /// \cond NOINTERNAL
         template <typename T>
-        struct is_execution_policy
-          : std::false_type
-        {};
+        struct is_execution_policy : std::false_type
+        {
+        };
 
         template <typename T>
-        struct is_parallel_execution_policy
-          : std::false_type
-        {};
+        struct is_parallel_execution_policy : std::false_type
+        {
+        };
 
         template <typename T>
-        struct is_sequenced_execution_policy
-          : std::false_type
-        {};
+        struct is_sequenced_execution_policy : std::false_type
+        {
+        };
 
         template <typename T>
-        struct is_async_execution_policy
-          : std::false_type
-        {};
+        struct is_async_execution_policy : std::false_type
+        {
+        };
 
         template <typename Executor>
-        struct is_rebound_execution_policy
-          : std::false_type
-        {};
+        struct is_rebound_execution_policy : std::false_type
+        {
+        };
 
         template <typename Executor>
-        struct is_vectorpack_execution_policy
-          : std::false_type
-        {};
+        struct is_vectorpack_execution_policy : std::false_type
+        {
+        };
         /// \endcond
-    }
+    }    // namespace detail
 
     ///////////////////////////////////////////////////////////////////////////
     /// 1. The type is_execution_policy can be used to detect execution
@@ -65,7 +64,8 @@ namespace hpx { namespace parallel { namespace execution
     struct is_execution_policy
       : execution::detail::is_execution_policy<
             typename hpx::util::decay<T>::type>
-    {};
+    {
+    };
 
     ///////////////////////////////////////////////////////////////////////////
     /// Extension: Detect whether given execution policy enables parallelization
@@ -84,7 +84,8 @@ namespace hpx { namespace parallel { namespace execution
     struct is_parallel_execution_policy
       : execution::detail::is_parallel_execution_policy<
             typename hpx::util::decay<T>::type>
-    {};
+    {
+    };
 
     ///////////////////////////////////////////////////////////////////////////
     /// Extension: Detect whether given execution policy does not enable
@@ -106,7 +107,8 @@ namespace hpx { namespace parallel { namespace execution
     struct is_sequenced_execution_policy
       : execution::detail::is_sequenced_execution_policy<
             typename hpx::util::decay<T>::type>
-    {};
+    {
+    };
 
     ///////////////////////////////////////////////////////////////////////////
     /// Extension: Detect whether given execution policy makes algorithms
@@ -128,22 +130,25 @@ namespace hpx { namespace parallel { namespace execution
     struct is_async_execution_policy
       : execution::detail::is_async_execution_policy<
             typename hpx::util::decay<T>::type>
-    {};
+    {
+    };
 
     /// \cond NOINTERNAL
     template <typename T>
     struct is_rebound_execution_policy
       : execution::detail::is_rebound_execution_policy<
             typename hpx::util::decay<T>::type>
-    {};
+    {
+    };
 
     // extension:
     template <typename T>
     struct is_vectorpack_execution_policy
       : execution::detail::is_vectorpack_execution_policy<
             typename hpx::util::decay<T>::type>
-    {};
+    {
+    };
     /// \endcond
-}}}
+}}}    // namespace hpx::parallel::execution
 
 #endif

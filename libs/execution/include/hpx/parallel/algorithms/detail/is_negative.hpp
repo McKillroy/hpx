@@ -1,5 +1,6 @@
 //  Copyright (c) 2007-2016 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -10,8 +11,7 @@
 
 #include <type_traits>
 
-namespace hpx { namespace parallel { inline namespace v1 { namespace detail
-{
+namespace hpx { namespace parallel { inline namespace v1 { namespace detail {
     // main template represents non-integral types (raises error)
     template <typename Size, typename Enable = void>
     struct is_negative_helper;
@@ -21,14 +21,17 @@ namespace hpx { namespace parallel { inline namespace v1 { namespace detail
     struct is_negative_helper<T,
         typename std::enable_if<std::is_signed<T>::value>::type>
     {
-        HPX_HOST_DEVICE HPX_FORCEINLINE
-        static bool call(T const& size) { return size < 0; }
+        HPX_HOST_DEVICE HPX_FORCEINLINE static bool call(T const& size)
+        {
+            return size < 0;
+        }
 
-        HPX_HOST_DEVICE HPX_FORCEINLINE
-        static T abs(T const& val) { return val < 0 ? -val : val; }
+        HPX_HOST_DEVICE HPX_FORCEINLINE static T abs(T const& val)
+        {
+            return val < 0 ? -val : val;
+        }
 
-        HPX_HOST_DEVICE HPX_FORCEINLINE
-        static T negate(T const& val)
+        HPX_HOST_DEVICE HPX_FORCEINLINE static T negate(T const& val)
         {
             return -val;
         }
@@ -39,14 +42,17 @@ namespace hpx { namespace parallel { inline namespace v1 { namespace detail
     struct is_negative_helper<T,
         typename std::enable_if<std::is_unsigned<T>::value>::type>
     {
-        HPX_HOST_DEVICE HPX_FORCEINLINE
-        static bool call(T const&) { return false; }
+        HPX_HOST_DEVICE HPX_FORCEINLINE static bool call(T const&)
+        {
+            return false;
+        }
 
-        HPX_HOST_DEVICE HPX_FORCEINLINE
-        static T abs(T const& val) { return val; }
+        HPX_HOST_DEVICE HPX_FORCEINLINE static T abs(T const& val)
+        {
+            return val;
+        }
 
-        HPX_HOST_DEVICE HPX_FORCEINLINE
-        static T negate(T const& val)
+        HPX_HOST_DEVICE HPX_FORCEINLINE static T negate(T const& val)
         {
             return val;
         }
@@ -70,8 +76,6 @@ namespace hpx { namespace parallel { inline namespace v1 { namespace detail
     {
         return is_negative_helper<T>::negate(val);
     }
-}}}}
+}}}}    // namespace hpx::parallel::v1::detail
 
 #endif
-
-

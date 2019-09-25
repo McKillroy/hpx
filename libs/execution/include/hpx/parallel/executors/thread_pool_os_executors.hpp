@@ -1,5 +1,6 @@
 //  Copyright (c) 2007-2017 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -16,8 +17,7 @@
 #include <hpx/parallel/executors/thread_timed_execution.hpp>
 #include <hpx/runtime/threads/executors/thread_pool_os_executors.hpp>
 
-namespace hpx { namespace parallel { namespace execution
-{
+namespace hpx { namespace parallel { namespace execution {
     ///////////////////////////////////////////////////////////////////////////
 #if defined(HPX_HAVE_LOCAL_SCHEDULER)
     /// Creates a new local_queue_os_executor
@@ -28,8 +28,7 @@ namespace hpx { namespace parallel { namespace execution
     ///                     associate with the newly created executor
     ///                     (default: 1).
     ///
-    using local_queue_os_executor =
-        threads::executors::local_queue_os_executor;
+    using local_queue_os_executor = threads::executors::local_queue_os_executor;
 #endif
 
 #if defined(HPX_HAVE_STATIC_SCHEDULER)
@@ -68,6 +67,6 @@ namespace hpx { namespace parallel { namespace execution
     using static_priority_queue_os_executor =
         threads::executors::static_priority_queue_os_executor;
 #endif
-}}}
+}}}    // namespace hpx::parallel::execution
 
 #endif

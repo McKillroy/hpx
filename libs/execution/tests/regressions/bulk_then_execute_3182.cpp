@@ -1,5 +1,6 @@
 //  Copyright (c) 2018 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -9,8 +10,8 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/testing.hpp>
 
-#include <hpx/include/parallel_executors.hpp>
 #include <hpx/include/parallel_algorithm.hpp>
+#include <hpx/include/parallel_executors.hpp>
 
 #include <algorithm>
 #include <atomic>
@@ -37,7 +38,7 @@ int fun2(int i, hpx::shared_future<int> f)
 }
 
 template <typename Executor>
-void test_bulk_then_execute(Executor && exec)
+void test_bulk_then_execute(Executor&& exec)
 {
     hpx::shared_future<int> f = hpx::make_ready_future(42);
     std::vector<int> v(100);
@@ -86,4 +87,3 @@ int main(int argc, char* argv[])
 {
     return hpx::init(argc, argv);
 }
-

@@ -1,5 +1,6 @@
 //  Copyright (c) 2016 Hartmut Kaiser
 //
+//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -16,17 +17,14 @@
 #include <boost/simd.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
-namespace hpx { namespace parallel { namespace traits
-{
+namespace hpx { namespace parallel { namespace traits {
     ///////////////////////////////////////////////////////////////////////////
-    namespace detail
-    {
+    namespace detail {
         template <typename T, std::size_t N, typename Abi>
         struct vector_pack_type
         {
-            typedef typename std::conditional<
-                    std::is_void<Abi>::value, boost::simd::abi_of_t<T, N>, Abi
-                >::type abi_type;
+            typedef typename std::conditional<std::is_void<Abi>::value,
+                boost::simd::abi_of_t<T, N>, Abi>::type abi_type;
 
             typedef boost::simd::pack<T, N, abi_type> type;
         };
@@ -35,21 +33,20 @@ namespace hpx { namespace parallel { namespace traits
         struct vector_pack_type<T, 0, Abi>
         {
             static std::size_t const N = boost::simd::native_cardinal<T>::value;
-            typedef typename std::conditional<
-                    std::is_void<Abi>::value, boost::simd::abi_of_t<T, N>, Abi
-                >::type abi_type;
+            typedef typename std::conditional<std::is_void<Abi>::value,
+                boost::simd::abi_of_t<T, N>, Abi>::type abi_type;
 
             typedef boost::simd::pack<T, N, abi_type> type;
         };
-    }
+    }    // namespace detail
 
     ///////////////////////////////////////////////////////////////////////////
     // Avoid premature instantiation of boost::simd::native_cardinal and
     // boost::simd::abi_of_t.
     template <typename T, std::size_t N, typename Abi>
-    struct vector_pack_type
-      : detail::vector_pack_type<T, N, Abi>
-    {};
+    struct vector_pack_type : detail::vector_pack_type<T, N, Abi>
+    {
+    };
 
     // don't wrap types twice
     template <typename T, std::size_t N1, typename Abi1, std::size_t N2,
@@ -58,8 +55,7 @@ namespace hpx { namespace parallel { namespace traits
     {
         typedef boost::simd::pack<T, N1, Abi1> type;
     };
-}}}
+}}}    // namespace hpx::parallel::traits
 
 #endif
 #endif
-

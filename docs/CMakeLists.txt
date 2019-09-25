@@ -1,5 +1,6 @@
 # Copyright (c) 2012 Bryce Adelstein-Lelbach
 #
+# SPDX-License-Identifier: BSL-1.0
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -47,7 +48,6 @@ set(doxygen_dependencies
     "${PROJECT_SOURCE_DIR}/hpx/runtime/resource/partitioner.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/runtime/resource/partitioner_fwd.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/runtime/threads/policies/scheduler_mode.hpp"
-    "${PROJECT_SOURCE_DIR}/hpx/runtime/threads/thread_enums.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/runtime/threads/thread_data_fwd.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/runtime/threads/thread_helpers.hpp"
     "${PROJECT_SOURCE_DIR}/hpx/runtime/threads/thread_pool_base.hpp"
