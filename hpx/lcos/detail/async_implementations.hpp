@@ -15,8 +15,8 @@
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/naming/address.hpp>
 #include <hpx/runtime/naming/id_type.hpp>
-#include <hpx/runtime/threads/thread.hpp>
-#include <hpx/runtime/threads/thread_init_data.hpp>
+#include <hpx/threading.hpp>
+#include <hpx/threading_base/thread_init_data.hpp>
 #include <hpx/errors.hpp>
 #include <hpx/traits/action_decorate_function.hpp>
 #include <hpx/traits/action_select_direct_execution.hpp>

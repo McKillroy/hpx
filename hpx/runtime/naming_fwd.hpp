@@ -9,6 +9,7 @@
 #define HPX_RUNTIME_NAMING_FWD_HPP
 
 #include <hpx/config.hpp>
+#include <hpx/naming_base.hpp>
 #include <hpx/runtime/agas_fwd.hpp>
 
 #include <cstdint>
@@ -21,18 +22,16 @@ namespace hpx
     /// (Active Global Address Space) service.
     namespace naming
     {
-        typedef agas::addressing_service resolver_client;
+        using resolver_client = agas::addressing_service;
 
         struct HPX_EXPORT gid_type;
         struct HPX_EXPORT id_type;
-        struct HPX_API_EXPORT address;
+        struct HPX_EXPORT address;
 
         HPX_API_EXPORT resolver_client& get_agas_client();
 
-        typedef std::int32_t component_type;
-        typedef std::uint64_t address_type;
-
-        HPX_CONSTEXPR_OR_CONST std::uint32_t invalid_locality_id = ~0U;
+        // tag used to mark serialization archive during check-pointing
+        struct checkpointing_tag {};
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -179,14 +179,14 @@ namespace hpx
 #include <hpx/assertion.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/preprocessor/strip_parens.hpp>
-#include <hpx/runtime/threads/thread.hpp>
+#include <hpx/threading.hpp>
 #include <hpx/errors.hpp>
 #include <hpx/traits/acquire_shared_state.hpp>
 #include <hpx/traits/future_access.hpp>
 #include <hpx/traits/is_future.hpp>
 #include <hpx/type_support/always_void.hpp>
+#include <hpx/type_support/pack.hpp>
 #include <hpx/functional/deferred_call.hpp>
-#include <hpx/datastructures/detail/pack.hpp>
 #include <hpx/datastructures/tuple.hpp>
 
 #include <algorithm>
@@ -234,11 +234,10 @@ namespace hpx { namespace lcos
                     // execute_deferred might have made the future ready
                     if (!shared_state->is_ready())
                     {
-                        shared_state->set_on_completed(
-                            util::deferred_call(
-                                &wait_some<Sequence>::on_future_ready,
-                                wait_.shared_from_this(),
-                                threads::get_self_id()));
+                        shared_state->set_on_completed(util::deferred_call(
+                            &wait_some<Sequence>::on_future_ready,
+                            wait_.shared_from_this(),
+                            hpx::basic_execution::this_thread::agent()));
                         return;
                     }
                 }
@@ -260,7 +259,7 @@ namespace hpx { namespace lcos
 
             template <typename Tuple, std::size_t ...Is>
             HPX_FORCEINLINE
-            void apply(Tuple& tuple, util::detail::pack_c<std::size_t, Is...>) const
+            void apply(Tuple& tuple, util::index_pack<Is...>) const
             {
                 int const _sequencer[]= {
                     (((*this)(util::get<Is>(tuple))), 0)...
@@ -273,7 +272,7 @@ namespace hpx { namespace lcos
             void apply(util::tuple<Ts...>& sequence) const
             {
                 apply(sequence,
-                    typename util::detail::make_index_pack<sizeof...(Ts)>::type());
+                    typename util::make_index_pack<sizeof...(Ts)>::type());
             }
 
             template <typename Sequence_>
@@ -297,13 +296,13 @@ namespace hpx { namespace lcos
         struct wait_some : std::enable_shared_from_this<wait_some<Sequence> > //-V690
         {
         public:
-            void on_future_ready(threads::thread_id_type const& id)
+            void on_future_ready(hpx::basic_execution::agent_ref ctx)
             {
                 if (count_.fetch_add(1) + 1 == needed_count_)
                 {
                     // reactivate waiting thread only if it's not us
-                    if (id != threads::get_self_id())
-                        threads::set_thread_state(id, threads::pending);
+                    if (ctx != hpx::basic_execution::this_thread::agent())
+                        ctx.resume();
                     else
                         goal_reached_on_calling_thread_ = true;
                 }
@@ -335,7 +334,7 @@ namespace hpx { namespace lcos
                 if (!goal_reached_on_calling_thread_)
                 {
                     // wait for any of the futures to return to become ready
-                    this_thread::suspend(threads::suspended,
+                    hpx::basic_execution::this_thread::suspend(
                         "hpx::detail::wait_some::operator()");
                 }
 

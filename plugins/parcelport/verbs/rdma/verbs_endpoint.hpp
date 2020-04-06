@@ -272,7 +272,7 @@ namespace verbs
         // this poll for event function is used by the main server endpoint when
         // it is waiting for connection/disconnection requests etc
         // ack_event, deletes the cm_event data structure allocated by the CM,
-        // so we do not ack and alow the event handler routine to do it
+        // so we do not ack and allow the event handler routine to do it
         template<typename Func>
         int poll_for_event(Func &&f)
         {
@@ -476,7 +476,7 @@ namespace verbs
         int reject(rdma_cm_id *id)
         {
             //
-            // Debugging code to get ip address of soure/dest of event
+            // Debugging code to get ip address of source/dest of event
             // NB: The src and dest fields refer to the message - not the connect request
             // so we are actually receiving a request from dest (but src of the msg)
             //

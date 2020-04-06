@@ -15,12 +15,12 @@ Miscellaneous
 Error handling
 ==============
 
-Like in any other asynchronous invocation scheme it is important to be able to
+Like in any other asynchronous invocation scheme, it is important to be able to
 handle error conditions occurring while the asynchronous (and possibly remote)
 operation is executed. In |hpx| all error handling is based on standard C++
 exception handling. Any exception thrown during the execution of an asynchronous
 operation will be transferred back to the original invocation :term:`locality`,
-where it is rethrown during synchronization with the calling thread.
+where it will be rethrown during synchronization with the calling thread.
 
 The source code for this example can be found here:
 :download:`error_handling.cpp <../../examples/quickstart/error_handling.cpp>`.
@@ -30,7 +30,7 @@ The source code for this example can be found here:
 Working with exceptions
 -----------------------
 
-For the following description we assume that the function ``raise_exception()``
+For the following description assume that the function ``raise_exception()``
 is executed by invoking the plain action ``raise_exception_type``.
 
 .. literalinclude:: ../../examples/quickstart/error_handling.cpp
@@ -59,15 +59,15 @@ calling thread tries to wait for the result of the action by invoking either
 
 Additionally, this example demonstrates how an exception thrown by an (possibly
 remote) action can be handled. It shows the use of
-:cpp:func:`hpx::diagnostic_information` which retrieves all available diagnostic
+:cpp:func:`hpx::diagnostic_information`, which retrieves all available diagnostic
 information from the exception as a formatted string. This includes, for
 instance, the name of the source file and line number, the sequence number of
-the OS-thread and the |hpx|-thread id, the :term:`locality` id and the stack
+the OS thread and the |hpx| thread id, the :term:`locality` id and the stack
 backtrace of the point where the original exception was thrown.
 
 Under certain circumstances it is desirable to output only some of the
 diagnostics, or to output those using different formatting. For this case, |hpx|
-exposes a set of lower level functions as demonstrated in the following code
+exposes a set of lower-level functions as demonstrated in the following code
 snippet:
 
 .. literalinclude:: ../../examples/quickstart/error_handling.cpp
@@ -83,7 +83,7 @@ Most of the API functions exposed by |hpx| can be invoked in two different
 modes. By default those will throw an exception on error as described above.
 However, sometimes it is desirable not to throw an exception in case of an error
 condition. In this case an object instance of the :cpp:class:`hpx::error_code`
-type can be passed as the last argument to the API function. In case of an error
+type can be passed as the last argument to the API function. In case of an error,
 the error condition will be returned in that :cpp:class:`hpx::error_code`
 instance. The following example demonstrates extracting the full diagnostic
 information without exception handling:
@@ -100,14 +100,14 @@ information without exception handling:
 This example show how an error can be handled without having to resolve to
 exceptions and that the returned :cpp:class:`hpx::error_code` instance can be
 used in a very similar way as the :cpp:class:`hpx::exception` type above. Simply
-pass it to the :cpp:func:`hpx::diagnostic_information` which retrieves all
+pass it to the :cpp:func:`hpx::diagnostic_information`, which retrieves all
 available diagnostic information from the error code instance as a formatted
 string.
 
 As for handling exceptions, when working with error codes, under certain
 circumstances it is desirable to output only some of the diagnostics, or to
 output those using different formatting. For this case, |hpx| exposes a set of
-lower level functions usable with error codes as demonstrated in the following
+lower-level functions usable with error codes as demonstrated in the following
 code snippet:
 
 .. literalinclude:: ../../examples/quickstart/error_handling.cpp
@@ -132,13 +132,13 @@ Lightweight error codes
 Sometimes it is not desirable to collect all the ambient information about the
 error at the point where it happened as this might impose too much overhead for
 simple scenarios. In this case, |hpx| provides a lightweight error code facility
-which will hold the error code only. The following snippet demonstrates its use:
+that will hold the error code only. The following snippet demonstrates its use:
 
 .. literalinclude:: ../../examples/quickstart/error_handling.cpp
    :language: c++
    :lines: 146-166
 
-All functions which retrieve other diagnostic elements from the
+All functions that retrieve other diagnostic elements from the
 :cpp:class:`hpx::error_code` will fail if called with a lightweight error_code
 instance.
 
@@ -147,7 +147,7 @@ instance.
 Utilities in |hpx|
 ==================
 
-In order to ease the burden of programming in |hpx| we have provided several
+In order to ease the burden of programming, |hpx| provides several
 utilities to users. The following section documents those facilies.
 
 .. _checkpoint:
@@ -155,101 +155,7 @@ utilities to users. The following section documents those facilies.
 Checkpoint
 ----------
 
-A common need of users is to periodically backup an application. This practice
-provides resiliency and potential restart points in code. We have developed the
-concept of a ``checkpoint`` to support this use case.
-
-Found in ``hpx/util/checkpoint.hpp``, ``checkpoint``\ s are defined as objects
-which hold a serialized version of an object or set of objects at a particular
-moment in time. This representation can be stored in memory for later use or it
-can be written to disk for storage and/or recovery at a later point. In order to
-create and fill this object with data we use a function called
-``save_checkpoint``. In code the function looks like this::
-
-    hpx::future<hpx::util::checkpoint> hpx::util::save_checkpoint(a, b, c, ...);
-
-``save_checkpoint`` takes arbitrary data containers such as int, double, float,
-vector, and future and serializes them into a newly created ``checkpoint``
-object. This function returns a ``future`` to a ``checkpoint`` containing the
-data. Let us look a simple use case below::
-
-    using hpx::util::checkpoint;
-    using hpx::util::save_checkpoint;
-
-    std::vector<int> vec{1,2,3,4,5};
-    hpx::future<checkpoint> save_checkpoint(vec);
-
-Once the future is ready the checkpoint object will contain the ``vector``
-``vec`` and its five elements.
-
-It is also possible to modify the launch policy used by ``save_checkpoint``.
-This is accomplished by passing a launch policy as the first argument. It is
-important to note that passing ``hpx::launch::sync`` will cause
-``save_checkpoint`` to return a ``checkpoint`` instead of a ``future`` to a
-``checkpoint``. All other policies passed to ``save_checkpoint`` will return a
-``future`` to a ``checkpoint``.
-
-Sometimes ``checkpoint`` s must be declared before they are used.
-``save_checkpoint`` allows users to move pre-created ``checkpoint`` s into the
-function as long as they are the first container passing into the function (In
-the case where a launch policy is used, the ``checkpoint`` will immediately
-follow the launch policy). An example of these features can be found below:
-
-.. literalinclude:: ../../tests/unit/util/checkpoint.cpp
-   :language: c++
-   :lines: 27-38
-
-Now that we can create ``checkpoint`` s we now must be able to restore the
-objects they contain into memory. This is accomplished by the function
-``restore_checkpoint``. This function takes a ``checkpoint`` and fills its data
-into the containers it is provided. It is important to remember that the
-containers must be ordered in the same way they were placed into the
-``checkpoint``. For clarity see the example below:
-
-.. literalinclude:: ../../tests/unit/util/checkpoint.cpp
-   :language: c++
-   :lines: 41-49
-
-The core utility of ``checkpoint`` is in its ability to make certain data
-persistent. Often this means that the data is needed to be stored in an object,
-such as a file, for later use. For these cases we have provided two solutions:
-stream operator overloads and access iterators.
-
-We have created the two stream overloads
-``operator<<`` and ``operator>>`` to stream data
-out of and into ``checkpoint``. You can see an
-example of the overloads in use below:
-
-.. literalinclude:: ../../tests/unit/util/checkpoint.cpp
-   :language: c++
-   :lines: 176-186
-
-This is the primary way to move data into and out of a ``checkpoint``. It is
-important to note, however, that users should be cautious when using a stream
-operator to load data an another function to remove it (or vice versa). Both
-``operator<<`` and ``operator>>`` rely on a ``.write()`` and a ``.read()``
-function respectively. In order to know how much data to read from the
-``std::istream``, the ``operator<<`` will write the size of the ``checkpoint``
-before writing the ``checkpoint`` data. Correspondingly, the ``operator>>`` will
-read the size of the stored data before reading the data into new instance of
-``checkpoint``. As long as the user employs the ``operator<<`` and
-``operator>>`` to stream the data this detail can be ignored.
-
-.. important::
-
-   Be careful when mixing ``operator<<`` and ``operator>>`` with other
-   facilities to read and write to a ``checkpoint``. ``operator<<`` writes and
-   extra variable and ``operator>>`` reads this variable back separately. Used
-   together the user will not encounter any issues and can safely ignore this
-   detail.
-
-Users may also move the data into and out of a ``checkpoint`` using the exposed
-``.begin()`` and ``.end()`` iterators. An example of this use case is
-illustrated below.
-
-.. literalinclude:: ../../tests/unit/util/checkpoint.cpp
-   :language: c++
-   :lines: 129-150
+See :ref:`libs_checkpoint`.
 
 .. _iostreams:
 
@@ -270,16 +176,16 @@ from ``hpx::cerr`` will be dispatched to ``std::cerr`` on the console
    ``hpx::endl`` and ``hpx::flush`` but those are just aliases for the
    corresponding standard manipulators.
 
-In order to use either ``hpx::cout`` or ``hpx::cerr`` application codes need to
+In order to use either ``hpx::cout`` or ``hpx::cerr``, application codes need to
 ``#include <hpx/include/iostreams.hpp>``. For an example, please see the
-simplest possible 'Hello world' program as included as an example with |hpx|:
+following 'Hello world' program:
 
 .. literalinclude:: ../../examples/quickstart/hello_world_1.cpp
    :language: c++
 
-Additionally those applications need to link with the iostreams component. When
-using cmake this can be achieved by using the ``COMPONENT_DEPENDENCIES``
-parameter, for instance:
+Additionally, those applications need to link with the iostreams component. When
+using CMake this can be achieved by using the ``COMPONENT_DEPENDENCIES``
+parameter; for instance:
 
 .. code-block:: cmake
 
@@ -295,4 +201,4 @@ parameter, for instance:
 
    The ``hpx::cout`` and ``hpx::cerr`` streams buffer all output locally until a
    ``std::endl`` or ``std::flush`` is encountered. That means that no output
-   will appear on the console as long as either of those is explicitly used.
+   will appear on the console as long as either of these is explicitly used.

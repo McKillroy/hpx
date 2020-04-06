@@ -5,23 +5,20 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-// make inspect happy: hpxinspect:nodeprecatedname:boost::is_any_of
-
 #if !defined(HPX_PLUGINS_PARCELPORT_FACTORY_HPP)
 #define HPX_PLUGINS_PARCELPORT_FACTORY_HPP
 
 #include <hpx/config.hpp>
+#include <hpx/plugin/traits/plugin_config_data.hpp>
 #include <hpx/plugins/parcelport_factory_base.hpp>
 #include <hpx/plugins/plugin_factory_base.hpp>
 #include <hpx/plugins/unique_plugin_name.hpp>
 #include <hpx/preprocessor/cat.hpp>
 #include <hpx/runtime/parcelset/parcelhandler.hpp>
-#include <hpx/traits/plugin_config_data.hpp>
-#include <hpx/util/find_prefix.hpp>
-#include <hpx/util/runtime_configuration.hpp>
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include <hpx/prefix/find_prefix.hpp>
+#include <hpx/runtime_configuration/runtime_configuration.hpp>
+#include <hpx/string_util/classification.hpp>
+#include <hpx/string_util/split.hpp>
 
 #include <algorithm>
 #include <cctype>
@@ -118,9 +115,10 @@ namespace hpx { namespace plugins
 
             // get the parcelport specific information ...
             char const* more = traits::plugin_config_data<Parcelport>::call();
-            if (more) {
+            if (more != nullptr)    // -V547
+            {
                 std::vector<std::string> data;
-                boost::split(data, more, boost::is_any_of("\n"));
+                hpx::string_util::split(data, more, hpx::string_util::is_any_of("\n"));
                 std::copy(data.begin(), data.end(), std::back_inserter(fillini));
             }
         }

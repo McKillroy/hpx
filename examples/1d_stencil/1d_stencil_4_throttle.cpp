@@ -1,4 +1,4 @@
-//  Copyright (c) 2014 Hartmut Kaiser
+//  Copyright (c) 2014-2020 Hartmut Kaiser
 //  Copyright (c) 2014 Patricia Grubel
 //
 //  SPDX-License-Identifier: BSL-1.0
@@ -39,31 +39,30 @@
 
 using hpx::naming::id_type;
 using hpx::performance_counters::get_counter;
-using hpx::performance_counters::stubs::performance_counter;
+using hpx::performance_counters::performance_counter;
 using hpx::performance_counters::counter_value;
 using hpx::performance_counters::status_is_valid;
 static bool counters_initialized = false;
 static const char * counter_name = "/threadqueue{{locality#{}/total}}/length";
-hpx::naming::id_type counter_id;
+apex_policy_handle * periodic_policy_handle;
 
-id_type get_counter_id() {
+performance_counter get_counter()
+{
     // Resolve the GID of the performances counter using it's symbolic name.
     std::uint32_t const prefix = hpx::get_locality_id();
-    id_type id = get_counter(hpx::util::format(counter_name, prefix));
-    return id;
+    return performance_counter(hpx::util::format(counter_name, prefix));
 }
 
 void setup_counters() {
     try {
-        id_type id = get_counter_id();
+        performance_counter counter(get_counter());
         // We need to explicitly start all counters before we can use them. For
         // certain counters this could be a no-op, in which case start will return
         // 'false'.
-        performance_counter::start(hpx::launch::sync, id);
-        std::cout << "Counters initialized! " << id << std::endl;
-        counter_value value = performance_counter::get_value(hpx::launch::sync, id);
+        counter.start(hpx::launch::sync);
+        std::cout << "Counters initialized! " << counter.get_id() << std::endl;
+        counter_value value = counter.get_counter_value(hpx::launch::sync);
         std::cout << "Active threads " << value.get_value<int>() << std::endl;
-        counter_id = id;
     }
     catch(hpx::exception const& e) {
         std::cerr
@@ -76,9 +75,11 @@ void setup_counters() {
 bool test_function(apex_context const& context) {
     if (!counters_initialized) return false;
     try {
-        counter_value value1 =
-            performance_counter::get_value(hpx::launch::sync, counter_id);
+        performance_counter counter(get_counter());
+        counter_value value1 = counter.get_counter_value(hpx::launch::sync);
         apex::sample_value("thread_queue_length", value1.get_value<int>());
+        std::cout << "Policy: thread_queue_length = " << value1.get_value<int>()
+                  << std::endl;
         return APEX_NOERROR;
     }
     catch(hpx::exception const& e) {
@@ -90,7 +91,7 @@ bool test_function(apex_context const& context) {
 }
 
 void register_policies() {
-    apex::register_periodic_policy(100000, test_function);
+    periodic_policy_handle = apex::register_periodic_policy(100000, test_function);
 
     apex::setup_timer_throttling(std::string("thread_queue_length"),
         APEX_MINIMIZE_ACCUMULATED, APEX_ACTIVE_HARMONY, 200000);
@@ -173,7 +174,7 @@ struct stepper
     // Our operator
     static double heat(double left, double middle, double right)
     {
-        return middle + (k*dt/dx*dx) * (left - 2*middle + right);
+        return middle + (k*dt/(dx*dx)) * (left - 2*middle + right);
     }
 
     // The partitioned operator, it invokes the heat operator above on all
@@ -197,8 +198,9 @@ struct stepper
     }
 
     // do all the work on 'np' partitions, 'nx' data points each, for 'nt'
-    // time steps
-    hpx::future<space> do_work(std::size_t np, std::size_t nx, std::size_t nt)
+    // time steps, limit depth of dependency tree to 'nd'
+    hpx::future<space> do_work(std::size_t np, std::size_t nx, std::size_t nt,
+        std::uint64_t nd)
     {
         using hpx::dataflow;
         using hpx::util::unwrapping;
@@ -219,6 +221,9 @@ struct stepper
             }
         );
 
+        // limit depth of dependency tree
+        hpx::lcos::local::sliding_semaphore sem(nd);
+
         auto Op = unwrapping(&stepper::heat_part);
 
         // Actual time step loop
@@ -233,7 +238,24 @@ struct stepper
                         hpx::launch::async, Op,
                         current[idx(i, -1, np)], current[i], current[idx(i, +1, np)]
                     );
+
             }
+
+            // every nd time steps, attach additional continuation which will
+            // trigger the semaphore once computation has reached this point
+            if ((t % nd) == 0)
+            {
+                next[0].then(
+                    [&sem, t](partition &&)
+                    {
+                        // inform semaphore about new lower limit
+                        sem.signal(t);
+                    });
+            }
+
+            // suspend if the tree has become too deep, the continuation above
+            // will resume this thread once the computation has caught up
+            sem.wait(t);
         }
 
         // Return the solution at time-step 'nt'.
@@ -247,6 +269,7 @@ int hpx_main(hpx::program_options::variables_map& vm)
     std::uint64_t np = vm["np"].as<std::uint64_t>();   // Number of partitions.
     std::uint64_t nx = vm["nx"].as<std::uint64_t>();   // Number of grid points.
     std::uint64_t nt = vm["nt"].as<std::uint64_t>();   // Number of steps.
+    std::uint64_t nd = vm["nd"].as<std::uint64_t>();   // Max depth of dep tree.
 
     if (vm.count("no-header"))
         header = false;
@@ -259,12 +282,16 @@ int hpx_main(hpx::program_options::variables_map& vm)
     std::uint64_t t = hpx::util::high_resolution_clock::now();
 
     // Execute nt time steps on nx grid points and print the final solution.
-    hpx::future<stepper::space> result = step.do_work(np, nx, nt);
+    hpx::future<stepper::space> result = step.do_work(np, nx, nt, nd);
 
     stepper::space solution = result.get();
     hpx::wait_all(solution);
 
     std::uint64_t elapsed = hpx::util::high_resolution_clock::now() - t;
+
+    // We're done with the periodic policy now, so disable it.
+    apex::deregister_policy(periodic_policy_handle);
+    apex::shutdown_throttling();
 
     // Print the final solution
     if (vm.count("results"))
@@ -288,10 +315,12 @@ int main(int argc, char* argv[])
 
     desc_commandline.add_options()
         ("results", "print generated results (default: false)")
-        ("nx", value<std::uint64_t>()->default_value(100000),
+        ("nx", value<std::uint64_t>()->default_value(100),
          "Local x dimension (of each partition)")
         ("nt", value<std::uint64_t>()->default_value(450),
          "Number of time steps")
+        ("nd", value<std::uint64_t>()->default_value(10),
+         "Number of time steps to allow the dependency tree to grow to")
         ("np", value<std::uint64_t>()->default_value(1000),
          "Number of partitions")
         ("k", value<double>(&k)->default_value(0.5),

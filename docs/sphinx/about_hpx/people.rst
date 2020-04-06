@@ -108,13 +108,21 @@ Acknowledgements
 Thanks also to the following people who contributed directly or indirectly to
 the project through discussions, pull requests, documentation patches, etc.
 
-* Jan Mełech, for adding automatic serialization of simple structs.
+* Auriane Reverdell (|cscs|_), for her tireless work on refactoring our CMake
+  setup and modularizing |hpx|.
+* Christopher Hinz, for his work on refactoring our CMake setup.
+* Weile Wei, for fixing |hpx| builds with CUDA on Summit.
+* Severin Strobl, for fixing our CMake setup related to linking and adding new
+  entry points to the |hpx| runtime.
+* Rebecca Stobaugh, for her major documentation review and contributions
+  during and after the 2019 Google Season of Documentation.
+* Jan Melech, for adding automatic serialization of simple structs.
 * Austin McCartney, for adding concept emulation of the Ranges TS bidirectional
   and random access iterator concepts.
 * Marco Diers, reporting and fixing issues related PMIx.
 * Maximilian Bremer, for reporting multiple issues and extending the component
   migration tests.
-* Piotr Mikołajczyk, for his improvements and fixes to the set and count
+* Piotr Mikolajczyk, for his improvements and fixes to the set and count
   algorithms.
 * Grant Rostig, for reporting several deficiencies on our web pages.
 * Jakub Golinowski, for implementing an |hpx| backend for OpenCV and in the
@@ -236,13 +244,15 @@ the project through discussions, pull requests, documentation patches, etc.
   improved examples in |hpx|.
 * Joseph Kleinhenz, Markus Elfring, Kirill Kropivyansky, Alexander Neundorf,
   Bryant Lam, and Alex Hirsch who improved our CMake.
-* Praveen Velliengiri, Jean-Loup Tastet, Michael Levine, Aalekh Nigam,
-  HadrienG2, Prayag Verma, and Avyav Kumar who improved the documentation.
+* Tapasweni Pathak, Praveen Velliengiri, Jean-Loup Tastet, Michael Levine, Aalekh Nigam,
+  HadrienG2, Prayag Verma, lslada, Alex Myczko, and Avyav Kumar
+  who improved the documentation.
 * Jayesh Badwaik, J. F. Bastien, Christoph Garth, Christopher Hinz, Brandon
   Kohn, Mario Lang, Maikel Nadolski, pierrele, hendrx, Dekken, woodmeister123,
   xaguilar, Andrew Kemp, Dylan Stark, Matthew Anderson, Jeremy Wilke, Jiazheng
-  Yuan, CyberDrudge, david8dixon, Maxwell Reeser, Raffaele Solcà, Marco
-  Ippolito, Jules Pénuchot, and yurivict who contributed to the general
+  Yuan, CyberDrudge, david8dixon, Maxwell Reeser, Raffaele Solca, Marco
+  Ippolito, Jules Penuchot, Weile Wei, Severin Strobl, Kor de Jong, albestro,
+  Jeff Trull, and Yuri Victorovich who contributed to the general
   improvement of |hpx|.
 
 In addition to the people who worked directly with |hpx| development we would

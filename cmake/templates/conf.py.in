@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2018 Mikael Simberg
 #
+# SPDX-License-Identifier: BSL-1.0
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 #
@@ -75,8 +76,8 @@ for subdir_full, dirs, files in os.walk(hpx_libs_dir):
         # We only scan the include subdir...
         if not '/include' in subdir:
             continue
-        # ... but omit anything in detail directories
-        if '/detail' in subdir:
+        # ... but omit anything in detail and include_compatibility directories
+        if '/detail' in subdir or '/include_compatibility' in subdir:
             continue
 
         # strip the name of the library... the base path is already
@@ -106,15 +107,17 @@ api_ref_header = '''
     Distributed under the Boost Software License, Version 1.0. (See accompanying
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+.. _libs_{0}_api:
+
 -------------------------------------------------------------------------------
-{}
+{0}
 -------------------------------------------------------------------------------
 '''
 
 api_ref_file = '''
 
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-`#include <{0}>`
+``#include <{0}>``
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. autodoxygenfile:: {0}
    :project: {1}
@@ -382,8 +385,6 @@ rst_prolog += '''
 .. _lgd: https://www.libgeodecomp.org/
 .. |conan| replace:: Conan
 .. _conan: https://www.conan.io/
-.. |boost_simd| replace:: Boost.SIMD
-.. _boost_simd: https://github.com/NumScale/boost.simd
 .. |vc| replace:: Vc Library
 .. _vc: https://github.com/VcDevel/Vc
 
@@ -479,7 +480,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'HPX'
-copyright = u'2008-2019, The STE||AR Group'
+copyright = u'2008-2020, The STE||AR Group'
 author = u'The STE||AR Group'
 
 # The version info for the project you're documenting, acts as replacement for

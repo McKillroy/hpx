@@ -15,7 +15,9 @@
 #if defined(HPX_DEBUG)
 #include <hpx/logging.hpp>
 #endif
+#include <hpx/threading_base/register_thread.hpp>
 #include <hpx/thread_support/unlock_guard.hpp>
+#include <hpx/runtime/threads/thread_data.hpp>
 #include <hpx/util/wrapper_heap_base.hpp>
 
 #include <cstddef>
@@ -157,7 +159,7 @@ namespace hpx { namespace util
     {
         if (nullptr == threads::get_self_ptr())
         {
-            hpx::applier::register_work_nullary(
+            hpx::threads::register_work_nullary(
                 util::bind_front(&one_size_heap_list::free, this, p, count),
                 "one_size_heap_list::free");
             return true;

@@ -11,12 +11,12 @@
 // pools, schedulers etc. assume that the global runtime (configuration, thread
 // manager, etc.) always exists.
 
+#include <hpx/basic_execution/this_thread.hpp>
 #include <hpx/include/apply.hpp>
 #include <hpx/include/async.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/include/parallel_executors.hpp>
 #include <hpx/testing.hpp>
-#include <hpx/util/yield_while.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -71,7 +71,7 @@ void test_then(Executor& exec)
 ///////////////////////////////////////////////////////////////////////////////
 void bulk_test(int value, hpx::thread::id tid, int passed_through)    //-V813
 {
-    HPX_TEST(tid != hpx::this_thread::get_id());
+    HPX_TEST_NEQ(tid, hpx::this_thread::get_id());
     HPX_TEST_EQ(passed_through, 42);
 }
 
@@ -118,7 +118,7 @@ void bulk_test_f(int value, hpx::shared_future<void> f, hpx::thread::id tid,
 
     f.get();    // propagate exceptions
 
-    HPX_TEST(tid != hpx::this_thread::get_id());
+    HPX_TEST_NEQ(tid, hpx::this_thread::get_id());
     HPX_TEST_EQ(passed_through, 42);
 }
 

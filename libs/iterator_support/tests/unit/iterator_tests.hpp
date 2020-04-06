@@ -12,7 +12,7 @@
 #define HPX_TESTS_UTIL_ITERATOR_TESTS_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/testing.hpp>
 #include <hpx/type_support/always_void.hpp>
 
@@ -107,7 +107,7 @@ namespace tests {
         HPX_TEST(*i1 == v2);
         HPX_TEST(*i == v2);
 
-        // i is dereferencable, so it must be incrementable.
+        // i is dereferenceable, so it must be incrementable.
         ++i;
 
         // how to test for operator-> ?
@@ -304,11 +304,10 @@ namespace tests {
     void random_access_iterator_test(Iterator i, int N, TrueVals vals)
     {
         bidirectional_iterator_test(i, vals[0], vals[1]);
-        const Iterator j = i;
+        Iterator const j = i;
         int c;
 
-        typedef typename boost::detail::iterator_traits<Iterator>::value_type
-            value_type;
+        using value_type = typename std::iterator_traits<Iterator>::value_type;
 
         for (c = 0; c < N - 1; ++c)
         {
@@ -318,8 +317,8 @@ namespace tests {
             HPX_TEST(*i == *(j + c));
             HPX_TEST(*i == *(c + j));
             ++i;
-            HPX_TEST(i > j);
-            HPX_TEST(i >= j);
+            HPX_TEST(j < i);
+            HPX_TEST(j <= i);
             HPX_TEST(j <= i);
             HPX_TEST(j < i);
         }
@@ -332,8 +331,8 @@ namespace tests {
             HPX_TEST(*i == detail::implicit_cast<value_type>(j[N - 1 - c]));
             Iterator q = k - c;
             HPX_TEST(*i == *q);
-            HPX_TEST(i > j);
-            HPX_TEST(i >= j);
+            HPX_TEST(j < i);
+            HPX_TEST(j <= i);
             HPX_TEST(j <= i);
             HPX_TEST(j < i);
             --i;
@@ -358,8 +357,8 @@ namespace tests {
             HPX_TEST(*i == *(j + c));
             HPX_TEST(*i == *(c + j));
             ++i;
-            HPX_TEST(i > j);
-            HPX_TEST(i >= j);
+            HPX_TEST(j < i);
+            HPX_TEST(j <= i);
             HPX_TEST(j <= i);
             HPX_TEST(j < i);
         }
@@ -374,8 +373,8 @@ namespace tests {
             HPX_TEST(*i == x);
             Iterator q = k - c;
             HPX_TEST(*i == *q);
-            HPX_TEST(i > j);
-            HPX_TEST(i >= j);
+            HPX_TEST(j < i);
+            HPX_TEST(j <= i);
             HPX_TEST(j <= i);
             HPX_TEST(j < i);
             --i;
@@ -390,7 +389,7 @@ namespace tests {
         typedef typename std::iterator_traits<Iterator>::reference reference;
         HPX_TEST((std::is_same<const value_type&, reference>::value));
         const T& v2 = *i2;
-        HPX_TEST(v1 == v2);
+        HPX_TEST_EQ(v1, v2);
         //HPX_TEST(is_lvalue_iterator<Iterator>::value);
         //HPX_TEST(!is_non_const_lvalue_iterator<Iterator>::value);
     }
@@ -403,14 +402,14 @@ namespace tests {
         typedef typename std::iterator_traits<Iterator>::reference reference;
         HPX_TEST((std::is_same<value_type&, reference>::value));
         T& v3 = *i2;
-        HPX_TEST(v1 == v3);
+        HPX_TEST_EQ(v1, v3);
 
         // A non-const lvalue iterator is not necessarily writable, but we
         // are assuming the value_type is assignable here
         *i = v2;
 
         T& v4 = *i2;
-        HPX_TEST(v2 == v4);
+        HPX_TEST_EQ(v2, v4);
         //HPX_TEST(is_lvalue_iterator<Iterator>::value);
         //HPX_TEST(is_non_const_lvalue_iterator<Iterator>::value);
     }

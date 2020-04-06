@@ -10,10 +10,12 @@
 #define HPX_PARCELSET_PARCELHANDLER_MAY_18_2008_0935AM
 
 #include <hpx/config.hpp>
+
+#if defined(HPX_HAVE_NETWORKING)
 #include <hpx/assertion.hpp>
 #include <hpx/errors.hpp>
 #include <hpx/functional/bind_front.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/logging.hpp>
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/runtime/naming/address.hpp>
@@ -89,9 +91,9 @@ namespace hpx { namespace parcelset
         ///                 transport operations the parcelhandler carries out.
         parcelhandler(util::runtime_configuration& cfg,
             threads::threadmanager* tm,
-            threads::policies::callback_notifier const& notifer);
+            threads::policies::callback_notifier const& notifier);
 
-        ~parcelhandler() {}
+        ~parcelhandler() = default;
 
         std::shared_ptr<parcelport> get_bootstrap_parcelport() const;
 
@@ -195,11 +197,10 @@ namespace hpx { namespace parcelset
         ///                 id (if not already set).
         HPX_FORCEINLINE void put_parcel(parcel p)
         {
-            auto f =
-                [=](boost::system::error_code const& ec, parcel const& p) -> void
-                {
-                    invoke_write_handler(ec, p);
-                };
+            auto f = [this](boost::system::error_code const& ec,
+                         parcel const& p) -> void {
+                invoke_write_handler(ec, p);
+            };
 
             put_parcel(std::move(p), std::move(f));
         }
@@ -236,10 +237,9 @@ namespace hpx { namespace parcelset
         ///                 id (if not already set).
         void put_parcels(std::vector<parcel> parcels)
         {
-            std::vector<write_handler_type> handlers(parcels.size(), [=](
-                boost::system::error_code const& ec, parcel const & p) -> void {
-                    return invoke_write_handler(ec, p);
-                });
+            std::vector<write_handler_type> handlers(parcels.size(),
+                [this](boost::system::error_code const& ec, parcel const& p)
+                    -> void { return invoke_write_handler(ec, p); });
 
             put_parcels(std::move(parcels), std::move(handlers));
         }
@@ -441,7 +441,7 @@ namespace hpx { namespace parcelset
         {
             std::map<std::string, int>::const_iterator it = priority_.find(name);
             if(it == priority_.end()) return 0;
-            return priority_.find(name)->second;
+            return it->second;
         }
 
         parcelport *find_parcelport(std::string const& type, error_code& = throws) const
@@ -449,7 +449,7 @@ namespace hpx { namespace parcelset
             int priority = get_priority(type);
             if(priority <= 0) return nullptr;
             HPX_ASSERT(pports_.find(priority) != pports_.end());
-            return pports_.find(priority)->second.get();
+            return pports_.find(priority)->second.get();    // -V783
         }
 
         /// \brief Attach the given parcel port to this handler
@@ -459,8 +459,8 @@ namespace hpx { namespace parcelset
         naming::resolver_client *resolver_;
 
         /// the parcelport this handler is associated with
-        typedef std::map<int, std::shared_ptr<parcelport>,
-            std::greater<int> > pports_type;
+        using pports_type = std::map<int, std::shared_ptr<parcelport>,
+            std::greater<int> >;
         pports_type pports_;
 
         std::map<std::string, int> priority_;
@@ -493,22 +493,20 @@ namespace hpx { namespace parcelset
         /// cache whether networking has been enabled
         bool is_networking_enabled_;
 
-    private:
+    public:
         static std::vector<plugins::parcelport_factory_base *> &
             get_parcelport_factories();
 
-    public:
         static void add_parcelport_factory(plugins::parcelport_factory_base *);
 
         static void init(int *argc, char ***argv, util::command_line_handling &cfg);
-
-        /// load runtime configuration settings ...
-        static std::vector<std::string> load_runtime_configuration();
     };
+
+    std::vector<std::string> load_runtime_configuration();
 }}
 
 #include <hpx/config/warnings_suffix.hpp>
 
 #endif
-
+#endif
 

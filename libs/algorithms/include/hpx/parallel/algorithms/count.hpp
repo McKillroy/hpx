@@ -11,16 +11,16 @@
 
 #include <hpx/config.hpp>
 #include <hpx/functional/bind_back.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
 #include <hpx/iterator_support/range.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/traits/segmented_iterator_traits.hpp>
 #include <hpx/util/unwrap.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
+#include <hpx/execution/parallel/traits/vector_pack_count_bits.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
 #include <hpx/parallel/algorithms/detail/distance.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/traits/projected.hpp>
-#include <hpx/parallel/traits/vector_pack_count_bits.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/invoke_projected.hpp>
 #include <hpx/parallel/util/loop.hpp>

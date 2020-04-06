@@ -9,7 +9,11 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <hpx/config.hpp>
+
+#if defined(HPX_HAVE_NETWORKING)
 #include <hpx/assertion.hpp>
+#include <hpx/format.hpp>
+#include <hpx/functional/bind_front.hpp>
 #include <hpx/runtime.hpp>
 #include <hpx/runtime/actions/action_support.hpp>
 #include <hpx/runtime/actions/plain_action.hpp>
@@ -29,16 +33,17 @@
 #include <hpx/runtime/parcelset/parcel.hpp>
 #include <hpx/runtime/parcelset/parcelport.hpp>
 #include <hpx/runtime/parcelset/put_parcel.hpp>
-#include <hpx/runtime/serialization/detail/polymorphic_id_factory.hpp>
-#include <hpx/runtime/serialization/vector.hpp>
+#include <hpx/serialization/detail/polymorphic_id_factory.hpp>
+#include <hpx/serialization/vector.hpp>
+#include <hpx/static_reinit/reinitializable_static.hpp>
+#include <hpx/basic_execution/this_thread.hpp>
 #include <hpx/timing/high_resolution_clock.hpp>
 #include <hpx/topology/topology.hpp>
+#include <hpx/util/from_string.hpp>
 #include <hpx/functional/bind_front.hpp>
-#include <hpx/util/detail/yield_k.hpp>
 #include <hpx/format.hpp>
-#include <hpx/util/reinitializable_static.hpp>
-#include <hpx/util/runtime_configuration.hpp>
-#include <hpx/util/safe_lexical_cast.hpp>
+#include <hpx/static_reinit/reinitializable_static.hpp>
+#include <hpx/runtime_configuration/runtime_configuration.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -225,7 +230,6 @@ namespace hpx { namespace agas { namespace detail
 
 namespace hpx { namespace agas
 {
-
     template <typename Action, typename... Args>
     void big_boot_barrier::apply(
         std::uint32_t source_locality_id
@@ -658,12 +662,12 @@ void big_boot_barrier::apply_notification(
 }
 
 void big_boot_barrier::add_locality_endpoints(std::uint32_t locality_id,
-    parcelset::endpoints_type const& endpoints)
+    parcelset::endpoints_type const& endpoints_data)
 {
-    if (localities.size() < locality_id + 1)
-        localities.resize(locality_id + 1);
+    if (localities.size() < static_cast<std::size_t>(locality_id) + 1)
+        localities.resize(static_cast<std::size_t>(locality_id) + 1);
 
-    localities[locality_id] = endpoints;
+    localities[static_cast<std::size_t>(locality_id)] = endpoints_data;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -774,7 +778,7 @@ void big_boot_barrier::wait_hosted(
     if(locality_str != "-1")
     {
         suggested_prefix = naming::get_gid_from_locality_id(
-            util::safe_lexical_cast<std::uint32_t>(locality_str, -1));
+            util::from_string<std::uint32_t>(locality_str, -1));
     }
 
     // pre-load all unassigned ids
@@ -902,3 +906,4 @@ big_boot_barrier& get_big_boot_barrier()
 
 }}
 
+#endif

@@ -10,10 +10,11 @@
 #define HPX_PARALLEL_UTIL_DETAIL_HANDLE_LOCAL_EXCEPTIONS_OCT_03_2014_0142PM
 
 #include <hpx/config.hpp>
+#include <hpx/assertion.hpp>
 #include <hpx/async.hpp>
 #include <hpx/errors.hpp>
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/hpx_finalize.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 
 #include <exception>
 #include <list>
@@ -28,6 +29,12 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
     {
         ///////////////////////////////////////////////////////////////////////
         // std::bad_alloc has to be handled separately
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+        static void call(std::exception_ptr const& e)
+        {
+            HPX_ASSERT(false);
+        }
+#else
         HPX_NORETURN static void call(std::exception_ptr const& e)
         {
             try
@@ -43,10 +50,14 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
                 throw exception_list(e);
             }
         }
+#endif
 
         static void call(
             std::exception_ptr const& e, std::list<std::exception_ptr>& errors)
         {
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+            HPX_ASSERT(false);
+#else
             try
             {
                 std::rethrow_exception(e);
@@ -59,12 +70,16 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
             {
                 errors.push_back(e);
             }
+#endif
         }
 
         template <typename T>
         static void call(std::vector<hpx::future<T>> const& workitems,
             std::list<std::exception_ptr>& errors, bool throw_errors = true)
         {
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+            HPX_ASSERT(false);
+#else
             for (hpx::future<T> const& f : workitems)
             {
                 if (f.has_exception())
@@ -73,6 +88,7 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
 
             if (throw_errors && !errors.empty())
                 throw exception_list(std::move(errors));
+#endif
         }
 
         ///////////////////////////////////////////////////////////////////////
@@ -80,6 +96,9 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
         static void call(std::vector<hpx::shared_future<T>> const& workitems,
             std::list<std::exception_ptr>& errors, bool throw_errors = true)
         {
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+            HPX_ASSERT(false);
+#else
             for (hpx::shared_future<T> const& f : workitems)
             {
                 if (f.has_exception())
@@ -88,6 +107,7 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
 
             if (throw_errors && !errors.empty())
                 throw exception_list(std::move(errors));
+#endif
         }
 
         template <typename T, typename Cleanup>
@@ -95,6 +115,9 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
             std::list<std::exception_ptr>& errors, Cleanup&& cleanup,
             bool throw_errors = true)
         {
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+            HPX_ASSERT(false);
+#else
             bool has_exception = false;
             std::exception_ptr bad_alloc_exception;
             for (hpx::future<T>& f : workitems)
@@ -135,6 +158,7 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
 
             if (throw_errors && !errors.empty())
                 throw exception_list(std::move(errors));
+#endif
         }
     };
 
@@ -142,48 +166,75 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
     struct handle_local_exceptions<execution::parallel_unsequenced_policy>
     {
         ///////////////////////////////////////////////////////////////////////
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+        static void call(std::exception_ptr const&)
+        {
+            HPX_ASSERT(false);
+        }
+#else
         HPX_NORETURN static void call(std::exception_ptr const&)
         {
             hpx::terminate();
         }
+#endif
 
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+        static void call(
+            std::exception_ptr const&, std::list<std::exception_ptr>&)
+        {
+            HPX_ASSERT(false);
+        }
+#else
         HPX_NORETURN static void call(
             std::exception_ptr const&, std::list<std::exception_ptr>&)
         {
             hpx::terminate();
         }
+#endif
 
         template <typename T>
         static void call(std::vector<hpx::future<T>> const& workitems,
             std::list<std::exception_ptr>&, bool = true)
         {
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+            HPX_ASSERT(false);
+#else
             for (hpx::future<T> const& f : workitems)
             {
                 if (f.has_exception())
                     hpx::terminate();
             }
+#endif
         }
 
         template <typename T>
         static void call(std::vector<hpx::shared_future<T>> const& workitems,
             std::list<std::exception_ptr>&, bool = true)
         {
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+            HPX_ASSERT(false);
+#else
             for (hpx::shared_future<T> const& f : workitems)
             {
                 if (f.has_exception())
                     hpx::terminate();
             }
+#endif
         }
 
         template <typename T, typename Cleanup>
         static void call(std::vector<hpx::future<T>> const& workitems,
             std::list<std::exception_ptr>&, Cleanup&&, bool = true)
         {
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+            HPX_ASSERT(false);
+#else
             for (hpx::future<T> const& f : workitems)
             {
                 if (f.has_exception())
                     hpx::terminate();
             }
+#endif
         }
     };
 }}}}    // namespace hpx::parallel::util::detail

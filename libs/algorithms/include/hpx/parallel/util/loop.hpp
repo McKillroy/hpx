@@ -13,11 +13,11 @@
 #endif
 #include <hpx/assertion.hpp>
 #include <hpx/datastructures/tuple.hpp>
+#include <hpx/execution/traits/is_execution_policy.hpp>
 #include <hpx/functional/invoke.hpp>
 #include <hpx/functional/result_of.hpp>
 #include <hpx/parallel/util/cancellation_token.hpp>
 #include <hpx/parallel/util/projection_identity.hpp>
-#include <hpx/traits/is_execution_policy.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -39,7 +39,7 @@ namespace hpx { namespace parallel { namespace util {
     }
 
     template <typename ExPolicy, typename Iter>
-    HPX_HOST_DEVICE HPX_FORCEINLINE HPX_CONSTEXPR typename std::enable_if<
+    HPX_HOST_DEVICE HPX_FORCEINLINE constexpr typename std::enable_if<
         !execution::is_vectorpack_execution_policy<ExPolicy>::value, bool>::type
         loop_optimization(Iter, Iter)
     {
@@ -143,8 +143,9 @@ namespace hpx { namespace parallel { namespace util {
             HPX_HOST_DEVICE HPX_FORCEINLINE static Iter call(
                 Iter it, std::size_t num, F&& f)
             {
-                std::size_t count(num & std::size_t(-4));
-                for (std::size_t i = 0; i < count; (void) ++it, i += 4)
+                std::size_t count(num & std::size_t(-4));    // -V112
+                for (std::size_t i = 0; i < count;
+                     (void) ++it, i += 4)    // -V112
                 {
                     f(it);
                     f(++it);
@@ -162,8 +163,9 @@ namespace hpx { namespace parallel { namespace util {
             HPX_HOST_DEVICE HPX_FORCEINLINE static Iter call(
                 Iter it, std::size_t num, CancelToken& tok, F&& f)
             {
-                std::size_t count(num & std::size_t(-4));
-                for (std::size_t i = 0; i < count; (void) ++it, i += 4)
+                std::size_t count(num & std::size_t(-4));    // -V112
+                for (std::size_t i = 0; i < count;
+                     (void) ++it, i += 4)    // -V112
                 {
                     if (tok.was_cancelled())
                         break;

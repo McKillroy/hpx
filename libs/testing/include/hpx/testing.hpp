@@ -12,8 +12,7 @@
 #include <hpx/config.hpp>
 #include <hpx/assertion.hpp>
 #include <hpx/preprocessor/stringize.hpp>
-
-#include <boost/io/ios_state.hpp>
+#include <hpx/util/ios_flags_saver.hpp>
 
 // Use smart_ptr's spinlock header because this header is used by the CMake
 // config tests, and therefore we can't include other hpx headers in this file.
@@ -46,20 +45,13 @@ namespace hpx { namespace util {
             std::ostream& stream_;
             std::size_t sanity_failures_;
             std::size_t test_failures_;
-#if defined(HPX_HAVE_CXX11_NSDMI)
             mutex_type mutex_ = BOOST_DETAIL_SPINLOCK_INIT;
-#else
-            mutex_type mutex_;
-#endif
 
         public:
             fixture(std::ostream& stream)
               : stream_(stream)
               , sanity_failures_(0)
               , test_failures_(0)
-#if !defined(HPX_HAVE_CXX11_NSDMI)
-              , mutex_(BOOST_DETAIL_SPINLOCK_INIT)
-#endif
             {
             }
 
@@ -74,7 +66,7 @@ namespace hpx { namespace util {
                 if (!t)
                 {
                     std::lock_guard<mutex_type> l(mutex_);
-                    boost::io::ios_flags_saver ifs(stream_);
+                    hpx::util::ios_flags_saver ifs(stream_);
                     stream_ << file << "(" << line << "): " << msg
                             << " failed in function '" << function << "'"
                             << std::endl;
@@ -91,7 +83,7 @@ namespace hpx { namespace util {
                 if (!(t == u))
                 {
                     std::lock_guard<mutex_type> l(mutex_);
-                    boost::io::ios_flags_saver ifs(stream_);
+                    hpx::util::ios_flags_saver ifs(stream_);
                     stream_ << file << "(" << line << "): " << msg
                             << " failed in function '" << function << "': "
                             << "'" << t << "' != '" << u << "'" << std::endl;
@@ -109,7 +101,7 @@ namespace hpx { namespace util {
                 if (!(t != u))
                 {
                     std::lock_guard<mutex_type> l(mutex_);
-                    boost::io::ios_flags_saver ifs(stream_);
+                    hpx::util::ios_flags_saver ifs(stream_);
                     stream_ << file << "(" << line << "): " << msg
                             << " failed in function '" << function << "': "
                             << "'" << t << "' != '" << u << "'" << std::endl;
@@ -126,7 +118,7 @@ namespace hpx { namespace util {
                 if (!(t < u))
                 {
                     std::lock_guard<mutex_type> l(mutex_);
-                    boost::io::ios_flags_saver ifs(stream_);
+                    hpx::util::ios_flags_saver ifs(stream_);
                     stream_ << file << "(" << line << "): " << msg
                             << " failed in function '" << function << "': "
                             << "'" << t << "' >= '" << u << "'" << std::endl;
@@ -144,7 +136,7 @@ namespace hpx { namespace util {
                 if (!(t <= u))
                 {
                     std::lock_guard<mutex_type> l(mutex_);
-                    boost::io::ios_flags_saver ifs(stream_);
+                    hpx::util::ios_flags_saver ifs(stream_);
                     stream_ << file << "(" << line << "): " << msg
                             << " failed in function '" << function << "': "
                             << "'" << t << "' > '" << u << "'" << std::endl;
@@ -162,7 +154,7 @@ namespace hpx { namespace util {
                 if (!(t >= u && t <= v))
                 {
                     std::lock_guard<mutex_type> l(mutex_);
-                    boost::io::ios_flags_saver ifs(stream_);
+                    hpx::util::ios_flags_saver ifs(stream_);
                     if (!(t >= u))
                     {
                         stream_ << file << "(" << line << "): " << msg

@@ -8,13 +8,11 @@
 #define HPX_IOSTREAMS_SERVER_BUFFER_JUL_18_2014_0715PM
 
 #include <hpx/config.hpp>
-#include <hpx/lcos/local/recursive_mutex.hpp>
-#include <hpx/runtime/serialization/serialization_fwd.hpp>
+#include <hpx/synchronization/recursive_mutex.hpp>
+#include <hpx/serialization/serialization_fwd.hpp>
 
 #include <hpx/components/iostreams/export_definitions.hpp>
 #include <hpx/components/iostreams/write_functions.hpp>
-
-#include <boost/swap.hpp>
 
 #include <iosfwd>
 #include <memory>
@@ -85,7 +83,7 @@ namespace hpx { namespace iostreams { namespace detail
         buffer init_locked()
         {
             buffer b;
-            boost::swap(b.data_, data_);
+            std::swap(b.data_, data_);
             return b;
         }
 

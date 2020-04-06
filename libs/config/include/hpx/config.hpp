@@ -209,7 +209,7 @@
 #  endif
 #endif
 #if !defined(HPX_SPINLOCK_DEADLOCK_DETECTION_LIMIT)
-#  define HPX_SPINLOCK_DEADLOCK_DETECTION_LIMIT 1000000
+#  define HPX_SPINLOCK_DEADLOCK_DETECTION_LIMIT 1073741823
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -263,7 +263,7 @@
 
 /// By default we capture only 5 levels of stack back trace on suspension
 #if !defined(HPX_HAVE_THREAD_BACKTRACE_DEPTH)
-#  define HPX_HAVE_THREAD_BACKTRACE_DEPTH 5
+#  define HPX_HAVE_THREAD_BACKTRACE_DEPTH 20
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -308,22 +308,27 @@
 #    define HPX_MAKE_DLL_STRING(n)  "lib" + n + HPX_SHARED_LIB_EXTENSION
 #  endif
 #elif defined(HPX_DEBUG)
-#  define HPX_MAKE_DLL_STRING(n)   n + "d" + HPX_SHARED_LIB_EXTENSION
+#  define HPX_MAKE_DLL_STRING(n)   (n) + "d" + HPX_SHARED_LIB_EXTENSION
 #else
-#  define HPX_MAKE_DLL_STRING(n)   n + HPX_SHARED_LIB_EXTENSION
+#  define HPX_MAKE_DLL_STRING(n)   (n) + HPX_SHARED_LIB_EXTENSION
 #endif
 
 #if defined(HPX_DEBUG)
 #  define HPX_MANGLE_NAME(n)     HPX_PP_CAT(n, d)
-#  define HPX_MANGLE_STRING(n)   n + "d"
+#  define HPX_MANGLE_STRING(n)   (n) + "d"
 #else
 #  define HPX_MANGLE_NAME(n)     n
 #  define HPX_MANGLE_STRING(n)   n
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
+// Set defaults for components
+#if !defined(HPX_COMPONENT_NAME_DEFAULT)
+#  define HPX_COMPONENT_NAME_DEFAULT hpx
+#endif
+
 #if !defined(HPX_COMPONENT_NAME)
-#  define HPX_COMPONENT_NAME hpx
+#  define HPX_COMPONENT_NAME HPX_COMPONENT_NAME_DEFAULT
 #endif
 
 #if !defined(HPX_COMPONENT_STRING)
@@ -339,8 +344,12 @@
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
+#if !defined(HPX_PLUGIN_NAME_DEFAULT)
+#  define HPX_PLUGIN_NAME_DEFAULT hpx
+#endif
+
 #if !defined(HPX_PLUGIN_NAME)
-#  define HPX_PLUGIN_NAME hpx
+#  define HPX_PLUGIN_NAME HPX_PLUGIN_NAME_DEFAULT
 #endif
 
 #if !defined(HPX_PLUGIN_STRING)
@@ -352,6 +361,14 @@
 #endif
 
 ///////////////////////////////////////////////////////////////////////////////
+#if defined(HPX_PREFIX_DEFAULT) && !defined(HPX_PREFIX)
+#  define HPX_PREFIX HPX_PREFIX_DEFAULT
+#endif
+
+#if defined(HPX_APPLICATION_NAME_DEFAULT) && !defined(HPX_APPLICATION_NAME)
+#  define HPX_APPLICATION_NAME HPX_APPLICATION_NAME_DEFAULT
+#endif
+
 #if !defined(HPX_APPLICATION_STRING)
 #  if defined(HPX_APPLICATION_NAME)
 #    define HPX_APPLICATION_STRING HPX_PP_STRINGIZE(HPX_APPLICATION_NAME)

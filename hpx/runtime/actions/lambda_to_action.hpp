@@ -54,8 +54,9 @@ namespace hpx { namespace actions
             static ReturnType invoke(naming::address::address_type /*lva*/,
                 naming::address::component_type comptype, Ts&&... vs)
             {
-                 int * dummy = nullptr;
-                 return reinterpret_cast<const F&>(*dummy)( std::forward<Ts>(vs)... );
+                int* dummy = nullptr;
+                return reinterpret_cast<const F&>(*dummy)(    // -V522
+                    std::forward<Ts>(vs)...);
             }
         };
 
@@ -80,7 +81,7 @@ namespace hpx { namespace actions
         struct action_maker
         {
             template<typename F>
-            HPX_CONSTEXPR typename hpx::actions::detail::action_from_lambda<F>::type
+            constexpr typename hpx::actions::detail::action_from_lambda<F>::type
             operator += (F*) const
             {
                 static_assert(
@@ -95,18 +96,13 @@ namespace hpx { namespace actions
         };
     }
 
-    template<typename F>
+    template <typename F>
     auto lambda_to_action(F&& f)
-    -> decltype( hpx::actions::detail::action_maker() += true
-        ? nullptr
-        : hpx::actions::detail::addr_add() +  f)
+        -> decltype(hpx::actions::detail::action_maker() +=
+            true ? nullptr : hpx::actions::detail::addr_add() + f)
     {
-        HPX_CONSTEXPR auto act =
-            hpx::actions::detail::action_maker() += true
-            ? nullptr
-            : hpx::actions::detail::addr_add() +  f;
-
-        return act;
+        return hpx::actions::detail::action_maker() +=
+            true ? nullptr : hpx::actions::detail::addr_add() + f;
     }
 }}
 

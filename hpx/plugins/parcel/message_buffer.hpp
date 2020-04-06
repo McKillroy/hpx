@@ -8,12 +8,16 @@
 #define HPX_RUNTIME_PARCELSET_POLICIES_COALESCING_MESSAGE_BUFFER_MAR_07_2013_1250PM
 
 #include <hpx/config.hpp>
+
+#if defined(HPX_HAVE_NETWORKING) && defined(HPX_HAVE_PARCEL_COALESCING)
+
 #include <hpx/assertion.hpp>
+#include <hpx/functional/deferred_call.hpp>
 #include <hpx/runtime/parcelset/locality.hpp>
 #include <hpx/runtime/parcelset/parcel.hpp>
 #include <hpx/runtime/parcelset/parcelport.hpp>
 #include <hpx/runtime/parcelset_fwd.hpp>
-#include <hpx/functional/deferred_call.hpp>
+#include <hpx/threading_base/register_thread.hpp>
 
 #include <cstddef>
 #include <utility>
@@ -158,4 +162,5 @@ namespace hpx { namespace plugins { namespace parcel { namespace detail
     };
 }}}}
 
+#endif
 #endif

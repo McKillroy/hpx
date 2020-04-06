@@ -7,17 +7,19 @@
 
 // This is needed to make everything work with the Intel MPI library header
 #include <hpx/config.hpp>
+
+#if defined(HPX_HAVE_NETWORKING)
 #include <hpx/state.hpp>
 #include <hpx/runtime_fwd.hpp>
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/runtime/parcelset/parcelport.hpp>
-#include <hpx/runtime/threads/thread.hpp>
-#include <hpx/util/io_service_pool.hpp>
-#include <hpx/util/runtime_configuration.hpp>
-#include <hpx/util/safe_lexical_cast.hpp>
+#include <hpx/threading.hpp>
+#include <hpx/util/get_entry_as.hpp>
+#include <hpx/runtime_configuration/runtime_configuration.hpp>
+#include <hpx/io_service/io_service_pool.hpp>
 #include <hpx/errors.hpp>
 #if defined(HPX_HAVE_APEX)
-#include <hpx/util/apex.hpp>
+#include <hpx/threading_base/external_timer.hpp>
 #endif
 #include <hpx/assertion.hpp>
 
@@ -41,14 +43,14 @@ namespace hpx { namespace parcelset
         allow_zero_copy_optimizations_(true),
         async_serialization_(false),
         priority_(hpx::util::get_entry_as<int>(ini,
-            "hpx.parcel." + type + ".priority", "0")),
+            "hpx.parcel." + type + ".priority", 0)),
         type_(type)
     {
         std::string key("hpx.parcel.");
         key += type;
 
         if (hpx::util::get_entry_as<int>(
-                ini, key + ".array_optimization", "1") == 0)
+                ini, key + ".array_optimization", 1) == 0)
         {
             allow_array_optimizations_ = false;
             allow_zero_copy_optimizations_ = false;
@@ -56,14 +58,14 @@ namespace hpx { namespace parcelset
         else
         {
             if (hpx::util::get_entry_as<int>(
-                    ini, key + ".zero_copy_optimization", "1") == 0)
+                    ini, key + ".zero_copy_optimization", 1) == 0)
             {
                 allow_zero_copy_optimizations_ = false;
             }
         }
 
         if (hpx::util::get_entry_as<int>(
-                ini, key + ".async_serialization", "0") != 0)
+                ini, key + ".async_serialization", 0) != 0)
         {
             async_serialization_ = true;
         }
@@ -285,10 +287,11 @@ namespace hpx { namespace parcelset
 
 #if defined(HPX_HAVE_APEX) && defined(HPX_HAVE_PARCEL_PROFILING)
         // tell APEX about the sent parcel
-        apex::send(p.parcel_id().get_lsb(), p.size(),
+        util::external_timer::send(p.parcel_id().get_lsb(), p.size(),
             p.destination_locality_id());
 #endif
     }
 
 }}
 
+#endif

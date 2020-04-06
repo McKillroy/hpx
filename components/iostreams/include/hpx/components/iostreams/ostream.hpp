@@ -1,5 +1,5 @@
 //  Copyright (c) 2011 Bryce Lelbach
-//  Copyright (c) 2011-2016 Hartmut Kaiser
+//  Copyright (c) 2011-2020 Hartmut Kaiser
 //
 //  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -12,10 +12,10 @@
 
 #include <hpx/apply.hpp>
 #include <hpx/async.hpp>
+#include <hpx/basic_execution/register_locks.hpp>
 #include <hpx/components/iostreams/manipulators.hpp>
 #include <hpx/components/iostreams/server/output_stream.hpp>
 #include <hpx/runtime/components/client_base.hpp>
-#include <hpx/concurrency/register_locks.hpp>
 
 #include <boost/iostreams/stream.hpp>
 

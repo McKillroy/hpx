@@ -12,7 +12,7 @@
 #include <hpx/config.hpp>
 #include <hpx/datastructures/tuple.hpp>
 #include <hpx/functional/invoke.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/lcos/dataflow.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/traits/segmented_iterator_traits.hpp>
@@ -20,9 +20,9 @@
 #include <hpx/type_support/void_guard.hpp>
 #include <hpx/util/unwrap.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
+#include <hpx/execution/executors/execution.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/execution_policy.hpp>
-#include <hpx/parallel/executors/execution.hpp>
 #include <hpx/parallel/segmented_algorithms/detail/dispatch.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/loop.hpp>

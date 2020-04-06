@@ -8,8 +8,8 @@
 #include <hpx/include/async.hpp>
 #include <hpx/include/resource_partitioner.hpp>
 #include <hpx/include/threads.hpp>
-#include <hpx/runtime/threads/policies/scheduler_mode.hpp>
-#include <hpx/runtime/threads/policies/schedulers.hpp>
+#include <hpx/threading_base/scheduler_mode.hpp>
+#include <hpx/schedulers.hpp>
 #include <hpx/testing.hpp>
 
 #include <cstddef>
@@ -50,7 +50,7 @@ void test_scheduler(int argc, char* argv[])
             -> std::unique_ptr<hpx::threads::thread_pool_base> {
             typename Scheduler::init_parameter_type init(
                 thread_pool_init.num_threads_, thread_pool_init.affinity_data_,
-                std::size_t(-1), 0, thread_queue_init);
+                std::size_t(-1), thread_queue_init);
             std::unique_ptr<Scheduler> scheduler(new Scheduler(init));
 
             thread_pool_init.mode_ = hpx::threads::policies::scheduler_mode(

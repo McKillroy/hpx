@@ -9,7 +9,9 @@
 #define HPX_RUNTIME_THREADS_RESOURCE_MANAGER_JAN_16_2013_0830AM
 
 #include <hpx/config.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+
+#if defined(HPX_HAVE_THREAD_EXECUTORS_COMPATIBILITY)
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/runtime/threads/thread_executor.hpp>
 #include <hpx/topology/topology.hpp>
 
@@ -213,8 +215,8 @@ namespace hpx { namespace  threads
             std::size_t num_cores_stolen_;
         };
 
-        typedef std::map<std::size_t, static_allocation_data>
-            allocation_data_map_type;
+        using allocation_data_map_type =
+            std::map<std::size_t, static_allocation_data>;
         allocation_data_map_type proxies_static_allocation_data_;
 
         // stores static allocation data for all schedulers
@@ -256,4 +258,5 @@ namespace hpx { namespace  threads
 
 #include <hpx/config/warnings_suffix.hpp>
 
+#endif
 #endif

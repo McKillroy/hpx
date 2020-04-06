@@ -11,8 +11,8 @@
 // This is really an incomplete test; should be fleshed out.
 
 #include <hpx/hpx_main.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
 #include <hpx/iterator_support/iterator_facade.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/testing.hpp>
 #include <hpx/type_support/always_void.hpp>
 
@@ -171,14 +171,14 @@ int main()
     {
         int x = 0;
         iterator_with_proxy_reference i(x);
-        HPX_TEST(x == 0);
-        HPX_TEST(i.m_x == 0);
+        HPX_TEST_EQ(x, 0);
+        HPX_TEST_EQ(i.m_x, 0);
         ++(*i).m_x;
-        HPX_TEST(x == 1);
-        HPX_TEST(i.m_x == 1);
+        HPX_TEST_EQ(x, 1);
+        HPX_TEST_EQ(i.m_x, 1);
         ++i->m_x;
-        HPX_TEST(x == 2);
-        HPX_TEST(i.m_x == 2);
+        HPX_TEST_EQ(x, 2);
+        HPX_TEST_EQ(i.m_x, 2);
     }
 
     return hpx::util::report_errors();

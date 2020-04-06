@@ -9,6 +9,7 @@ set(tests
     no_output_1173
    )
 
+
 set(lost_output_2236_FLAGS COMPONENT_DEPENDENCIES iostreams)
 
 set(no_output_1173_PARAMETERS LOCALITIES 2)
@@ -22,11 +23,12 @@ foreach(test ${tests})
 
   # add example executable
   add_hpx_executable(${test}_test
-                     SOURCES ${sources}
-                     ${${test}_FLAGS}
-                     EXCLUDE_FROM_ALL
-                     HPX_PREFIX ${HPX_BUILD_PREFIX}
-                     FOLDER "Tests/Regressions/Components/IO")
+    INTERNAL_FLAGS
+    SOURCES ${sources}
+    ${${test}_FLAGS}
+    EXCLUDE_FROM_ALL
+    HPX_PREFIX ${HPX_BUILD_PREFIX}
+    FOLDER "Tests/Regressions/Components/IO")
 
   add_hpx_regression_test("components.iostreams" ${test} ${${test}_PARAMETERS})
 endforeach()

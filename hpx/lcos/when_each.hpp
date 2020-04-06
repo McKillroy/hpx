@@ -128,12 +128,12 @@ namespace hpx
 #else // DOXYGEN
 
 #include <hpx/config.hpp>
-#include <hpx/datastructures/detail/pack.hpp>
 #include <hpx/datastructures/tuple.hpp>
 #include <hpx/functional/bind_back.hpp>
 #include <hpx/iterator_support/range.hpp>
 #include <hpx/lcos/detail/future_data.hpp>
 #include <hpx/lcos/when_some.hpp>
+#include <hpx/memory/intrusive_ptr.hpp>
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/traits/acquire_future.hpp>
 #include <hpx/traits/acquire_shared_state.hpp>
@@ -142,9 +142,8 @@ namespace hpx
 #include <hpx/traits/is_future.hpp>
 #include <hpx/traits/is_future_range.hpp>
 #include <hpx/type_support/decay.hpp>
+#include <hpx/type_support/pack.hpp>
 #include <hpx/type_support/unwrap_ref.hpp>
-
-#include <boost/intrusive_ptr.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -240,10 +239,10 @@ namespace hpx { namespace lcos
                             // Attach a continuation to this future which will
                             // re-evaluate it and continue to the next argument
                             // (if any).
-                            boost::intrusive_ptr<when_each_frame> this_(this);
+                            hpx::intrusive_ptr<when_each_frame> this_(this);
                             next_future_data->set_on_completed(
-                                [HPX_CAPTURE_MOVE(this_),
-                                    HPX_CAPTURE_MOVE(next), HPX_CAPTURE_MOVE(end)
+                                [this_ = std::move(this_),
+                                    next = std::move(next), end = std::move(end)
                                 ]() mutable -> void {
                                     return this_->template await_range<I>(
                                         std::move(next), std::move(end));
@@ -309,9 +308,9 @@ namespace hpx { namespace lcos
                         // Attach a continuation to this future which will
                         // re-evaluate it and continue to the next argument
                         // (if any).
-                        boost::intrusive_ptr<when_each_frame> this_(this);
+                        hpx::intrusive_ptr<when_each_frame> this_(this);
                         next_future_data->set_on_completed(
-                            [HPX_CAPTURE_MOVE(this_)]() -> void {
+                            [this_ = std::move(this_)]() -> void {
                                 return this_->template await_next<I>(
                                     std::true_type(), std::false_type());
                             });
@@ -342,12 +341,12 @@ namespace hpx { namespace lcos
                     typename util::tuple_element<I, Tuple>::type
                 >::type future_type;
 
-                typedef util::detail::any_of<
+                typedef util::any_of<
                         traits::is_future<future_type>,
                         traits::is_ref_wrapped_future<future_type>
                     > is_future;
 
-                typedef util::detail::any_of<
+                typedef util::any_of<
                         traits::is_future_range<future_type>,
                         traits::is_ref_wrapped_future_range<future_type>
                     > is_range;
@@ -389,7 +388,7 @@ namespace hpx { namespace lcos
             traits::acquire_future_disp());
 
         std::size_t lazy_values_size = lazy_values_.size();
-        boost::intrusive_ptr<frame_type> p(new frame_type(
+        hpx::intrusive_ptr<frame_type> p(new frame_type(
             util::forward_as_tuple(std::move(lazy_values_)),
             std::forward<F>(func), lazy_values_size));
 
@@ -423,7 +422,7 @@ namespace hpx { namespace lcos
 
         return lcos::when_each(std::forward<F>(f), lazy_values_)
             .then(hpx::launch::sync, [
-                HPX_CAPTURE_MOVE(end)
+                end = std::move(end)
             ](lcos::future<void> fut) -> Iterator {
                 fut.get();      // rethrow exceptions, if any
                 return end;
@@ -447,7 +446,7 @@ namespace hpx { namespace lcos
 
         return lcos::when_each(std::forward<F>(f), lazy_values_)
             .then(hpx::launch::sync, [
-                HPX_CAPTURE_MOVE(begin)
+                begin = std::move(begin)
             ](lcos::future<void> fut) -> Iterator {
                 fut.get();      // rethrow exceptions, if any
                 return begin;
@@ -465,7 +464,7 @@ namespace hpx { namespace lcos
     template <typename F, typename... Ts>
     typename std::enable_if<
         !traits::is_future<typename std::decay<F>::type>::value &&
-        util::detail::all_of<traits::is_future<Ts>...>::value,
+        util::all_of<traits::is_future<Ts>...>::value,
         lcos::future<void>
     >::type
     when_each(F&& f, Ts&&... ts)
@@ -480,7 +479,7 @@ namespace hpx { namespace lcos
         traits::acquire_future_disp func;
         argument_type lazy_values(func(std::forward<Ts>(ts))...);
 
-        boost::intrusive_ptr<frame_type> p(new frame_type(
+        hpx::intrusive_ptr<frame_type> p(new frame_type(
             std::move(lazy_values), std::forward<F>(f), sizeof...(Ts)));
 
         p->do_await();

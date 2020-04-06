@@ -7,7 +7,7 @@
 #if !defined(HPX_PARALLEL_ALGORITHMS_TRANSFER)
 #define HPX_PARALLEL_ALGORITHMS_TRANSFER
 
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #if !defined(HPX_COMPUTE_DEVICE_CODE)
 #include <hpx/traits/segmented_iterator_traits.hpp>
 #endif
@@ -109,7 +109,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
         //           returns \a FwdIter2 otherwise.
         //           The \a move algorithm returns the output iterator to the
         //           element in the destination range, one past the last element
-        //           transfered.
+        //           transferred.
         //
         template <typename Algo, typename ExPolicy, typename FwdIter1,
             typename FwdIter2,

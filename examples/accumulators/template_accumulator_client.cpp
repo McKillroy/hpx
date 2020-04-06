@@ -5,13 +5,12 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/hpx_init.hpp>
+#include <hpx/string_util/split.hpp>
+#include <hpx/string_util/trim.hpp>
+#include <hpx/string_util/classification.hpp>
+#include <hpx/util/from_string.hpp>
 
 #include "template_accumulator.hpp"
-
-#include <boost/lexical_cast.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string/classification.hpp>
 
 #include <iostream>
 #include <string>
@@ -49,12 +48,12 @@ void run_template_accumulator(char const* type)
     std::string line;
     while (std::getline(std::cin, line))
     {
-        boost::algorithm::trim(line);
+        hpx::string_util::trim(line);
 
         std::vector<std::string> cmd;
-        boost::algorithm::split(cmd, line,
-            boost::algorithm::is_any_of(" \t\n"),
-            boost::algorithm::token_compress_on);
+        hpx::string_util::split(cmd, line,
+            hpx::string_util::is_any_of(" \t\n"),
+            hpx::string_util::token_compress_mode::on);
 
         if (!cmd.empty() && !cmd[0].empty())
         {
@@ -65,10 +64,10 @@ void run_template_accumulator(char const* type)
             else if (cmd[0] == "add") {
                 if (cmd.size() == 2) {
                     try {
-                        double val = boost::lexical_cast<double>(cmd[1]);
+                        double val = hpx::util::from_string<double>(cmd[1]);
                         accu.add(argument_type(val));
                     }
-                    catch (boost::bad_lexical_cast const&) {
+                    catch (hpx::util::bad_lexical_cast const&) {
                         std::cout << "error: invalid argument for add: '"
                                     << cmd[1] << "'" << std::endl;
                     }

@@ -11,6 +11,9 @@
 #ifndef HPX_RUNTIME_ACTIONS_TRANSFER_BASE_ACTION_HPP
 #define HPX_RUNTIME_ACTIONS_TRANSFER_BASE_ACTION_HPP
 
+#include <hpx/config/defines.hpp>
+
+#if defined(HPX_HAVE_NETWORKING)
 #include <hpx/runtime/actions_fwd.hpp>
 
 #include <hpx/assertion.hpp>
@@ -18,9 +21,9 @@
 #include <hpx/runtime/actions/base_action.hpp>
 #include <hpx/runtime/actions/detail/invocation_count_registry.hpp>
 #include <hpx/runtime/components/pinned_ptr.hpp>
-#include <hpx/runtime/serialization/input_archive.hpp>
-#include <hpx/runtime/serialization/output_archive.hpp>
-#include <hpx/runtime/serialization/unique_ptr.hpp>
+#include <hpx/serialization/input_archive.hpp>
+#include <hpx/serialization/output_archive.hpp>
+#include <hpx/serialization/unique_ptr.hpp>
 #include <hpx/traits/action_does_termination_detection.hpp>
 #include <hpx/traits/action_message_handler.hpp>
 #include <hpx/traits/action_priority.hpp>
@@ -78,7 +81,7 @@ namespace hpx { namespace actions
             }
 
 #if defined(HPX_DISABLE_ASSERTS) || defined(BOOST_DISABLE_ASSERTS) || defined(NDEBUG)
-            HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE
+            constexpr HPX_HOST_DEVICE HPX_FORCEINLINE
             Args const& data() const
             {
                 return *data_;
@@ -101,7 +104,7 @@ namespace hpx { namespace actions
 namespace hpx { namespace util
 {
     template <std::size_t I, typename Args>
-    HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE
+    constexpr HPX_HOST_DEVICE HPX_FORCEINLINE
     typename util::tuple_element<I, Args>::type&
     get(hpx::actions::detail::argument_holder<Args>& t)
     {
@@ -109,7 +112,7 @@ namespace hpx { namespace util
     }
 
     template <std::size_t I, typename Args>
-    HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE
+    constexpr HPX_HOST_DEVICE HPX_FORCEINLINE
     typename util::tuple_element<I, Args>::type const&
     get(hpx::actions::detail::argument_holder<Args> const& t)
     {
@@ -117,7 +120,7 @@ namespace hpx { namespace util
     }
 
     template <std::size_t I, typename Args>
-    HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE
+    constexpr HPX_HOST_DEVICE HPX_FORCEINLINE
     typename util::tuple_element<I, Args>::type&&
     get(hpx::actions::detail::argument_holder<Args>&& t)
     {
@@ -126,7 +129,7 @@ namespace hpx { namespace util
     }
 
     template <std::size_t I, typename Args>
-    HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE
+    constexpr HPX_HOST_DEVICE HPX_FORCEINLINE
     typename util::tuple_element<I, Args>::type const&&
     get(hpx::actions::detail::argument_holder<Args> const&& t)
     {
@@ -241,7 +244,7 @@ namespace hpx { namespace actions
 
         /// The function \a get_action_type returns whether this action needs
         /// to be executed in a new thread or directly.
-        action_type get_action_type() const override
+        action_flavor get_action_type() const override
         {
             return derived_type::get_action_type();
         }
@@ -280,7 +283,7 @@ namespace hpx { namespace actions
     public:
         /// retrieve the N's argument
         template <std::size_t N>
-        HPX_CONSTEXPR inline
+        constexpr inline
         typename util::tuple_element<N, arguments_type>::type const&
         get() const
         {
@@ -340,7 +343,7 @@ namespace hpx { namespace actions
 
     ///////////////////////////////////////////////////////////////////////////
     template <std::size_t N, typename Action>
-    HPX_CONSTEXPR inline typename util::tuple_element<
+    constexpr inline typename util::tuple_element<
         N, typename transfer_action<Action>::arguments_type
     >::type const& get(transfer_base_action<Action> const& args)
     {
@@ -366,4 +369,5 @@ namespace hpx { namespace parcelset { namespace detail
 }}}
 #endif
 
+#endif
 #endif

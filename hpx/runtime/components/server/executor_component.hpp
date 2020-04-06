@@ -10,15 +10,14 @@
 #include <hpx/config.hpp>
 #include <hpx/runtime/get_lva.hpp>
 #include <hpx/runtime/naming/address.hpp>
-#include <hpx/runtime/threads/thread_data_fwd.hpp>
-#include <hpx/runtime/threads/thread_enums.hpp>
-#include <hpx/runtime/threads/thread_init_data.hpp>
+#include <hpx/coroutines/thread_enums.hpp>
+#include <hpx/threading_base/thread_init_data.hpp>
 #include <hpx/traits/is_launch_policy.hpp>
-#include <hpx/util/annotated_function.hpp>
+#include <hpx/threading_base/annotated_function.hpp>
 #include <hpx/functional/deferred_call.hpp>
-#include <hpx/util/thread_description.hpp>
+#include <hpx/threading_base/thread_description.hpp>
 
-#include <hpx/parallel/executors/execution.hpp>
+#include <hpx/execution/executors/execution.hpp>
 
 #include <type_traits>
 #include <utility>
@@ -65,10 +64,11 @@ namespace hpx { namespace components
 #ifdef HPX_HAVE_THREAD_DESCRIPTION
             desc = data.description;
 #endif
-            hpx::get_lva<executor_component>::call(lva)->exec_.add(
-                hpx::util::deferred_call(&executor_component::execute,
-                    std::move(data.func)),
-                desc, initial_state);
+            hpx::parallel::execution::post(
+                hpx::get_lva<executor_component>::call(lva)->exec_,
+                hpx::util::annotated_function(
+                    &executor_component::execute, desc.get_description()),
+                std::move(data.func));
         }
 
         template <typename Executor_ = Executor>

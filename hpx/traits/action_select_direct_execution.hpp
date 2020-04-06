@@ -8,8 +8,8 @@
 #define HPX_TRAITS_ACTION_SELECT_DIRECT_EXECUTION_MAR_22_21018_0124PM
 
 #include <hpx/config.hpp>
+#include <hpx/naming_base.hpp>
 #include <hpx/runtime/launch_policy.hpp>
-#include <hpx/runtime/naming_fwd.hpp>
 #include <hpx/type_support/detail/wrap_int.hpp>
 
 namespace hpx { namespace traits
@@ -22,7 +22,7 @@ namespace hpx { namespace traits
         {
             // by default we return the unchanged function
             template <typename Action>
-            static HPX_CONSTEXPR launch call(
+            static constexpr launch call(
                 wrap_int, launch policy, naming::address_type)
             {
                 return policy;
@@ -43,7 +43,7 @@ namespace hpx { namespace traits
         };
 
         template <typename Action>
-        HPX_CONSTEXPR launch call_select_direct_execution(
+        constexpr launch call_select_direct_execution(
             launch policy, naming::address_type lva)
         {
             return select_direct_execution_helper::template call<Action>(
@@ -54,7 +54,7 @@ namespace hpx { namespace traits
     template <typename Action, typename Enable = void>
     struct action_select_direct_execution
     {
-        static HPX_CONSTEXPR launch call(launch policy,
+        static constexpr launch call(launch policy,
             naming::address_type lva)
         {
             return detail::call_select_direct_execution<Action>(policy, lva);

@@ -13,7 +13,7 @@
 
 #include <hpx/config.hpp>
 #include <hpx/lcos/base_lco_with_value.hpp>
-#include <hpx/lcos/local/condition_variable.hpp>
+#include <hpx/synchronization/condition_variable.hpp>
 #include <hpx/runtime/agas_fwd.hpp>
 #include <hpx/runtime/agas/gva.hpp>
 #include <hpx/runtime/actions/component_action.hpp>
@@ -235,12 +235,10 @@ struct HPX_EXPORT primary_namespace
 #endif
 
     // helper function
-    void wait_for_migration_locked(
-        std::unique_lock<mutex_type>& l
-      , naming::gid_type id
-      , error_code& ec);
+    void wait_for_migration_locked(std::unique_lock<mutex_type>& l,
+        naming::gid_type const& id, error_code& ec);
 
-  public:
+public:
     primary_namespace()
       : base_type(HPX_AGAS_PRIMARY_NS_MSB, HPX_AGAS_PRIMARY_NS_LSB)
       , mutex_()
@@ -275,26 +273,22 @@ struct HPX_EXPORT primary_namespace
         error_code& ec = throws
         );
 
+#if defined(HPX_HAVE_NETWORKING)
     void route(parcelset::parcel && p);
+#endif
 
     bool bind_gid(
-        gva g
-      , naming::gid_type id
-      , naming::gid_type locality
-        );
+        gva const& g, naming::gid_type id, naming::gid_type const& locality);
 
     // API
     std::pair<naming::id_type, naming::address> begin_migration(naming::gid_type id);
-    bool end_migration(naming::gid_type id);
+    bool end_migration(naming::gid_type const& id);
 
-    resolved_type resolve_gid(naming::gid_type id);
+    resolved_type resolve_gid(naming::gid_type const& id);
 
-    naming::id_type colocate(naming::gid_type id);
+    naming::id_type colocate(naming::gid_type const& id);
 
-    naming::address unbind_gid(
-        std::uint64_t count
-      , naming::gid_type id
-        );
+    naming::address unbind_gid(std::uint64_t count, naming::gid_type id);
 
     std::int64_t increment_credit(
         std::int64_t credits
@@ -303,10 +297,8 @@ struct HPX_EXPORT primary_namespace
         );
 
     std::vector<std::int64_t> decrement_credit(
-        std::vector<
-            hpx::util::tuple<std::int64_t, naming::gid_type, naming::gid_type>
-        > requests
-        );
+        std::vector<hpx::util::tuple<std::int64_t, naming::gid_type,
+            naming::gid_type>> const& requests);
 
     std::pair<naming::gid_type, naming::gid_type> allocate(std::uint64_t count);
 
@@ -377,9 +369,12 @@ struct HPX_EXPORT primary_namespace
     HPX_DEFINE_COMPONENT_ACTION(primary_namespace, increment_credit);
     HPX_DEFINE_COMPONENT_ACTION(primary_namespace, resolve_gid);
     HPX_DEFINE_COMPONENT_ACTION(primary_namespace, unbind_gid);
+#if defined(HPX_HAVE_NETWORKING)
     HPX_DEFINE_COMPONENT_ACTION(primary_namespace, route);
+#endif
     HPX_DEFINE_COMPONENT_ACTION(primary_namespace, statistics_counter);
 
+#if defined(HPX_HAVE_NETWORKING)
     static parcelset::policies::message_handler* get_message_handler(
         parcelset::parcelhandler* ph
       , parcelset::locality const& loc
@@ -389,6 +384,7 @@ struct HPX_EXPORT primary_namespace
     static serialization::binary_filter* get_serialization_filter(
         parcelset::parcel const& p
         );
+#endif
 };
 
 }}}
@@ -456,12 +452,14 @@ HPX_REGISTER_ACTION_DECLARATION(
     hpx::agas::server::primary_namespace::unbind_gid_action,
     primary_namespace_unbind_gid_action)
 
+#if defined(HPX_HAVE_NETWORKING)
 HPX_ACTION_USES_MEDIUM_STACK(
     hpx::agas::server::primary_namespace::route_action)
 
 HPX_REGISTER_ACTION_DECLARATION(
     hpx::agas::server::primary_namespace::route_action,
     primary_namespace_route_action)
+#endif
 
 HPX_ACTION_USES_MEDIUM_STACK(
     hpx::agas::server::primary_namespace::statistics_counter_action)
@@ -490,7 +488,7 @@ HPX_REGISTER_BASE_LCO_WITH_VALUE_DECLARATION(
 
 namespace hpx { namespace traits
 {
-#if !defined(HPX_COMPUTE_DEVICE_CODE)
+#if !defined(HPX_COMPUTE_DEVICE_CODE) && defined(HPX_HAVE_NETWORKING)
     // Parcel routing forwards the message handler request to the routed action
     template <>
     struct action_message_handler<agas::server::primary_namespace::route_action>

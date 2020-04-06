@@ -20,29 +20,27 @@ set(tests
     sequenced_executor
     service_executors
     shared_parallel_executor
-    this_thread_executors
-    thread_pool_attached_executors
-    thread_pool_executors
-    thread_pool_os_executors
     timed_parallel_executor
-    timed_this_thread_executors
-    timed_thread_pool_executors
-    standalone_thread_pool_os_executors
+    standalone_thread_pool_executor
    )
 
-if(HPX_WITH_DATAPAR_VC OR HPX_WITH_DATAPAR_BOOST_SIMD)
-  set(tests
-      ${tests}
-      count_datapar
-      countif_datapar
-      foreach_datapar
-      foreach_datapar_zipiter
-      foreachn_datapar
-      transform_datapar
-      transform_binary_datapar
-      transform_binary2_datapar
-      transform_reduce_binary_datapar
-     )
+if(HPX_WITH_THREAD_EXECUTORS_COMPATIBILITY)
+  set(tests ${tests}
+    thread_pool_attached_executors
+    thread_pool_os_executors)
+
+  if(HPX_WITH_THREAD_POOL_OS_EXECUTOR_COMPATIBILITY)
+    set(tests ${tests}
+      this_thread_executors
+      standalone_thread_pool_os_executors)
+  endif()
+
+  if(HPX_WITH_EMBEDDED_THREAD_POOLS_COMPATIBILITY)
+    set(tests ${tests}
+      thread_pool_executors
+      timed_this_thread_executors
+      timed_thread_pool_executors)
+  endif()
 endif()
 
 foreach(test ${tests})
@@ -57,11 +55,12 @@ foreach(test ${tests})
 
   # add example executable
   add_hpx_executable(${test}_test
-                     SOURCES ${sources}
-                     ${${test}_FLAGS}
-                     EXCLUDE_FROM_ALL
-                     HPX_PREFIX ${HPX_BUILD_PREFIX}
-                     FOLDER ${folder_name})
+    INTERNAL_FLAGS
+    SOURCES ${sources}
+    ${${test}_FLAGS}
+    EXCLUDE_FROM_ALL
+    HPX_PREFIX ${HPX_BUILD_PREFIX}
+    FOLDER ${folder_name})
 
   add_hpx_unit_test("modules.execution" ${test} ${${test}_PARAMETERS})
 

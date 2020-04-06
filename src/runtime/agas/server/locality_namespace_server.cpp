@@ -22,7 +22,7 @@
 #include <hpx/runtime/agas/server/locality_namespace.hpp>
 #include <hpx/runtime/agas/server/primary_namespace.hpp>
 #include <hpx/runtime/components/component_type.hpp>
-#include <hpx/runtime/serialization/vector.hpp>
+#include <hpx/serialization/vector.hpp>
 #include <hpx/timing/scoped_timer.hpp>
 #include <hpx/util/get_and_reset_value.hpp>
 #include <hpx/util/insert_checked.hpp>
@@ -60,22 +60,29 @@ void locality_namespace::register_counter_types(
 
         std::string name(detail::locality_namespace_services[i].name_);
         std::string help;
+        performance_counters::counter_type type;
         std::string::size_type p = name.find_last_of('/');
         HPX_ASSERT(p != std::string::npos);
 
         if (detail::locality_namespace_services[i].target_ ==
             detail::counter_target_count)
+        {
             help = hpx::util::format(
                 "returns the number of invocations of the AGAS service '{}'",
                 name.substr(p+1));
+            type = performance_counters::counter_monotonically_increasing;
+        }
         else
+        {
             help = hpx::util::format(
                 "returns the overall execution time of the AGAS service '{}'",
                 name.substr(p+1));
+            type = performance_counters::counter_elapsed_time;
+        }
 
         performance_counters::install_counter_type(
             agas::performance_counter_basename + name
-          , performance_counters::counter_raw
+          , type
           , help
           , creator
           , &performance_counters::locality0_counter_discoverer
@@ -105,17 +112,25 @@ void locality_namespace::register_global_counter_types(
             continue;
 
         std::string help;
+        performance_counters::counter_type type;
         if (detail::locality_namespace_services[i].target_ ==
             detail::counter_target_count)
-            help = "returns the overall number of invocations \
-                    of all locality AGAS services";
+        {
+            help = "returns the overall number of invocations of all locality "
+                   "AGAS services";
+            type = performance_counters::counter_monotonically_increasing;
+        }
         else
-            help = "returns the overall execution time of all locality AGAS services";
+        {
+            help = "returns the overall execution time of all locality AGAS "
+                   "services";
+            type = performance_counters::counter_elapsed_time;
+        }
 
         performance_counters::install_counter_type(
             std::string(agas::performance_counter_basename) +
                 detail::locality_namespace_services[i].name_
-          , performance_counters::counter_raw
+          , type
           , help
           , creator
           , &performance_counters::locality0_counter_discoverer
@@ -269,7 +284,7 @@ std::uint32_t locality_namespace::allocate(
 } // }}}
 
 parcelset::endpoints_type locality_namespace::resolve_locality(
-    naming::gid_type locality)
+    naming::gid_type const& locality)
 { // {{{ resolve_locality implementation
     util::scoped_timer<std::atomic<std::int64_t> > update(
         counter_data_.resolve_locality_.time_,
@@ -291,7 +306,7 @@ parcelset::endpoints_type locality_namespace::resolve_locality(
     return parcelset::endpoints_type();
 } // }}}
 
-void locality_namespace::free(naming::gid_type locality)
+void locality_namespace::free(naming::gid_type const& locality)
 { // {{{ free implementation
     util::scoped_timer<std::atomic<std::int64_t> > update(
         counter_data_.free_.time_,
@@ -450,7 +465,7 @@ std::uint32_t locality_namespace::get_num_overall_threads()
     return num_threads;
 }
 
-naming::gid_type locality_namespace::statistics_counter(std::string name)
+naming::gid_type locality_namespace::statistics_counter(std::string const& name)
 { // {{{ statistics_counter implementation
     LAGAS_(info) << "locality_namespace::statistics_counter";
 

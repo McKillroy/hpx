@@ -9,17 +9,18 @@
 #include <hpx/errors.hpp>
 #include <hpx/functional/bind_front.hpp>
 #include <hpx/functional/function.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/runtime.hpp>
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/runtime/shutdown_function.hpp>
 #include <hpx/thread_support/unlock_guard.hpp>
 #include <hpx/timing/steady_clock.hpp>
 #include <hpx/functional/deferred_call.hpp>
-#include <hpx/util/io_service_pool.hpp>
+#include <hpx/io_service/io_service_pool.hpp>
 #include <hpx/util/pool_timer.hpp>
 
 #include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/system/error_code.hpp>
 
 #include <chrono>
 #include <memory>

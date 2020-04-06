@@ -12,7 +12,7 @@
 
 #include <hpx/config.hpp>
 #include <hpx/assertion.hpp>
-#include <hpx/runtime/serialization/serialization_fwd.hpp>
+#include <hpx/serialization/serialization_fwd.hpp>
 #include <hpx/functional/detail/basic_function.hpp>
 #include <hpx/functional/detail/vtable/function_vtable.hpp>
 #include <hpx/util/detail/vtable/serializable_function_vtable.hpp>
@@ -34,7 +34,7 @@ namespace hpx { namespace util { namespace detail
         using base_type = basic_function<R(Ts...), Copyable, false>;
 
     public:
-        HPX_CONSTEXPR basic_function() noexcept
+        constexpr basic_function() noexcept
           : base_type()
           , serializable_vptr(nullptr)
         {}

@@ -33,15 +33,6 @@
 #include <utility>
 #include <vector>
 
-#ifdef __APPLE__
-#include <crt_externs.h>
-#define environ (*_NSGetEnviron())
-#elif defined(__FreeBSD__)
-HPX_EXPORT char** freebsd_environ = nullptr;
-#elif !defined(HPX_WINDOWS)
-extern char** environ;
-#endif
-
 namespace hpx {
     ///////////////////////////////////////////////////////////////////////////
     /// Construct a hpx::exception from a \a hpx::error.
@@ -185,7 +176,7 @@ namespace hpx { namespace detail {
         }
 
         // need this return to silence a warning with icc
-        HPX_ASSERT(false);
+        HPX_ASSERT(false);    // -V779
         return std::exception_ptr();
     }
 
@@ -205,7 +196,7 @@ namespace hpx { namespace detail {
         }
 
         // need this return to silence a warning with icc
-        HPX_ASSERT(false);
+        HPX_ASSERT(false);    // -V779
         return std::exception_ptr();
     }
 
@@ -235,7 +226,7 @@ namespace hpx { namespace detail {
         }
 
         // need this return to silence a warning with icc
-        HPX_ASSERT(false);
+        HPX_ASSERT(false);    // -V779
         return std::exception_ptr();
     }
 

@@ -33,7 +33,7 @@
 #include <hpx/assertion.hpp>
 #include <hpx/format.hpp>
 #include <hpx/functional/bind.hpp>
-#include <hpx/timing/high_resolution_timer.hpp>
+#include <hpx/timing.hpp>
 
 #include <hpx/program_options.hpp>
 
@@ -218,15 +218,9 @@ int qthreads_main(
         }
 
         // Randomly shuffle the entire sequence to deal with drift.
-#if defined(HPX_HAVE_CXX11_STD_SHUFFLE)
         std::random_device random_device;
         std::mt19937 generator(random_device());
         std::shuffle(payloads.begin(), payloads.end(), std::move(generator));
-#else
-        using hpx::util::placeholders::_1;
-        std::random_shuffle(payloads.begin(), payloads.end(),
-            hpx::util::bind(&shuffler, std::ref(prng), _1));
-#endif
 
         ///////////////////////////////////////////////////////////////////////
         // Validate the payloads.
@@ -308,7 +302,7 @@ int main(
         ( "seed"
         , value<std::uint64_t>(&seed)->default_value(0)
         , "seed for the pseudo random number generator (if 0, a seed is "
-          "choosen based on the current system time)")
+          "chosen based on the current system time)")
 
         ( "no-header"
         , "do not print out the csv header row")

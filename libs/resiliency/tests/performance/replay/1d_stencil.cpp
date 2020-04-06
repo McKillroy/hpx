@@ -22,6 +22,7 @@
 #include <hpx/hpx_init.hpp>
 
 #include <hpx/include/parallel_algorithm.hpp>
+#include <hpx/synchronization.hpp>
 #include <boost/range/irange.hpp>
 
 #include <cstddef>
@@ -53,7 +54,7 @@ public:
         for (std::size_t k = 0; k != subdomain_width + 1; ++k)
             data_[k] = std::sin(2 * pi *
                 ((0.0 + subdomain_width * subdomain_index + k) /
-                    (subdomain_width * subdomains)));
+                    static_cast<double>(subdomain_width * subdomains)));
     }
 
     partition_data(partition_data&& other)
@@ -240,7 +241,9 @@ int hpx_main(hpx::program_options::variables_map& vm)
     }
 
     std::cout << "Time elapsed: "
-              << (hpx::util::high_resolution_clock::now() - t) / 1e9
+              << static_cast<double>(
+                     hpx::util::high_resolution_clock::now() - t) /
+            1e9
               << std::endl;
     std::cout << "Errors occurred: 0" << std::endl;
 

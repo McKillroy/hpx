@@ -13,9 +13,7 @@ set(subdirs
     diagnostics
     lcos
     parallel_block
-    performance_counter
     resource
-    serialization
     threads
     topology
     traits
@@ -29,8 +27,6 @@ endif()
 if(HPX_WITH_APEX)
   set(subdirs ${subdirs} apex)
 endif()
-
-set(subdirs ${subdirs} computeapi)
 
 foreach(subdir ${subdirs})
   if(NOT TARGET tests.unit.${subdir})

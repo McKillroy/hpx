@@ -10,8 +10,8 @@
 #define HPX_DF595582_FEBC_4EE0_A606_A1EEB171D770
 
 #include <hpx/config.hpp>
+#include <hpx/basic_execution/register_locks.hpp>
 #include <hpx/concurrency/itt_notify.hpp>
-#include <hpx/concurrency/register_locks.hpp>
 
 #include <boost/smart_ptr/detail/spinlock.hpp>
 
@@ -24,17 +24,10 @@ namespace hpx { namespace util {
         HPX_NON_COPYABLE(spinlock);
 
     private:
-#if defined(HPX_HAVE_CXX11_NSDMI)
         boost::detail::spinlock m = BOOST_DETAIL_SPINLOCK_INIT;
-#else
-        boost::detail::spinlock m;
-#endif
 
     public:
         spinlock(char const* /*desc*/ = nullptr)
-#if !defined(HPX_HAVE_CXX11_NSDMI)
-          : m(BOOST_DETAIL_SPINLOCK_INIT)
-#endif
         {
             HPX_ITT_SYNC_CREATE(this, "util::spinlock", "");
         }

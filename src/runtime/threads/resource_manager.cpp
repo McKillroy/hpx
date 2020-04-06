@@ -6,11 +6,15 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/config.hpp>
+
+#if defined(HPX_HAVE_THREAD_EXECUTORS_COMPATIBILITY)
 #include <hpx/assertion.hpp>
 #include <hpx/errors.hpp>
 #include <hpx/runtime/threads/resource_manager.hpp>
 #include <hpx/runtime/threads/thread_executor.hpp>
-#include <hpx/util/reinitializable_static.hpp>
+#include <hpx/threading_base/thread_helpers.hpp>
+#include <hpx/static_reinit/reinitializable_static.hpp>
+#include <hpx/topology.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -33,7 +37,7 @@ namespace hpx { namespace threads
     resource_manager::resource_manager()
       : next_cookie_(0),
         punits_(get_os_thread_count()),
-        topology_(get_topology())
+        topology_(create_topology())
     {}
 
     // Request an initial resource allocation
@@ -334,7 +338,7 @@ namespace hpx { namespace threads
 
 #if defined(HPX_DEBUG)
                 // epsilon allows forgiveness of reasonable round-off errors
-                HPX_CONSTEXPR_OR_CONST double epsilon = 1e-7;
+                constexpr double epsilon = 1e-7;
 #endif
                 allocation_data_map_type scaled_static_allocation_data;
                 scaled_static_allocation_data[new_allocation] =
@@ -349,7 +353,9 @@ namespace hpx { namespace threads
                     static_allocation_data st = data.second;
                     if (st.num_owned_cores_ > st.min_proxy_cores_)
                     {
-                        HPX_ASSERT(st.adjusted_desired_ == double(st.max_proxy_cores_));
+                        HPX_ASSERT(std::size_t(st.adjusted_desired_) ==
+                            st.max_proxy_cores_);
+
                         scaled_static_allocation_data.insert(
                             allocation_data_map_type::value_type(data.first, st));
 
@@ -388,8 +394,9 @@ namespace hpx { namespace threads
                         static_allocation_data& st = data.second;
                         if (st.allocation_ > st.num_owned_cores_)
                         {
-                            double modifier = static_cast<double>(
-                                st.num_owned_cores_) / st.allocation_;
+                            double modifier =
+                                static_cast<double>(st.num_owned_cores_) /
+                                static_cast<double>(st.allocation_);
 
                             // Reduce adjusted_desired by multiplying it with
                             // 'modifier', to try to bias allocation to the
@@ -423,7 +430,8 @@ namespace hpx { namespace threads
                         static_allocation_data& st = data.second;
                         if (st.allocation_ > st.max_proxy_cores_)
                         {
-                            double modifier = st.max_proxy_cores_ /
+                            double modifier =
+                                static_cast<double>(st.max_proxy_cores_) /
                                 static_cast<double>(st.allocation_);
 
                             // Reduce adjusted_desired by multiplying with it
@@ -458,7 +466,9 @@ namespace hpx { namespace threads
                         static_allocation_data& st = data.second;
                         if (st.min_proxy_cores_ > st.allocation_)
                         {
-                            double new_desired = st.min_proxy_cores_ / scaling;
+                            double new_desired =
+                                static_cast<double>(st.min_proxy_cores_) /
+                                scaling;
 
                             // Bias desired to get allocation closer to min.
                             total_desired += new_desired - st.adjusted_desired_;
@@ -569,12 +579,12 @@ namespace hpx { namespace threads
         {
             static_allocation_data& st = data.second;
             st.allocation_ = static_cast<std::size_t>(st.scaled_allocation_);
-            st.scaled_allocation_ -= st.allocation_;
+            st.scaled_allocation_ -= static_cast<double>(st.allocation_);
         }
 
         // Sort by scaled_allocation
-        typedef std::pair<double, allocation_data_map_type::iterator> item;
-        typedef std::vector<item> helper_type;
+        using item = std::pair<double, allocation_data_map_type::iterator>;
+        using helper_type = std::vector<item>;
 
         helper_type d;
         d.reserve(scaled_static_allocation_data.size());
@@ -583,7 +593,7 @@ namespace hpx { namespace threads
                 scaled_static_allocation_data.begin();
              it != scaled_static_allocation_data.end(); ++it)
         {
-            d.push_back(std::make_pair(it->second.scaled_allocation_, it));
+            d.emplace_back(it->second.scaled_allocation_, it);
         }
 
         std::sort(
@@ -620,11 +630,12 @@ namespace hpx { namespace threads
 
             if (it <= rit.base())
             {
-                if (it->second->second.scaled_allocation_ > epsilon)
+                auto& alloc_data = it->second->second;
+                if (alloc_data.scaled_allocation_ > epsilon)
                 {
-                    fraction += (1.0 - it->second->second.scaled_allocation_);
-                    it->second->second.scaled_allocation_ = 0.0;
-                    it->second->second.allocation_ += 1;
+                    fraction += (1.0 - alloc_data.scaled_allocation_);
+                    alloc_data.scaled_allocation_ = 0.0;
+                    alloc_data.allocation_ += 1;
                 }
             }
             else
@@ -862,4 +873,5 @@ namespace hpx { namespace threads
         return rm.get_resource_allocation();
     }
 }}
+#endif
 

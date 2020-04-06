@@ -6,12 +6,14 @@
 
 #if !defined(HPX_PARALLEL_SEGMENTED_ALGORITHM_REDUCE)
 #define HPX_PARALLEL_SEGMENTED_ALGORITHM_REDUCE
+
 #include <hpx/config.hpp>
 #include <hpx/functional/invoke.hpp>
 #include <hpx/traits/segmented_iterator_traits.hpp>
+#include <hpx/util/zip_iterator.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/segmented_algorithms/detail/dispatch.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/zip_iterator.hpp>

@@ -12,10 +12,9 @@ set(tests
    )
 
 if(HPX_WITH_NETWORKING)
-    set(tests ${tests}
-        register_with_basename_1804
-       )
-
+  set(tests ${tests}
+    register_with_basename_1804
+   )
   set(register_with_basename_1804_PARAMETERS LOCALITIES 2)
 endif()
 
@@ -27,11 +26,12 @@ foreach(test ${tests})
 
   # add example executable
   add_hpx_executable(${test}_test
-                     SOURCES ${sources}
-                     ${${test}_FLAGS}
-                     EXCLUDE_FROM_ALL
-                     HPX_PREFIX ${HPX_BUILD_PREFIX}
-                     FOLDER "Tests/Regressions/AGAS")
+    INTERNAL_FLAGS
+    SOURCES ${sources}
+    ${${test}_FLAGS}
+    EXCLUDE_FROM_ALL
+    HPX_PREFIX ${HPX_BUILD_PREFIX}
+    FOLDER "Tests/Regressions/AGAS")
 
   add_hpx_regression_test("agas" ${test} ${${test}_PARAMETERS})
 

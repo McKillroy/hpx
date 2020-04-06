@@ -4,9 +4,6 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-// hpxinspect:nodeprecatedinclude:boost/ref.hpp
-// hpxinspect:nodeprecatedname:boost::reference_wrapper
-
 #include <hpx/config.hpp>
 
 // #if defined(HPX_COMPUTE_DEVICE_CODE)
@@ -23,31 +20,31 @@
 #define HPX_LCOS_DATAFLOW_HPP
 
 #include <hpx/allocator_support/internal_allocator.hpp>
+#include <hpx/coroutines/detail/get_stack_pointer.hpp>
+#include <hpx/datastructures/tuple.hpp>
+#include <hpx/functional/deferred_call.hpp>
 #include <hpx/functional/invoke_fused.hpp>
+#include <hpx/functional/traits/is_action.hpp>
 #include <hpx/lcos/detail/future_transforms.hpp>
+#include <hpx/memory/intrusive_ptr.hpp>
+#include <hpx/runtime/actions/basic_action_fwd.hpp>
 #include <hpx/runtime/get_worker_thread_num.hpp>
 #include <hpx/runtime/launch_policy.hpp>
-#include <hpx/runtime/threads/coroutines/detail/get_stack_pointer.hpp>
+#include <hpx/runtime/naming_fwd.hpp>
 #include <hpx/traits/acquire_future.hpp>
 #include <hpx/traits/extract_action.hpp>
 #include <hpx/traits/future_access.hpp>
-#include <hpx/functional/traits/is_action.hpp>
-#include <hpx/traits/is_executor.hpp>
+#include <hpx/execution/traits/is_executor.hpp>
 #include <hpx/traits/is_future.hpp>
 #include <hpx/traits/is_launch_policy.hpp>
 #include <hpx/traits/promise_local_result.hpp>
 #include <hpx/type_support/always_void.hpp>
-#include <hpx/util/annotated_function.hpp>
-#include <hpx/functional/deferred_call.hpp>
+#include <hpx/threading_base/annotated_function.hpp>
 #include <hpx/util/pack_traversal_async.hpp>
-#include <hpx/util/thread_description.hpp>
-#include <hpx/datastructures/tuple.hpp>
+#include <hpx/threading_base/thread_description.hpp>
 
-#include <hpx/parallel/executors/execution.hpp>
-#include <hpx/parallel/executors/parallel_executor.hpp>
-
-#include <boost/intrusive_ptr.hpp>
-#include <boost/ref.hpp>
+#include <hpx/execution/executors/execution.hpp>
+#include <hpx/execution/executors/parallel_executor.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -64,15 +61,10 @@ namespace hpx { namespace lcos { namespace detail
     template <typename F, typename Args>
     struct dataflow_not_callable
     {
-#if defined(HPX_HAVE_CXX14_RETURN_TYPE_DEDUCTION)
         static auto error(F f, Args args)
         {
             hpx::util::invoke_fused(std::move(f), std::move(args));
         }
-#else
-        static auto error(F f, Args args)
-         -> decltype(hpx::util::invoke_fused(std::move(f), std::move(args)));
-#endif
 
         using type = decltype(
             error(std::declval<F>(), std::declval<Args>()));
@@ -195,13 +187,13 @@ namespace hpx { namespace lcos { namespace detail
         void finalize(hpx::detail::async_policy policy, Futures&& futures)
         {
             // schedule the final function invocation with high priority
-            boost::intrusive_ptr<dataflow_frame> this_(this);
+            hpx::intrusive_ptr<dataflow_frame> this_(this);
 
             // simply schedule new thread
             parallel::execution::parallel_policy_executor<launch::async_policy>
                 exec{policy};
             parallel::execution::post(exec,
-                [HPX_CAPTURE_MOVE(this_)](Futures&& futures) -> void {
+                [this_ = std::move(this_)](Futures&& futures) -> void {
                     return this_->done(std::move(futures));
                 }, std::move(futures));
         }
@@ -246,12 +238,12 @@ namespace hpx { namespace lcos { namespace detail
         void finalize(hpx::detail::fork_policy policy, Futures&& futures)
         {
             // schedule the final function invocation with high priority
-            boost::intrusive_ptr<dataflow_frame> this_(this);
+            hpx::intrusive_ptr<dataflow_frame> this_(this);
 
             parallel::execution::parallel_policy_executor<launch::fork_policy>
                 exec{policy};
             parallel::execution::post(exec,
-                [HPX_CAPTURE_MOVE(this_)](Futures&& futures) -> void {
+                [this_ = std::move(this_)](Futures&& futures) -> void {
                     return this_->done(std::move(futures));
                 }, std::move(futures));
         }
@@ -286,9 +278,9 @@ namespace hpx { namespace lcos { namespace detail
         >::type
         finalize(Executor&& exec, Futures&& futures)
         {
-            boost::intrusive_ptr<dataflow_frame> this_(this);
+            hpx::intrusive_ptr<dataflow_frame> this_(this);
             parallel::execution::post(std::forward<Executor>(exec),
-                [HPX_CAPTURE_MOVE(this_)](Futures&& futures) -> void {
+                [this_ = std::move(this_)](Futures&& futures) -> void {
                     return this_->execute(is_void{}, std::move(futures));
                 }, std::move(futures));
         }
@@ -341,7 +333,7 @@ namespace hpx { namespace lcos { namespace detail
 
         // Construct the dataflow_frame and traverse
         // the arguments asynchronously
-        boost::intrusive_ptr<Frame> p = util::traverse_pack_async(
+        hpx::intrusive_ptr<Frame> p = util::traverse_pack_async(
             util::async_traverse_in_place_tag<Frame>{},
             std::move(data), std::forward<Ts>(ts)...);
 
@@ -365,7 +357,7 @@ namespace hpx { namespace lcos { namespace detail
 
         // Construct the dataflow_frame and traverse
         // the arguments asynchronously
-        boost::intrusive_ptr<Frame> p = util::traverse_pack_async_allocator(
+        hpx::intrusive_ptr<Frame> p = util::traverse_pack_async_allocator(
             alloc, util::async_traverse_in_place_tag<Frame>{},
             std::move(data), std::forward<Ts>(ts)...);
 

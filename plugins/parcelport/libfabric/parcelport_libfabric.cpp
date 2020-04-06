@@ -11,11 +11,11 @@
 // config
 #include <hpx/config.hpp>
 // util
-#include <hpx/lcos/local/condition_variable.hpp>
-#include <hpx/runtime/threads/thread_data.hpp>
-#include <hpx/util/command_line_handling.hpp>
+#include <hpx/synchronization/condition_variable.hpp>
+#include <hpx/threading_base/thread_data.hpp>
+#include <hpx/command_line_handling/command_line_handling.hpp>
 #include <hpx/timing/high_resolution_timer.hpp>
-#include <hpx/util/runtime_configuration.hpp>
+#include <hpx/runtime_configuration/runtime_configuration.hpp>
 
 // The memory pool specialization need to be pulled in before encode_parcels
 #include <hpx/plugins/parcelport_factory.hpp>
@@ -294,7 +294,7 @@ namespace libfabric
     }
 
     // --------------------------------------------------------------------
-    // the root node has spacial handlig, this returns its Id
+    // the root node has spacial handling, this returns its Id
     parcelset::locality parcelport::
     agas_locality(util::runtime_configuration const & ini) const
     {

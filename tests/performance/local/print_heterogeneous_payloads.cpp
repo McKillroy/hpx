@@ -5,12 +5,7 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-// hpxinspect:nodeprecatedinclude:boost/bind.hpp
-// hpxinspect:nodeprecatedname:boost::bind
-
 #include <hpx/config/defines.hpp>   // avoid issues with Intel14/libstdc++4.4 nullptr
-
-#include <boost/bind.hpp>
 #include <hpx/program_options.hpp>
 
 #include <cstddef>
@@ -139,14 +134,9 @@ int app_main(
     }
 
     // Randomly shuffle the entire sequence to deal with drift.
-#if defined(HPX_HAVE_CXX11_STD_SHUFFLE)
     std::random_device random_device;
     std::mt19937 generator(random_device());
     std::shuffle(payloads.begin(), payloads.end(), std::move(generator));
-#else
-    std::random_shuffle(payloads.begin(), payloads.end(),
-        boost::bind(&shuffler, std::ref(prng), _1));
-#endif
 
     ///////////////////////////////////////////////////////////////////////
     // Validate the payloads.
@@ -199,7 +189,7 @@ int main(
         ( "seed"
         , value<std::uint64_t>(&seed)->default_value(0)
         , "seed for the pseudo random number generator (if 0, a seed is "
-          "choosen based on the current system time)")
+          "chosen based on the current system time)")
         ;
 
     store(command_line_parser(argc, argv).options(cmdline).run(), vm);

@@ -8,7 +8,8 @@
 #define HPX_UTIL_THREAD_MAPPER_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/errors.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/functional/function.hpp>
 
 #include <boost/bimap.hpp>

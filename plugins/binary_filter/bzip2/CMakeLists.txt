@@ -16,26 +16,32 @@ if(HPX_WITH_COMPRESSION_BZIP2)
       hpx_error("BZip2 could not be found and HPX_WITH_COMPRESSION_BZIP2=ON, please specify BZIP2_ROOT to point to the correct location or set HPX_WITH_COMPRESSION_BZIP2 to OFF")
     endif()
   endif()
-endif()
 
-function(add_bzip2_module)
   hpx_debug("add_bzip2_module" "BZIP2_FOUND: ${BZIP2_FOUND}")
-  if(HPX_WITH_COMPRESSION_BZIP2)
-    if(NOT MSVC)
-      include_directories(${BZIP2_INCLUDE_DIR})
-    endif()
 
-    add_hpx_library(compress_bzip2
-      PLUGIN
-      SOURCES
-        "${PROJECT_SOURCE_DIR}/plugins/binary_filter/bzip2/bzip2_serialization_filter.cpp"
-      HEADERS
-        "${PROJECT_SOURCE_DIR}/hpx/plugins/binary_filter/bzip2_serialization_filter.hpp"
-        "${PROJECT_SOURCE_DIR}/hpx/plugins/binary_filter/bzip2_serialization_filter_registration.hpp"
-      FOLDER "Core/Plugins/Compression"
-      DEPENDENCIES ${BZIP2_LIBRARIES})
+  set(SOURCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/src")
+  set(HEADER_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-    add_hpx_pseudo_dependencies(plugins.binary_filter.bzip2 compress_bzip2)
-    add_hpx_pseudo_dependencies(core plugins.binary_filter.bzip2)
+  add_hpx_library(compression_bzip2
+    INTERNAL_FLAGS
+    PLUGIN
+    SOURCES
+      "${SOURCE_ROOT}/bzip2_serialization_filter.cpp"
+    HEADERS
+      "${HEADER_ROOT}/hpx/include/compression_bzip2.hpp"
+      "${HEADER_ROOT}/hpx/plugins/binary_filter/bzip2_serialization_filter.hpp"
+      "${HEADER_ROOT}/hpx/plugins/binary_filter/bzip2_serialization_filter_registration.hpp"
+    FOLDER "Core/Plugins/Compression"
+    DEPENDENCIES ${BZIP2_LIBRARIES})
+
+  if(NOT MSVC)
+    target_include_directories(compression_bzip2 SYSTEM PRIVATE ${BZIP2_INCLUDE_DIR})
   endif()
-endfunction()
+
+  target_include_directories(compression_bzip2 PUBLIC
+    $<BUILD_INTERFACE:${HEADER_ROOT}>)
+  target_link_libraries(compression_bzip2 PUBLIC Boost::iostreams)
+
+  add_hpx_pseudo_dependencies(plugins.binary_filter.bzip2 compression_bzip2)
+  add_hpx_pseudo_dependencies(core plugins.binary_filter.bzip2)
+endif()

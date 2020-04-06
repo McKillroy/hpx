@@ -8,17 +8,16 @@
 #define HPX_UTIL_DETAIL_PACK_TRAVERSAL_ASYNC_IMPL_HPP
 
 #include <hpx/config.hpp>
+#include <hpx/allocator_support/allocator_deleter.hpp>
 #include <hpx/assertion.hpp>
-#include <hpx/datastructures/detail/pack.hpp>
 #include <hpx/datastructures/tuple.hpp>
 #include <hpx/functional/invoke.hpp>
 #include <hpx/functional/invoke_fused.hpp>
+#include <hpx/memory/intrusive_ptr.hpp>
 #include <hpx/traits/future_access.hpp>
-#include <hpx/allocator_support/allocator_deleter.hpp>
 #include <hpx/type_support/always_void.hpp>
+#include <hpx/type_support/pack.hpp>
 #include <hpx/util/detail/container_category.hpp>
-
-#include <boost/intrusive_ptr.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -61,8 +60,8 @@ namespace util {
         template <std::size_t Offset, typename Pack>
         struct relocate_index_pack;
         template <std::size_t Offset, std::size_t... Sequence>
-        struct relocate_index_pack<Offset, pack_c<std::size_t, Sequence...>>
-          : std::common_type<pack_c<std::size_t, (Sequence + Offset)...>>
+        struct relocate_index_pack<Offset, index_pack<Sequence...>>
+          : std::common_type<index_pack<(Sequence + Offset)...>>
         {
         };
 
@@ -166,7 +165,7 @@ namespace util {
             void async_continue(T&& value, Hierarchy&& hierarchy)
             {
                 // Create a self reference
-                boost::intrusive_ptr<async_traversal_frame> self(this);
+                hpx::intrusive_ptr<async_traversal_frame> self(this);
 
                 // Create a callable object which resumes the current
                 // traversal when it's called.
@@ -273,26 +272,26 @@ namespace util {
                 return *this;
             }
 
-            HPX_CONSTEXPR auto operator*() const noexcept
+            constexpr auto operator*() const noexcept
                 -> decltype(util::get<Begin>(*target_))
             {
                 return util::get<Begin>(*target_);
             }
 
             template <std::size_t Position>
-            HPX_CONSTEXPR static_async_range<Target, Position, End> relocate()
+            constexpr static_async_range<Target, Position, End> relocate()
                 const noexcept
             {
                 return static_async_range<Target, Position, End>{target_};
             }
 
-            HPX_CONSTEXPR static_async_range<Target, Begin + 1, End> next()
+            constexpr static_async_range<Target, Begin + 1, End> next()
                 const noexcept
             {
                 return static_async_range<Target, Begin + 1, End>{target_};
             }
 
-            HPX_CONSTEXPR bool is_finished() const noexcept
+            constexpr bool is_finished() const noexcept
             {
                 return false;
             }
@@ -303,9 +302,9 @@ namespace util {
         template <typename Target, std::size_t Begin>
         struct static_async_range<Target, Begin, Begin>
         {
-            explicit static_async_range(Target*) {}
+            explicit constexpr static_async_range(Target*) {}
 
-            HPX_CONSTEXPR bool is_finished() const noexcept
+            constexpr bool is_finished() const noexcept
             {
                 return true;
             }
@@ -509,7 +508,7 @@ namespace util {
 
             template <std::size_t... Sequence, typename Current>
             void async_traverse_static_async_range(
-                pack_c<std::size_t, Sequence...>,
+                index_pack<Sequence...>,
                 Current&& current)
             {
                 int dummy[] = {((void) async_traverse_one_checked(
@@ -642,10 +641,10 @@ namespace util {
                     typename std::decay<Args>::type...>;
 
             /// The type of the frame pointer
-            using frame_pointer_type = boost::intrusive_ptr<frame_type>;
+            using frame_pointer_type = hpx::intrusive_ptr<frame_type>;
 
             /// The type of the demoted visitor type
-            using visitor_pointer_type = boost::intrusive_ptr<Visitor>;
+            using visitor_pointer_type = hpx::intrusive_ptr<Visitor>;
         };
 
         template <typename Visitor, typename VisitorArg, typename... Args>

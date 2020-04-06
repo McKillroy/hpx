@@ -8,15 +8,18 @@
 #define HPX_RUNTIME_THREADS_EXECUTORS_THREAD_POOL_OS_EXECUTORS_HPP
 
 #include <hpx/config.hpp>
+
+#if defined(HPX_HAVE_THREAD_EXECUTORS_COMPATIBILITY) && \
+    defined(HPX_HAVE_THREAD_POOL_OS_EXECUTOR_COMPATIBILITY)
 #include <hpx/datastructures/optional.hpp>
-#include <hpx/runtime/resource/detail/partitioner.hpp>
-#include <hpx/runtime/threads/detail/scheduled_thread_pool.hpp>
-#include <hpx/runtime/threads/policies/affinity_data.hpp>
-#include <hpx/runtime/threads/policies/callback_notifier.hpp>
-#include <hpx/runtime/threads/thread_enums.hpp>
+#include <hpx/resource_partitioner/detail/partitioner.hpp>
+#include <hpx/thread_pools/scheduled_thread_pool.hpp>
+#include <hpx/affinity/affinity_data.hpp>
+#include <hpx/threading_base/callback_notifier.hpp>
+#include <hpx/coroutines/thread_enums.hpp>
 #include <hpx/runtime/threads/thread_executor.hpp>
 #include <hpx/timing/steady_clock.hpp>
-#include <hpx/util/thread_description.hpp>
+#include <hpx/threading_base/thread_description.hpp>
 #include <hpx/functional/unique_function.hpp>
 
 #include <atomic>
@@ -85,7 +88,7 @@ namespace hpx { namespace threads { namespace executors {
             void set_scheduler_mode(
                 threads::policies::scheduler_mode mode) override
             {
-                pool_->set_scheduler_mode(mode);
+                pool_->get_scheduler()->set_scheduler_mode(mode);
             }
 
         protected:
@@ -161,5 +164,6 @@ namespace hpx { namespace threads { namespace executors {
 }}}    // namespace hpx::threads::executors
 
 #include <hpx/config/warnings_suffix.hpp>
+#endif
 
 #endif /*HPX_RUNTIME_THREADS_EXECUTORS_THREAD_POOL_OS_EXECUTORS_HPP*/

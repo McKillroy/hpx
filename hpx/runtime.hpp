@@ -9,21 +9,22 @@
 #define HPX_RUNTIME_RUNTIME_JUN_10_2008_1012AM
 
 #include <hpx/config.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/performance_counters/counters.hpp>
+#include <hpx/program_options.hpp>
 #include <hpx/runtime/applier_fwd.hpp>
 #include <hpx/runtime/components/component_type.hpp>
 #include <hpx/runtime/parcelset/locality.hpp>
 #include <hpx/runtime/parcelset_fwd.hpp>
-#include <hpx/runtime/runtime_mode.hpp>
+#include <hpx/runtime_configuration/runtime_mode.hpp>
 #include <hpx/runtime/shutdown_function.hpp>
 #include <hpx/runtime/startup_function.hpp>
 #include <hpx/runtime/thread_hooks.hpp>
-#include <hpx/runtime/threads/policies/callback_notifier.hpp>
+#include <hpx/threading_base/callback_notifier.hpp>
 #include <hpx/topology/topology.hpp>
 #include <hpx/runtime_fwd.hpp>
 #include <hpx/state.hpp>
-#include <hpx/util/runtime_configuration.hpp>
+#include <hpx/runtime_configuration/runtime_configuration.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -182,14 +183,14 @@ namespace hpx
         virtual int suspend() = 0;
         virtual int resume() = 0;
 
-        virtual parcelset::parcelhandler& get_parcel_handler() = 0;
-        virtual parcelset::parcelhandler const& get_parcel_handler() const = 0;
-
         virtual threads::threadmanager& get_thread_manager() = 0;
-
         virtual naming::resolver_client& get_agas_client() = 0;
 
+#if defined(HPX_HAVE_NETWORKING)
+        virtual parcelset::parcelhandler& get_parcel_handler() = 0;
+        virtual parcelset::parcelhandler const& get_parcel_handler() const = 0;
         virtual parcelset::endpoints_type const& endpoints() const = 0;
+#endif
         virtual std::string here() const = 0;
 
         virtual applier::applier& get_applier() = 0;
@@ -288,10 +289,12 @@ namespace hpx
             char const* description = nullptr, error_code& ec = throws);
 
         // stop periodic evaluation of counters during shutdown
-        void stop_evaluating_counters();
+        void stop_evaluating_counters(bool terminate = false);
 
+#if defined(HPX_HAVE_NETWORKING)
         void register_message_handler(char const* message_handler_type,
             char const* action, error_code& ec = throws);
+
         parcelset::policies::message_handler* create_message_handler(
             char const* message_handler_type, char const* action,
             parcelset::parcelport* pp, std::size_t num_messages,
@@ -299,6 +302,7 @@ namespace hpx
         serialization::binary_filter* create_binary_filter(
             char const* binary_filter_type, bool compress,
             serialization::binary_filter* next_filter, error_code& ec = throws);
+#endif
 
         notification_policy_type::on_startstop_type on_start_func() const;
         notification_policy_type::on_startstop_type on_stop_func() const;
@@ -347,11 +351,24 @@ namespace hpx
         std::unique_ptr<components::server::memory> memory_;
         std::unique_ptr<components::server::runtime_support> runtime_support_;
 
-        // support tieing in external functions to be called for thread events
+        // support tying in external functions to be called for thread events
         notification_policy_type::on_startstop_type on_start_func_;
         notification_policy_type::on_startstop_type on_stop_func_;
         notification_policy_type::on_error_type on_error_func_;
     };
+
+    namespace util {
+        ///////////////////////////////////////////////////////////////////////////
+        // retrieve the command line arguments for the current locality
+        HPX_API_EXPORT bool retrieve_commandline_arguments(
+            hpx::program_options::options_description const& app_options,
+            hpx::program_options::variables_map& vm);
+
+        ///////////////////////////////////////////////////////////////////////////
+        // retrieve the command line arguments for the current locality
+        HPX_API_EXPORT bool retrieve_commandline_arguments(
+            std::string const& appname, hpx::program_options::variables_map& vm);
+    }    // namespace util
 }   // namespace hpx
 
 #include <hpx/config/warnings_suffix.hpp>

@@ -1,5 +1,5 @@
 ..
-    Copyright (c) 2007-2019 Louisiana State University
+    Copyright (c) 2007-2020 Louisiana State University
 
     SPDX-License-Identifier: BSL-1.0
     Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -8,9 +8,9 @@
 |circleci_status| |zenodo_doi| |codacy|
 
 Documentation: `latest
-<https://stellar-group.github.io/hpx/docs/sphinx/latest/html/index.html>`_,
+<https://stellar-group.github.io/hpx-docs/latest/html/index.html>`_,
 `development (master)
-<https://stellar-group.github.io/hpx/docs/sphinx/branches/master/html/index.html>`_
+<https://stellar-group.github.io/hpx-docs/branches/master/html/index.html>`_
 
 ===
 HPX
@@ -61,6 +61,16 @@ What's so special about HPX?
 * HPX is published under a liberal open-source license and has an open, active,
   and thriving developer community.
 
+Governance
+==========
+
+The HPX project is a meritocratic, consensus-based community project. Anyone
+with an interest in the project can join the community, contribute to the
+project design and participate in the decision making process.
+`This document <http://hpx.stellar-group.org/documents/governance/>`_ describes
+how that participation takes place and how to set about earning merit within
+the project community.
+
 Documentation
 =============
 
@@ -69,16 +79,16 @@ which can be downloaded `here <https://stellar.cct.lsu.edu/downloads/>`_.
 
 To quickly get started with HPX on most Linux distributions you can read the
 quick start guide `here
-<https://stellar-group.github.io/hpx/docs/sphinx/latest/html/quickstart.html>`_.
+<https://stellar-group.github.io/hpx-docs/latest/html/quickstart.html>`_.
 Detailed instructions on building and installing HPX on various platforms can be
 found `here
-<https://stellar-group.github.io/hpx/docs/sphinx/latest/html/manual/building_hpx.html>`_.
+<https://stellar-group.github.io/hpx-docs/latest/html/manual/building_hpx.html>`_.
 The full documentation for the latest release of HPX can always be found `here
-<https://stellar-group.github.io/hpx/docs/sphinx/latest/html/index.html>`_.
+<https://stellar-group.github.io/hpx-docs/latest/html/index.html>`_.
 
 If you would like to work with the cutting edge version of this repository
 (``master`` branch) the documentation can be found `here
-<https://stellar-group.github.io/hpx/docs/sphinx/branches/master/html/index.html>`_.
+<https://stellar-group.github.io/hpx-docs/branches/master/html/index.html>`_.
 We strongly recommend that you follow the current health status of the master
 branch by looking at our `continuous integration results website
 <http://rostam.cct.lsu.edu/console>`_. While we try to keep the master branch
@@ -87,7 +97,8 @@ stable and usable, sometimes new bugs trick their way into the code base. The
 service additionally tracks the current build status for the master branch:
 |circleci_status|.
 
-We use `Codacy <https://www.codacy.com/>`_ to assess the code quality of this project: |codacy|.
+We use `Codacy <https://www.codacy.com/>`_ to assess the code quality of this
+project: |codacy|.
 
 If you can't find what you are looking for in the documentation or you suspect
 you've found a bug in HPX we very much encourage and appreciate any issue
@@ -176,7 +187,7 @@ HPX is currently funded by
 
 .. |zenodo_doi| image:: https://zenodo.org/badge/DOI/10.5281/zenodo.598202.svg
      :target: https://doi.org/10.5281/zenodo.598202
-     
+
 .. |codacy| image:: https://api.codacy.com/project/badge/Grade/fef52e7a84d04123921152e35fbb1594
      :target: https://www.codacy.com/app/STEllAR-GROUP/hpx
      :alt: HPX Code Quality Assessment

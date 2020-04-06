@@ -12,8 +12,8 @@
 #include <hpx/runtime/actions/action_support.hpp>
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/naming/address.hpp>
-#include <hpx/runtime/threads/thread_enums.hpp>
-#include <hpx/runtime/threads/thread_helpers.hpp>
+#include <hpx/coroutines/thread_enums.hpp>
+#include <hpx/threading_base/thread_helpers.hpp>
 #include <hpx/runtime_fwd.hpp>
 #include <hpx/state.hpp>
 #include <hpx/traits/action_continuation.hpp>

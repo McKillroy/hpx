@@ -21,8 +21,6 @@
 #include <plugins/parcelport/verbs/rdma/verbs_completion_queue.hpp>
 #include <plugins/parcelport/verbs/rdma/verbs_device.hpp>
 //
-#include <boost/lexical_cast.hpp>
-//
 #include <poll.h>
 #include <errno.h>
 #include <iomanip>
@@ -562,7 +560,7 @@ int rdma_controller::handle_connect_request(
         }
         else {
             // we need to delete the connection we started and replace it with a new one
-            LOG_DEVEL_MSG("Priorty to new, Aborting old from "
+            LOG_DEVEL_MSG("Priority to new, Aborting old from "
                 << sockaddress(&local_addr_) << "to "
                 << ipaddress(remote_ip)
                 << "( " << sockaddress(&local_addr_) << ")");

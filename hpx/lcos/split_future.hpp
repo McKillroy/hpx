@@ -67,20 +67,19 @@ namespace hpx
 #else // DOXYGEN
 
 #include <hpx/config.hpp>
+#include <hpx/datastructures/tuple.hpp>
 #include <hpx/errors.hpp>
+#include <hpx/functional/deferred_call.hpp>
 #include <hpx/lcos/detail/future_data.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/lcos/local/packaged_continuation.hpp>
+#include <hpx/memory/intrusive_ptr.hpp>
 #include <hpx/traits/acquire_future.hpp>
 #include <hpx/traits/acquire_shared_state.hpp>
 #include <hpx/traits/future_access.hpp>
 #include <hpx/traits/future_traits.hpp>
-#include <hpx/functional/deferred_call.hpp>
-#include <hpx/datastructures/detail/pack.hpp>
-#include <hpx/datastructures/tuple.hpp>
+#include <hpx/type_support/pack.hpp>
 #include <hpx/type_support/unused.hpp>
-
-#include <boost/intrusive_ptr.hpp>
 
 #include <array>
 #include <cstddef>
@@ -130,7 +129,7 @@ namespace hpx { namespace lcos
                 // Bind an on_completed handler to this future which will wait
                 // for the future and will transfer its result to the new
                 // future.
-                boost::intrusive_ptr<split_nth_continuation> this_(this);
+                hpx::intrusive_ptr<split_nth_continuation> this_(this);
                 shared_state_ptr const& state =
                     hpx::traits::detail::get_shared_state(future);
 
@@ -193,7 +192,7 @@ namespace hpx { namespace lcos
         HPX_FORCEINLINE
         hpx::util::tuple<hpx::future<Ts>...>
         split_future_helper(hpx::future<hpx::util::tuple<Ts...> > && f,
-            hpx::util::detail::pack_c<std::size_t, Is...>)
+            hpx::util::index_pack<Is...>)
         {
             return hpx::util::make_tuple(extract_nth_future<Is>(f)...);
         }
@@ -202,7 +201,7 @@ namespace hpx { namespace lcos
         HPX_FORCEINLINE
         hpx::util::tuple<hpx::future<Ts>...>
         split_future_helper(hpx::shared_future<hpx::util::tuple<Ts...> > && f,
-            hpx::util::detail::pack_c<std::size_t, Is...>)
+            hpx::util::index_pack<Is...>)
         {
             return hpx::util::make_tuple(extract_nth_future<Is>(f)...);
         }
@@ -266,7 +265,7 @@ namespace hpx { namespace lcos
                 // Bind an on_completed handler to this future which will wait
                 // for the future and will transfer its result to the new
                 // future.
-                boost::intrusive_ptr<split_continuation> this_(this);
+                hpx::intrusive_ptr<split_continuation> this_(this);
                 shared_state_ptr const& state =
                     hpx::traits::detail::get_shared_state(future);
 
@@ -321,10 +320,8 @@ namespace hpx { namespace lcos
     HPX_FORCEINLINE hpx::util::tuple<hpx::future<Ts>...>
     split_future(hpx::future<hpx::util::tuple<Ts...> > && f)
     {
-        return detail::split_future_helper(
-                std::move(f),
-                typename hpx::util::detail::make_index_pack<sizeof...(Ts)>::type()
-            );
+        return detail::split_future_helper(std::move(f),
+            typename hpx::util::make_index_pack<sizeof...(Ts)>::type());
     }
 
     HPX_FORCEINLINE hpx::util::tuple<hpx::future<void> >
@@ -333,14 +330,12 @@ namespace hpx { namespace lcos
         return hpx::util::make_tuple(hpx::future<void>(std::move(f)));
     }
 
-    template <typename ... Ts>
-    HPX_FORCEINLINE hpx::util::tuple<hpx::future<Ts>...>
-    split_future(hpx::shared_future<hpx::util::tuple<Ts...> > && f)
+    template <typename... Ts>
+    HPX_FORCEINLINE hpx::util::tuple<hpx::future<Ts>...> split_future(
+        hpx::shared_future<hpx::util::tuple<Ts...>>&& f)
     {
-        return detail::split_future_helper(
-                std::move(f),
-                typename hpx::util::detail::make_index_pack<sizeof...(Ts)>::type()
-            );
+        return detail::split_future_helper(std::move(f),
+            typename hpx::util::make_index_pack<sizeof...(Ts)>::type());
     }
 
     HPX_FORCEINLINE hpx::util::tuple<hpx::future<void> >

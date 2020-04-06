@@ -17,9 +17,9 @@
 #include <hpx/errors.hpp>
 #include <hpx/lcos/wait_all.hpp>
 
-#include <hpx/parallel/execution_policy.hpp>
-#include <hpx/parallel/executors/execution.hpp>
-#include <hpx/parallel/executors/execution_parameters.hpp>
+#include <hpx/execution/execution_policy.hpp>
+#include <hpx/execution/executors/execution.hpp>
+#include <hpx/execution/executors/execution_parameters.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/detail/chunk_size.hpp>
 #include <hpx/parallel/util/detail/handle_local_exceptions.hpp>
@@ -336,10 +336,10 @@ namespace hpx { namespace parallel { namespace util {
                 std::size_t count, T&& init, F1&& f1, F2&& f2, F3&& f3, F4&& f4)
             {
                 return execution::async_execute(policy.executor(),
-                    [first, count, HPX_CAPTURE_FORWARD(policy),
-                        HPX_CAPTURE_FORWARD(init), HPX_CAPTURE_FORWARD(f1),
-                        HPX_CAPTURE_FORWARD(f2), HPX_CAPTURE_FORWARD(f3),
-                        HPX_CAPTURE_FORWARD(f4)]() mutable -> R {
+                    [first, count, policy = std::forward<ExPolicy_>(policy),
+                        init = std::forward<T>(init), f1 = std::forward<F1>(f1),
+                        f2 = std::forward<F2>(f2), f3 = std::forward<F3>(f3),
+                        f4 = std::forward<F4>(f4)]() mutable -> R {
                         using partitioner_type =
                             scan_static_partitioner<ExPolicy, ScanPartTag, R,
                                 Result1, Result2>;

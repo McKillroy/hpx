@@ -12,12 +12,12 @@
 
 #include <hpx/config.hpp>
 #include <hpx/functional/invoke.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
+#include <hpx/iterator_support/zip_iterator.hpp>
 #include <hpx/util/unwrap.hpp>
-#include <hpx/util/zip_iterator.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/loop.hpp>
 #include <hpx/parallel/util/partitioner.hpp>
@@ -141,7 +141,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                     std::forward<ExPolicy>(policy),
                     make_zip_iterator(first, dest), count, init,
                     // step 1 performs first part of scan algorithm
-                    [op, last, HPX_CAPTURE_FORWARD(conv)](
+                    [op, last, conv = std::forward<Conv>(conv)](
                         zip_iterator part_begin, std::size_t part_size) -> T {
                         T part_init =
                             hpx::util::invoke(conv, get<0>(*part_begin));
@@ -294,118 +294,6 @@ namespace hpx { namespace parallel { inline namespace v1 {
         return detail::inclusive_scan_(std::forward<ExPolicy>(policy), first,
             last, dest, init, std::forward<Op>(op), is_segmented());
     }
-
-#if defined(HPX_HAVE_INCLUSIVE_SCAN_COMPATIBILITY)
-    /// \cond NOINTERNAL
-    template <typename ExPolicy, typename FwdIter1, typename FwdIter2,
-        typename T, typename Op,
-        HPX_CONCEPT_REQUIRES_(execution::is_execution_policy<ExPolicy>::value&&
-                hpx::traits::is_iterator<FwdIter1>::value&& hpx::traits::
-                    is_iterator<FwdIter2>::value&& hpx::traits::is_invocable<Op,
-                        typename std::iterator_traits<FwdIter1>::value_type,
-                        typename std::iterator_traits<FwdIter1>::value_type>::
-                        value)>
-    HPX_DEPRECATED(HPX_DEPRECATED_MSG)
-    typename util::detail::algorithm_result<ExPolicy, FwdIter2>::type
-        inclusive_scan(ExPolicy&& policy, FwdIter1 first, FwdIter1 last,
-            FwdIter2 dest, T init, Op&& op)
-    {
-        static_assert((hpx::traits::is_forward_iterator<FwdIter1>::value),
-            "Requires at least forward iterator.");
-        static_assert((hpx::traits::is_forward_iterator<FwdIter2>::value),
-            "Requires at least forward iterator.");
-
-        typedef hpx::traits::is_segmented_iterator<FwdIter1> is_segmented;
-
-        return detail::inclusive_scan_(std::forward<ExPolicy>(policy), first,
-            last, dest, init, std::forward<Op>(op), is_segmented());
-    }
-    /// \endcond
-
-    ///////////////////////////////////////////////////////////////////////////
-    /// Assigns through each iterator \a i in [result, result + (last - first))
-    /// the value of
-    /// GENERALIZED_NONCOMMUTATIVE_SUM(+, init, *first, ..., *(first + (i - result))).
-    ///
-    /// \note   Complexity: O(\a last - \a first) applications of the
-    ///         predicate \a +.
-    ///
-    /// \tparam ExPolicy    The type of the execution policy to use (deduced).
-    ///                     It describes the manner in which the execution
-    ///                     of the algorithm may be parallelized and the manner
-    ///                     in which it executes the assignments.
-    /// \tparam FwdIter1    The type of the source iterators used (deduced).
-    ///                     This iterator type must meet the requirements of an
-    ///                     forward iterator.
-    /// \tparam FwdIter2    The type of the iterator representing the
-    ///                     destination range (deduced).
-    ///                     This iterator type must meet the requirements of an
-    ///                     forward iterator.
-    /// \tparam T           The type of the value to be used as initial (and
-    ///                     intermediate) values (deduced).
-    ///
-    /// \param policy       The execution policy to use for the scheduling of
-    ///                     the iterations.
-    /// \param first        Refers to the beginning of the sequence of elements
-    ///                     the algorithm will be applied to.
-    /// \param last         Refers to the end of the sequence of elements the
-    ///                     algorithm will be applied to.
-    /// \param dest         Refers to the beginning of the destination range.
-    /// \param init         The initial value for the generalized sum.
-    ///
-    /// The reduce operations in the parallel \a inclusive_scan algorithm invoked
-    /// with an execution policy object of type \a sequenced_policy
-    /// execute in sequential order in the calling thread.
-    ///
-    /// The reduce operations in the parallel \a inclusive_scan algorithm invoked
-    /// with an execution policy object of type \a parallel_policy
-    /// or \a parallel_task_policy are permitted to execute in an unordered
-    /// fashion in unspecified threads, and indeterminately sequenced
-    /// within each thread.
-    ///
-    /// \returns  The \a copy_n algorithm returns a \a hpx::future<FwdIter2> if
-    ///           the execution policy is of type
-    ///           \a sequenced_task_policy or
-    ///           \a parallel_task_policy and
-    ///           returns \a FwdIter2 otherwise.
-    ///           The \a inclusive_scan algorithm returns the output iterator
-    ///           to the element in the destination range, one past the last
-    ///           element copied.
-    ///
-    /// \note   GENERALIZED_NONCOMMUTATIVE_SUM(+, a1, ..., aN) is defined as:
-    ///         * a1 when N is 1
-    ///         * GENERALIZED_NONCOMMUTATIVE_SUM(op, a1, ..., aK)
-    ///           + GENERALIZED_NONCOMMUTATIVE_SUM(+, aM, ..., aN)
-    ///           where 1 < K+1 = M <= N.
-    ///
-    /// The difference between \a exclusive_scan and \a inclusive_scan is that
-    /// \a inclusive_scan includes the ith input element in the ith sum.
-    ///
-    template <typename ExPolicy, typename FwdIter1, typename FwdIter2,
-        typename T,
-        HPX_CONCEPT_REQUIRES_(
-            execution::is_execution_policy<ExPolicy>::value&&
-                hpx::traits::is_iterator<FwdIter1>::value&&
-                    hpx::traits::is_iterator<FwdIter2>::value &&
-            !hpx::traits::is_invocable<T,
-                typename std::iterator_traits<FwdIter1>::value_type,
-                typename std::iterator_traits<FwdIter1>::value_type>::value)>
-    HPX_DEPRECATED(HPX_DEPRECATED_MSG)
-    typename util::detail::algorithm_result<ExPolicy, FwdIter2>::type
-        inclusive_scan(ExPolicy&& policy, FwdIter1 first, FwdIter1 last,
-            FwdIter2 dest, T init)
-    {
-        static_assert((hpx::traits::is_forward_iterator<FwdIter1>::value),
-            "Requires at least forward iterator.");
-        static_assert((hpx::traits::is_forward_iterator<FwdIter2>::value),
-            "Requires at least forward iterator.");
-
-        typedef hpx::traits::is_segmented_iterator<FwdIter1> is_segmented;
-
-        return detail::inclusive_scan_(std::forward<ExPolicy>(policy), first,
-            last, dest, init, std::plus<T>(), is_segmented());
-    }
-#endif
 
     ///////////////////////////////////////////////////////////////////////////
     /// Assigns through each iterator \a i in [result, result + (last - first))

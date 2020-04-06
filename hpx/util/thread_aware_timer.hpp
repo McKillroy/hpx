@@ -8,7 +8,7 @@
 #define HPX_UTIL_THREAD_AWARE_TIMER_AUG_17_2012_0745PM
 
 #include <hpx/lcos/future.hpp>
-#include <hpx/lcos/local/promise.hpp>
+#include <hpx/local_lcos/promise.hpp>
 #include <hpx/timing/high_resolution_clock.hpp>
 
 #include <cstdint>
@@ -50,7 +50,7 @@ namespace hpx { namespace util
 
         std::int64_t elapsed_microseconds() const
         {
-            return std::int64_t((take_time_stamp() - start_time_) * 1e-3);
+            return std::int64_t((take_time_stamp() - start_time_) / 1000);
         }
 
         std::int64_t elapsed_nanoseconds() const

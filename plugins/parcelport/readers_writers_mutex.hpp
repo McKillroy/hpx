@@ -12,7 +12,7 @@
 #define HPX_READERS_WRITERS_MUTEX_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/util/detail/yield_k.hpp>
+#include <hpx/basic_execution/this_thread.hpp>
 
 #include <plugins/parcelport/parcelport_logging.hpp>
 
@@ -22,7 +22,7 @@
 # define RWL_DEBUG_MSG(x)
 #endif
 
-// Note that this implementaion uses 16bit counters so can handle 65536
+// Note that this implementation uses 16bit counters so can handle 65536
 // contentions on the lock without wraparound. It has not proven to be a
 // problem so far. (c.f. original description below)
 

@@ -6,7 +6,7 @@
 
 #include <hpx/hpx_init.hpp>
 #include <hpx/hpx.hpp>
-#include <hpx/timing/high_resolution_clock.hpp>
+#include <hpx/timing.hpp>
 #include <hpx/include/parallel_algorithm.hpp>
 #include <hpx/include/iostreams.hpp>
 #include <hpx/include/partitioned_vector_predef.hpp>
@@ -160,7 +160,7 @@ int main(int argc, char* argv[])
 
         ("test_count"
         , hpx::program_options::value<int>()->default_value(100)
-        , "number of tests to be averaged (defalt: 100)")
+        , "number of tests to be averaged (default: 100)")
 
         ("chunk_size"
         , hpx::program_options::value<int>()->default_value(0)

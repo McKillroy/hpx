@@ -22,6 +22,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/parallel_algorithm.hpp>
 #include <hpx/resiliency/resiliency.hpp>
+#include <hpx/synchronization.hpp>
 #include <boost/range/irange.hpp>
 
 #include <cstddef>
@@ -71,7 +72,7 @@ public:
         {
             data_[k] = std::sin(2 * pi *
                 ((0.0 + subdomain_width * subdomain_index + k) /
-                    (subdomain_width * subdomains)));
+                    static_cast<double>(subdomain_width * subdomains)));
             checksum_ += data_[k];
         }
     }
@@ -335,7 +336,9 @@ int hpx_main(hpx::program_options::variables_map& vm)
     }
 
     std::cout << "Time elapsed: "
-              << (hpx::util::high_resolution_clock::now() - t) / 1e9
+              << static_cast<double>(
+                     hpx::util::high_resolution_clock::now() - t) /
+            1e9
               << std::endl;
     std::cout << "Errors occurred: " << counter << std::endl;
 

@@ -10,12 +10,12 @@
 #define HPX_PARALLEL_DETAIL_EQUAL_JUL_06_2014_0848PM
 
 #include <hpx/config.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
 #include <hpx/iterator_support/range.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 
+#include <hpx/execution/algorithms/detail/predicates.hpp>
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/algorithms/detail/predicates.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/loop.hpp>
 #include <hpx/parallel/util/partitioner.hpp>
@@ -91,7 +91,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
 
                 difference_type1 count1 = std::distance(first1, last1);
 
-                // The specifcation of std::equal(_binary) states that if FwdIter1
+                // The specification of std::equal(_binary) states that if FwdIter1
                 // and FwdIter2 meet the requirements of RandomAccessIterator and
                 // last1 - first1 != last2 - first2 then no applications of the
                 // predicate p are made.

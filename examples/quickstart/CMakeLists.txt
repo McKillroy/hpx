@@ -20,6 +20,7 @@ set(example_programs
     enumerate_threads
     error_handling
     event_synchronization
+    executor_with_thread_hooks
     factorial
     fibonacci
     fibonacci_await
@@ -96,6 +97,7 @@ set(partitioned_vector_spmd_foreach_FLAGS
 set(pingpong_FLAGS COMPONENT_DEPENDENCIES iostreams)
 set(potpourri_FLAGS COMPONENT_DEPENDENCIES iostreams)
 set(shared_mutex_FLAGS COMPONENT_DEPENDENCIES iostreams)
+set(shared_mutex_LIBRARIES hpx_dependencies_boost)
 set(simple_future_continuation_FLAGS COMPONENT_DEPENDENCIES iostreams)
 set(timed_futures_FLAGS COMPONENT_DEPENDENCIES iostreams)
 set(vector_counting_dotproduct_FLAGS COMPONENT_DEPENDENCIES iostreams)
@@ -126,7 +128,8 @@ set(timed_futures_PARAMETERS THREADS_PER_LOCALITY 4)
 set(vector_counting_dotproduct_PARAMETERS THREADS_PER_LOCALITY 4)
 set(vector_zip_dotproduct_PARAMETERS THREADS_PER_LOCALITY 4)
 
-if(HPX_WITH_LOCAL_SCHEDULER OR HPX_WITH_ALL_SCHEDULERS)
+if((HPX_WITH_LOCAL_SCHEDULER OR HPX_WITH_ALL_SCHEDULERS)
+    AND HPX_WITH_EMBEDDED_THREAD_POOLS_COMPATIBILITY)
   set(example_programs ${example_programs}
       fractals_executor
      )
@@ -149,10 +152,12 @@ foreach(example_program ${example_programs})
 
   # add example executable
   add_hpx_executable(${example_program}
+                     INTERNAL_FLAGS
                      SOURCES ${sources}
                      ${${example_program}_FLAGS}
                      FOLDER "Examples/Quickstart")
 
+  target_link_libraries(${example_program} PRIVATE ${${example_program}_LIBRARIES})
   add_hpx_example_target_dependencies("quickstart" ${example_program})
 
   if(HPX_WITH_TESTS AND HPX_WITH_TESTS_EXAMPLES AND

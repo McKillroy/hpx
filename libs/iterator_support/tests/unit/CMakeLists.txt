@@ -5,11 +5,16 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 set(tests
+    counting_iterator
     is_iterator
     is_range
     iterator_adaptor
     iterator_facade
     range
+    stencil3_iterator
+    transform_iterator
+    transform_iterator2
+    zip_iterator
 )
 
 # Set the dependencies of each test
@@ -31,12 +36,13 @@ foreach(test ${tests})
   source_group("Source Files" FILES ${sources})
 
   add_hpx_executable(${test}_test
-                     SOURCES ${sources}
-                     ${${test}_FLAGS}
-                     ${${test}_LIBS}
-                     EXCLUDE_FROM_ALL
-                     HPX_PREFIX ${HPX_BUILD_PREFIX}
-                     FOLDER "Tests/Unit/Modules/Iterator_support")
+    INTERNAL_FLAGS
+    SOURCES ${sources}
+    ${${test}_FLAGS}
+    ${${test}_LIBS}
+    EXCLUDE_FROM_ALL
+    HPX_PREFIX ${HPX_BUILD_PREFIX}
+    FOLDER "Tests/Unit/Modules/IteratorSupport")
 
   add_hpx_unit_test("modules.iterator_support" ${test} ${${test}_PARAMETERS})
 

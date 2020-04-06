@@ -5,7 +5,7 @@
     Copyright (c) Pablo Aguilar 2005
     Copyright (c) Kevlin Henney 2001
 
-//  SPDX-License-Identifier: BSL-1.0
+    SPDX-License-Identifier: BSL-1.0
     Distributed under the Boost Software License, Version 1.0. (See accompanying
     file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -19,10 +19,10 @@
 #include <hpx/config.hpp>
 #include <hpx/assertion.hpp>
 #include <hpx/datastructures/any.hpp>
-#include <hpx/runtime/serialization/base_object.hpp>
-#include <hpx/runtime/serialization/detail/raw_ptr.hpp>
-#include <hpx/runtime/serialization/serialize.hpp>
-#include <hpx/traits/supports_streaming_with_any.hpp>
+#include <hpx/datastructures/traits/supports_streaming_with_any.hpp>
+#include <hpx/serialization/base_object.hpp>
+#include <hpx/serialization/detail/raw_ptr.hpp>
+#include <hpx/serialization/serialize.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -44,9 +44,9 @@ namespace hpx { namespace util { namespace detail { namespace any {
     ////////////////////////////////////////////////////////////////////////////
     // serializable function pointer table
     template <typename IArch, typename OArch, typename Char>
-    struct fxn_ptr_table
+    struct fxn_ptr_table<IArch, OArch, Char, std::true_type>
     {
-        virtual ~fxn_ptr_table() {}
+        virtual ~fxn_ptr_table() = default;
         virtual fxn_ptr_table* get_ptr() = 0;
 
         std::type_info const& (*get_type)();
@@ -73,9 +73,10 @@ namespace hpx { namespace util { namespace detail { namespace any {
 
     ////////////////////////////////////////////////////////////////////////////
     template <typename IArch, typename OArch, typename Vtable, typename Char>
-    struct fxn_ptr : fxn_ptr_table<IArch, OArch, Char>
+    struct fxn_ptr<IArch, OArch, Vtable, Char, std::true_type>
+      : fxn_ptr_table<IArch, OArch, Char, std::true_type>
     {
-        using base_type = fxn_ptr_table<IArch, OArch, Char>;
+        using base_type = fxn_ptr_table<IArch, OArch, Char, std::true_type>;
 
         fxn_ptr()
         {
@@ -116,14 +117,14 @@ namespace hpx { namespace util {
 
     ////////////////////////////////////////////////////////////////////////////
     template <typename IArch, typename OArch, typename Char>
-    class basic_any
+    class basic_any<IArch, OArch, Char, std::true_type>
     {
     public:
         // constructors
-        HPX_CONSTEXPR basic_any() noexcept
+        constexpr basic_any() noexcept
           : table(
                 detail::any::get_table<detail::any::empty>::template get<IArch,
-                    OArch, Char>())
+                    OArch, Char, std::true_type>())
           , object(nullptr)
         {
         }
@@ -131,7 +132,7 @@ namespace hpx { namespace util {
         basic_any(basic_any const& x)
           : table(
                 detail::any::get_table<detail::any::empty>::template get<IArch,
-                    OArch, Char>())
+                    OArch, Char, std::true_type>())
           , object(nullptr)
         {
             assign(x);
@@ -144,19 +145,19 @@ namespace hpx { namespace util {
         {
             x.table =
                 detail::any::get_table<detail::any::empty>::template get<IArch,
-                    OArch, Char>();
+                    OArch, Char, std::true_type>();
             x.object = nullptr;
         }
 
         // Perfect forwarding of T
-        template <typename T>
+        template <typename T,
+            typename Enable = typename std::enable_if<!std::is_same<basic_any,
+                typename std::decay<T>::type>::value>::type>
         basic_any(T&& x,
-            typename std::enable_if<
-                !std::is_same<basic_any, typename std::decay<T>::type>::value &&
-                std::is_copy_constructible<
-                    typename std::decay<T>::type>::value>::type* = nullptr)
+            typename std::enable_if<std::is_copy_constructible<
+                typename std::decay<T>::type>::value>::type* = nullptr)
           : table(detail::any::get_table<typename util::decay<T>::type>::
-                    template get<IArch, OArch, Char>())
+                    template get<IArch, OArch, Char, std::true_type>())
           , object(nullptr)
         {
             using value_type = typename util::decay<T>::type;
@@ -174,7 +175,7 @@ namespace hpx { namespace util {
                     typename std::decay<T>::type>::value>::type>
         explicit basic_any(std::in_place_type_t<T>, Ts&&... ts)
           : table(detail::any::get_table<typename std::decay<T>::type>::
-                    template get<IArch, OArch, Char>())
+                    template get<IArch, OArch, Char, std::true_type>())
           , object(nullptr)
         {
             using value_type = typename std::decay<T>::type;
@@ -192,7 +193,7 @@ namespace hpx { namespace util {
         explicit basic_any(
             std::in_place_type_t<T>, std::initializer_list<U> il, Ts&&... ts)
           : table(detail::any::get_table<typename std::decay<T>::type>::
-                    template get<IArch, OArch, Char>())
+                    template get<IArch, OArch, Char, std::true_type>())
           , object(nullptr)
         {
             using value_type = typename std::decay<T>::type;
@@ -245,6 +246,7 @@ namespace hpx { namespace util {
 
     public:
         // copy assignment operator
+        // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
         basic_any& operator=(basic_any const& x)
         {
             basic_any(x).swap(*this);
@@ -252,6 +254,7 @@ namespace hpx { namespace util {
         }
 
         // move assignment
+        // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
         basic_any& operator=(basic_any&& rhs) noexcept
         {
             rhs.swap(*this);
@@ -305,8 +308,9 @@ namespace hpx { namespace util {
             if (has_value())
             {
                 table->static_delete(&object);
-                table = detail::any::get_table<
-                    detail::any::empty>::template get<IArch, OArch, Char>();
+                table =
+                    detail::any::get_table<detail::any::empty>::template get<
+                        IArch, OArch, Char, std::true_type>();
                 object = nullptr;
             }
         }
@@ -327,20 +331,6 @@ namespace hpx { namespace util {
             return false;
         }
 
-        // these functions have been added in the assumption that the embedded
-        // type has a corresponding operator defined, which is completely safe
-        // because hpx::util::any is used only in contexts where these operators
-        // exist
-        template <typename IArch_, typename OArch_, typename Char_>
-        friend std::basic_istream<Char_>& operator>>(
-            std::basic_istream<Char_>& i,
-            basic_any<IArch_, OArch_, Char_>& obj);
-
-        template <typename IArch_, typename OArch_, typename Char_>
-        friend std::basic_ostream<Char_>& operator<<(
-            std::basic_ostream<Char_>& o,
-            basic_any<IArch_, OArch_, Char_> const& obj);
-
     private:
         friend class hpx::serialization::access;
 
@@ -355,10 +345,10 @@ namespace hpx { namespace util {
             }
             else
             {
-                typename detail::any::fxn_ptr_table<IArch, OArch, Char>* p =
-                    nullptr;
+                typename detail::any::fxn_ptr_table<IArch, OArch, Char,
+                    std::true_type>* p = nullptr;
                 ar >> hpx::serialization::detail::raw_ptr(p);
-                table = p->get_ptr();
+                table = p->get_ptr();  // -V522
                 delete p;
                 table->load_object(&object, ar, version);
             }
@@ -378,12 +368,11 @@ namespace hpx { namespace util {
         HPX_SERIALIZATION_SPLIT_MEMBER();
 
     private:    // types
-        template <typename T, typename IArch_, typename OArch_,
-            typename Char_>
-        friend T* any_cast(basic_any<IArch_, OArch_, Char_>*) noexcept;
+        friend struct detail::any::any_cast_support;
+        friend struct detail::any::stream_support;
 
         // fields
-        detail::any::fxn_ptr_table<IArch, OArch, Char>* table;
+        detail::any::fxn_ptr_table<IArch, OArch, Char, std::true_type>* table;
         void* object;
     };
 
@@ -394,7 +383,7 @@ namespace hpx { namespace util {
     make_any(Ts&&... ts)
     {
         return basic_any<serialization::input_archive,
-            serialization::output_archive, Char>(
+            serialization::output_archive, Char, std::true_type>(
             std::in_place_type<T>, std::forward<Ts>(ts)...);
     }
 
@@ -403,7 +392,7 @@ namespace hpx { namespace util {
     make_any(std::initializer_list<U> il, Ts&&... ts)
     {
         return basic_any<serialization::input_archive,
-            serialization::output_archive, Char>(
+            serialization::output_archive, Char, std::true_type>(
             std::in_place_type<T>, il, std::forward<Ts>(ts)...);
     }
 #endif
@@ -413,24 +402,25 @@ namespace hpx { namespace util {
     make_any(T&& t)
     {
         return basic_any<serialization::input_archive,
-            serialization::output_archive, Char>(std::forward<T>(t));
+            serialization::output_archive, Char, std::true_type>(
+            std::forward<T>(t));
     }
 
     ////////////////////////////////////////////////////////////////////////////
     // backwards compatibility
     using any = basic_any<serialization::input_archive,
-        serialization::output_archive, char>;
+        serialization::output_archive, char, std::true_type>;
     using wany = basic_any<serialization::input_archive,
-        serialization::output_archive, wchar_t>;
+        serialization::output_archive, wchar_t, std::true_type>;
 
     ////////////////////////////////////////////////////////////////////////////
     // support for hashing any
     struct hash_any
     {
         template <typename Char>
-        HPX_EXPORT std::size_t operator()(
-            const basic_any<serialization::input_archive,
-                serialization::output_archive, Char>& elem) const;
+        HPX_EXPORT std::size_t
+        operator()(const basic_any<serialization::input_archive,
+            serialization::output_archive, Char, std::true_type>& elem) const;
     };
 }}    // namespace hpx::util
 

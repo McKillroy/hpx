@@ -2,6 +2,7 @@
 #
 # Copyright (c) 2014 Thomas Heller
 #
+# SPDX-License-Identifier: BSL-1.0
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -89,6 +90,14 @@ def run_srun(cmd, localities, verbose):
         print('Executing command: ' + ' '.join(exec_cmd))
     subproc(exec_cmd)
 
+# Run with jsrun
+# This is executing jsrun with the '-n' option set to the number of localities
+def run_jsrun(cmd, localities, verbose):
+    exec_cmd = ['jsrun', '-n', str(localities)] + cmd
+    if verbose:
+        print('Executing command: ' + ' '.join(exec_cmd))
+    subproc(exec_cmd)
+
 # Select the appropriate run function based on runwrapper
 def run(cmd, runwrapper, localities, verbose):
     if runwrapper == 'none':
@@ -97,14 +106,20 @@ def run(cmd, runwrapper, localities, verbose):
         run_mpi(cmd, localities, verbose)
     if runwrapper == 'srun':
         run_srun(cmd, localities, verbose)
+    if runwrapper == 'jsrun':
+        run_jsrun(cmd, localities, verbose)
 
 # Building the command line. This function concatenates the different options
 def build_cmd(options, args):
     cmd = [args[0]]
     args.pop(0)
 
+    # Append the remaining args
+    for arg in args:
+        cmd += [arg]
+
     if options.localities > 1:
-        # Selecting the parcelport for hpx via hpx ini confifuration
+        # Selecting the parcelport for hpx via hpx ini configuration
         select_parcelport = (lambda pp:
             ['--hpx:ini=hpx.parcel.verbs.enable=1'] if pp == 'verbs'
             else ['--hpx:ini=hpx.parcel.ipc.enable=1'] if pp == 'ipc'
@@ -124,10 +139,6 @@ def build_cmd(options, args):
     # set number of localities
     if options.localities > 1:
         cmd += ['--hpx:localities=' + str(options.localities)]
-
-    # Append the remaining args
-    for arg in args:
-        cmd += [arg]
 
     return cmd
 
@@ -157,7 +168,7 @@ def check_options(parser, options, args):
         sys.exit(1)
 
     check_valid_runwrapper = (lambda x:
-            x == 'none' or x == 'mpi' or x == 'srun');
+            x == 'none' or x == 'mpi' or x == 'srun' or x =='jsrun');
     if not check_valid_runwrapper(options.runwrapper):
         print('Error: Runwrapper option not valid\n', sys.stderr)
         parser.print_help()
@@ -219,7 +230,7 @@ if __name__ == '__main__':
     parser.add_option('-r', '--runwrapper'
       , action='store', type='string'
       , dest='runwrapper', default=default_env('HPXRUN_RUNWRAPPER', 'none')
-      , help='Which runwrapper to use (Options are: none, mpi, srun) '
+      , help='Which runwrapper to use (Options are: none, mpi, srun, jsrun) '
              '(environment variable HPXRUN_RUNWRAPPER)')
 
     parser.add_option('-e', '--expected'

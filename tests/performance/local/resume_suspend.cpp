@@ -10,9 +10,9 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_start.hpp>
-#include <hpx/timing/high_resolution_clock.hpp>
-#include <hpx/util/yield_while.hpp>
+#include <hpx/basic_execution/this_thread.hpp>
 #include <hpx/testing.hpp>
+#include <hpx/timing.hpp>
 
 #include <hpx/program_options.hpp>
 
@@ -38,11 +38,6 @@ int main(int argc, char ** argv)
     std::uint64_t repetitions = vm["repetitions"].as<std::uint64_t>();
 
     hpx::start(nullptr, desc_commandline, argc, argv);
-    hpx::runtime* rt = hpx::get_runtime_ptr();
-    hpx::util::yield_while([rt]()
-        {
-            return rt->get_state() < hpx::state_running;
-        });
     hpx::suspend();
 
     std::uint64_t threads = hpx::resource::get_num_threads("default");

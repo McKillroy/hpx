@@ -25,7 +25,7 @@
 #include <hpx/runtime/naming_fwd.hpp>
 #include <hpx/runtime/report_error.hpp>
 #include <hpx/runtime/runtime_fwd.hpp>
-#include <hpx/runtime/runtime_mode.hpp>
+#include <hpx/runtime_configuration/runtime_mode.hpp>
 #include <hpx/runtime/set_parcel_write_handler.hpp>
 #include <hpx/runtime/shutdown_function.hpp>
 #include <hpx/runtime/startup_function.hpp>
@@ -265,6 +265,41 @@ namespace hpx
         char const* binary_filter_type, bool compress,
         serialization::binary_filter* next_filter = nullptr,
         error_code& ec = throws);
+
+    namespace threads {
+        class HPX_EXPORT threadmanager;
+
+        /// \cond NOINTERNAL
+        // The function get_thread_manager returns a reference to the
+        // current thread manager.
+        HPX_API_EXPORT threadmanager& get_thread_manager();
+        /// \endcond
+
+        /// \cond NOINTERNAL
+        /// Reset internal (round robin) thread distribution scheme
+        HPX_API_EXPORT void reset_thread_distribution();
+
+        /// Set the new scheduler mode
+        HPX_API_EXPORT void set_scheduler_mode(
+            threads::policies::scheduler_mode new_mode);
+
+        /// Add the given flags to the scheduler mode
+        HPX_API_EXPORT void add_scheduler_mode(
+            threads::policies::scheduler_mode to_add);
+
+        /// Add/remove the given flags to the scheduler mode
+        HPX_API_EXPORT void add_remove_scheduler_mode(
+            threads::policies::scheduler_mode to_add,
+            threads::policies::scheduler_mode to_remove);
+
+        /// Remove the given flags from the scheduler mode
+        HPX_API_EXPORT void remove_scheduler_mode(
+            threads::policies::scheduler_mode to_remove);
+
+        /// Get the global topology instance
+        HPX_API_EXPORT topology const& get_topology();
+        /// \endcond
+    }
 }
 
 #endif

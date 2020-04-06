@@ -10,7 +10,6 @@ set(example_programs
     1d_stencil_2
     1d_stencil_3
     1d_stencil_4
-    1d_stencil_4_checkpoint
     1d_stencil_4_parallel
     1d_stencil_5
     1d_stencil_6
@@ -42,7 +41,6 @@ set(1d_stencil_1_PARAMETERS THREADS_PER_LOCALITY 4)
 set(1d_stencil_2_PARAMETERS THREADS_PER_LOCALITY 4)
 set(1d_stencil_3_PARAMETERS THREADS_PER_LOCALITY 4)
 set(1d_stencil_4_PARAMETERS THREADS_PER_LOCALITY 4)
-set(1d_stencil_4_checkpoint_PARAMETERS THREADS_PER_LOCALITY 4)
 set(1d_stencil_4_parallel_PARAMETERS THREADS_PER_LOCALITY 4)
 set(1d_stencil_5_PARAMETERS THREADS_PER_LOCALITY 4)
 set(1d_stencil_6_PARAMETERS THREADS_PER_LOCALITY 4)
@@ -59,6 +57,7 @@ foreach(example_program ${example_programs})
 
   # add example executable
   add_hpx_executable(${example_program}
+                     INTERNAL_FLAGS
                      SOURCES ${sources}
                      ${${example_program}_FLAGS}
                      FOLDER "Examples/1D Stencil/${example_program}")
@@ -68,7 +67,7 @@ foreach(example_program ${example_programs})
   if(HPX_WITH_TESTS AND HPX_WITH_TESTS_EXAMPLES AND
     NOT ("${example_program}" IN_LIST disabled_tests))
 
-    add_hpx_example_test("1d_stencil" ${example_program} ${${example_program}_PARAMETERS})
+  add_hpx_example_test("1d_stencil" ${example_program} ${${example_program}_PARAMETERS})
 
   endif()
 

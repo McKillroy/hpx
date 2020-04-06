@@ -18,8 +18,8 @@
 #include <hpx/runtime/parcelset/locality.hpp>
 
 #include <hpx/assertion.hpp>
+#include <hpx/functional/unique_function.hpp>
 #include <hpx/thread_support/atomic_count.hpp>
-#include <hpx/util/unique_function.hpp>
 
 #include <boost/container/small_vector.hpp>
 #include <memory>
@@ -109,7 +109,7 @@ namespace libfabric
         void handle_send_completion();
 
         // --------------------------------------------------------------------
-        // Triggered when the remote end has finished RMA opreations and
+        // Triggered when the remote end has finished RMA operations and
         // we can release resources
         void handle_message_completion_ack();
 

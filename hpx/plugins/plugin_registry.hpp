@@ -4,26 +4,22 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-// make inspect happy: hpxinspect:nodeprecatedname:boost::is_any_of
-
 #if !defined(HPX_PLUGIN_REGISTRY_MAR_24_2013_0235PM)
 #define HPX_PLUGIN_REGISTRY_MAR_24_2013_0235PM
 
 #include <hpx/config.hpp>
-#include <hpx/plugins/plugin_registry_base.hpp>
+#include <hpx/runtime_configuration/plugin_registry_base.hpp>
 #include <hpx/plugins/unique_plugin_name.hpp>
 
+#include <hpx/plugin/traits/plugin_config_data.hpp>
 #include <hpx/preprocessor/cat.hpp>
 #include <hpx/preprocessor/expand.hpp>
 #include <hpx/preprocessor/nargs.hpp>
 #include <hpx/preprocessor/stringize.hpp>
-#include <hpx/util/find_prefix.hpp>
-#include <hpx/util/ini.hpp>
-
-#include <hpx/traits/plugin_config_data.hpp>
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include <hpx/prefix/find_prefix.hpp>
+#include <hpx/runtime_configuration/ini.hpp>
+#include <hpx/string_util/classification.hpp>
+#include <hpx/string_util/split.hpp>
 
 #include <string>
 #include <vector>
@@ -62,9 +58,10 @@ namespace hpx { namespace plugins
             fillini.emplace_back("enabled = 1");
 
             char const* more = traits::plugin_config_data<Plugin>::call();
-            if (more) {
+            if (more != nullptr)    // -V547
+            {
                 std::vector<std::string> data;
-                boost::split(data, more, boost::is_any_of("\n"));
+                hpx::string_util::split(data, more, hpx::string_util::is_any_of("\n"));
                 std::copy(data.begin(), data.end(), std::back_inserter(fillini));
             }
             return true;
@@ -97,10 +94,10 @@ namespace hpx { namespace plugins
     /**/
 #define HPX_REGISTER_PLUGIN_REGISTRY_5(                                        \
         PluginType, pluginname, pluginstring, pluginsection, pluginsuffix)     \
-    HPX_CXX14_CONSTEXPR char __##pluginname##_string[] =                       \
+    constexpr char __##pluginname##_string[] =                                 \
         HPX_PP_STRINGIZE(pluginstring);                                        \
-    HPX_CXX14_CONSTEXPR char __##pluginname##_section[] = pluginsection;       \
-    HPX_CXX14_CONSTEXPR char __##pluginname##_suffix[] = pluginsuffix;         \
+    constexpr char __##pluginname##_section[] = pluginsection;                 \
+    constexpr char __##pluginname##_suffix[] = pluginsuffix;                   \
     typedef hpx::plugins::plugin_registry<PluginType, __##pluginname##_string, \
         __##pluginname##_section, __##pluginname##_suffix>                     \
         __##pluginname##_plugin_registry_type;                                 \

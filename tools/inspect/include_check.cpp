@@ -9,12 +9,12 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/config.hpp>
+#include <hpx/util/to_string.hpp>
 
 #include <algorithm>
 
 #include "include_check.hpp"
 #include "boost/regex.hpp"
-#include "boost/lexical_cast.hpp"
 #include "function_hyper.hpp"
 
 namespace boost
@@ -48,6 +48,8 @@ namespace boost
         {"(\\bstd\\s*::\\s*((i|o)?stringstream)\\b)", "std::\\2", "sstream"},
         {"(\\bstd\\s*::\\s*((i|o)?fstream)\\b)", "std::\\2", "fstream"},
         {"(\\bstd\\s*::\\s*(cin|cout|cerr|clog)\\b)", "std::\\2", "iostream"},
+        {"(\\bstd\\s*::\\s*setw\\b)", "std::setw", "iomanip"},
+        {"(\\bstd\\s*::\\s*setprecision\\b)", "std::setprecision", "iomanip"},
         // cstddef
         {"(\\bstd\\s*::\\s*size_t\\b)", "std::size_t", "cstddef"},
         {"(\\bstd\\s*::\\s*ptrdiff_t\\b)", "std::ptrdiff_t", "cstddef"},
@@ -219,8 +221,12 @@ namespace boost
         {"(\\bstd\\s*::\\s*atomic\\b)", "std::atomic", "atomic"},
         {"(\\bstd\\s*::\\s*(memory_order_*)\\b)", "std::\\2", "atomic"},
         // boost
-        {"(\\bboost\\s*::\\s*intrusive_ptr\\b)", "boost::intrusive_ptr",
-            "boost/intrusive_ptr.hpp"},
+        {"(\\bhpx\\s*::\\s*intrusive_ptr\\b)", "hpx::intrusive_ptr",
+            "hpx/memory/intrusive_ptr.hpp"},
+        {"(\\bhpx\\s*::\\s*util\\s*::\\s*from_string\\b)",
+            "hpx::util::from_string", "hpx/util/from_string.hpp"},
+        {"(\\bhpx\\s*::\\s*util\\s*::\\s*to_string\\b)",
+            "hpx::util::to_string", "hpx/util/to_string.hpp"},
         // macros
         {"(\\bHPX_PP_CAT\\b)", "HPX_PP_CAT", "hpx/preprocessor/cat.hpp"},
         {"(\\bHPX_PP_EXPAND\\b)", "HPX_PP_EXPAND",
@@ -356,7 +362,7 @@ namespace boost
                   + m.format(d.data->include)
                   + ") for symbol "
                   + m.format(d.data->name) + " on line "
-                  + linelink(full_path, boost::lexical_cast<string>(line_number)));
+                  + linelink(full_path, hpx::util::to_string(line_number)));
             }
             checked_includes.insert(m.format(d.data->include));
           }

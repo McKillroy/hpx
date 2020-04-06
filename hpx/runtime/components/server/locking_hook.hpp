@@ -8,12 +8,13 @@
 #define HPX_COMPONENTS_SERVER_LOCKING_HOOK_OCT_17_2012_0732PM
 
 #include <hpx/config.hpp>
-#include <hpx/concurrency/register_locks.hpp>
+#include <hpx/basic_execution/register_locks.hpp>
 #include <hpx/functional/bind_front.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/runtime/get_lva.hpp>
-#include <hpx/runtime/threads/coroutines/coroutine.hpp>
+#include <hpx/coroutines/coroutine.hpp>
 #include <hpx/thread_support/unlock_guard.hpp>
+#include <hpx/threading_base/thread_data.hpp>
 #include <hpx/traits/action_decorate_function.hpp>
 
 #include <mutex>
@@ -48,7 +49,18 @@ namespace hpx { namespace components
           , mtx_()
         {}
 
-        typedef void decorates_action;
+        using decorates_action = void;
+
+        locking_hook& operator=(locking_hook const& rhs)
+        {
+            this->base_type::operator=(rhs);
+            return *this;
+        }
+        locking_hook& operator=(locking_hook&& rhs)
+        {
+            this->base_type::operator=(std::move(rhs));
+            return *this;
+        }
 
         /// This is the hook implementation for decorate_action which locks
         /// the component ensuring that only one action is executed at a time
@@ -74,6 +86,7 @@ namespace hpx { namespace components
             template <typename F, typename Enable = typename
                 std::enable_if<!std::is_same<typename hpx::util::decay<F>::type,
                     decorate_wrapper>::value>::type>
+            // NOLINTNEXTLINE(bugprone-forwarding-reference-overload)
             decorate_wrapper(F && f)
             {
                 threads::get_self().decorate_yield(std::forward<F>(f));

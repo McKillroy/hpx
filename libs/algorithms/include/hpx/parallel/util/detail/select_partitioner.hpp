@@ -11,7 +11,7 @@
 #include <hpx/config.hpp>
 #include <hpx/lcos/future.hpp>
 
-#include <hpx/parallel/execution_policy.hpp>
+#include <hpx/execution/execution_policy.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace hpx { namespace parallel { namespace util { namespace detail {
@@ -52,7 +52,7 @@ namespace hpx { namespace parallel { namespace util { namespace detail {
         TaskPartitioner>
     {
         template <typename... Args>
-        using apply = TaskPartitioner<execution::datapar_task_policy>;
+        using apply = TaskPartitioner<execution::datapar_task_policy, Args...>;
     };
 #endif
 }}}}    // namespace hpx::parallel::util::detail

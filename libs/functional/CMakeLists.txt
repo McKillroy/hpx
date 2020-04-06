@@ -4,7 +4,7 @@
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-cmake_minimum_required(VERSION 3.3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -21,6 +21,7 @@ set(functional_headers
   hpx/functional/bind.hpp
   hpx/functional/bind_back.hpp
   hpx/functional/bind_front.hpp
+  hpx/functional/first_argument.hpp
   hpx/functional/function.hpp
   hpx/functional/function_ref.hpp
   hpx/functional/invoke.hpp
@@ -30,6 +31,7 @@ set(functional_headers
   hpx/functional/protect.hpp
   hpx/functional/result_of.hpp
   hpx/functional/unique_function.hpp
+  hpx/functional/traits/get_action_name.hpp
   hpx/functional/traits/get_function_address.hpp
   hpx/functional/traits/get_function_annotation.hpp
   hpx/functional/traits/is_action.hpp
@@ -45,6 +47,7 @@ set(functional_compat_headers
   hpx/util/bind_back.hpp
   hpx/util/bind_front.hpp
   hpx/util/deferred_call.hpp
+  hpx/util/first_argument.hpp
   hpx/util/function.hpp
   hpx/util/function_ref.hpp
   hpx/util/invoke.hpp

@@ -3,16 +3,17 @@
 //  Copyright (c) 2007-2013 Hartmut Kaiser
 //
 //  SPDX-License-Identifier: BSL-1.0
-//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <hpx/config.hpp>
 #include <hpx/runtime.hpp>
 
+#include <hpx/collectives.hpp>
+#include <hpx/datastructures/tuple.hpp>
 #include <hpx/errors.hpp>
-#include <hpx/lcos/barrier.hpp>
-#include <hpx/lcos/detail/barrier_node.hpp>
+#include <hpx/logging.hpp>
 #include <hpx/runtime/agas/interface.hpp>
 #include <hpx/runtime/applier/applier.hpp>
 #include <hpx/runtime/components/runtime_support.hpp>
@@ -24,9 +25,7 @@
 #include <hpx/runtime/startup_function.hpp>
 #include <hpx/runtime/threads/threadmanager.hpp>
 #include <hpx/runtime/threads/threadmanager_counters.hpp>
-#include <hpx/logging.hpp>
-#include <hpx/util/runtime_configuration.hpp>
-#include <hpx/datastructures/tuple.hpp>
+#include <hpx/runtime_configuration/runtime_configuration.hpp>
 
 #include <cstddef>
 #include <string>
@@ -62,25 +61,29 @@ static void register_counter_types()
     lbt_ << "(2nd stage) pre_main: registered thread-manager performance "
             "counter types";
 
+#if defined(HPX_HAVE_NETWORKING)
     applier::get_applier().get_parcel_handler().register_counter_types();
     lbt_ << "(2nd stage) pre_main: registered parcelset performance "
             "counter types";
+#endif
 }
 
+#if defined(HPX_HAVE_NETWORKING)
 ///////////////////////////////////////////////////////////////////////////////
-extern std::vector<util::tuple<char const*, char const*> >
-    message_handler_registrations;
+std::vector<hpx::util::tuple<char const*, char const*>>&
+get_message_handler_registrations();
 
 static void register_message_handlers()
 {
     runtime& rt = get_runtime();
-    for (auto const& t : message_handler_registrations)
+    for (auto const& t : get_message_handler_registrations())
     {
         error_code ec(lightweight);
         rt.register_message_handler(util::get<0>(t), util::get<1>(t), ec);
     }
     lbt_ << "(3rd stage) pre_main: registered message handlers";
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // Implements second and third stage bootstrapping.
@@ -108,8 +111,10 @@ int pre_main(runtime_mode mode)
         lbt_ << "(2nd stage) pre_main: loaded components"
             << (exit_code ? ", application exit has been requested" : "");
 
+#if defined(HPX_HAVE_NETWORKING)
         // Work on registration requests for message handler plugins
         register_message_handlers();
+#endif
 
         // Register all counter types before the startup functions are being
         // executed.
@@ -161,8 +166,10 @@ int pre_main(runtime_mode mode)
         lcos::barrier::synchronize();
         lbt_ << "(2nd stage) pre_main: passed 2nd stage boot barrier";
 
+#if defined(HPX_HAVE_NETWORKING)
         // Work on registration requests for message handler plugins
         register_message_handlers();
+#endif
 
         // Register all counter types before the startup functions are being
         // executed.

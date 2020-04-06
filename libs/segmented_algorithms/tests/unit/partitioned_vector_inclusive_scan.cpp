@@ -7,12 +7,14 @@
 #include <hpx/hpx_main.hpp>
 #include <hpx/include/parallel_scan.hpp>
 #include <hpx/include/partitioned_vector_predef.hpp>
+#include <hpx/timing.hpp>
 
 #include <hpx/testing.hpp>
 
 #include "partitioned_vector_scan.hpp"
 
 #include <cstddef>
+#include <iomanip>
 #include <iostream>
 #include <type_traits>
 #include <vector>

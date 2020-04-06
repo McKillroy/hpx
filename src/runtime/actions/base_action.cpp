@@ -5,14 +5,14 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/config.hpp>
-#include <hpx/runtime/threads/thread_data_fwd.hpp>
 
+#if defined(HPX_HAVE_NETWORKING)
 #include <hpx/runtime/actions/base_action.hpp>
 #include <hpx/runtime/get_locality_id.hpp>
-#include <hpx/runtime/serialization/serialize.hpp>
-#include <hpx/runtime/serialization/input_archive.hpp>
-#include <hpx/runtime/serialization/output_archive.hpp>
-#include <hpx/traits/is_bitwise_serializable.hpp>
+#include <hpx/serialization/serialize.hpp>
+#include <hpx/serialization/input_archive.hpp>
+#include <hpx/serialization/output_archive.hpp>
+#include <hpx/serialization/traits/is_bitwise_serializable.hpp>
 
 #include <cstdint>
 
@@ -174,3 +174,5 @@ namespace hpx { namespace actions
         return stacksize_;
     }
 }}
+
+#endif

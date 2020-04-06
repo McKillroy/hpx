@@ -17,10 +17,10 @@
 #include <hpx/runtime/parcelset/locality.hpp>
 #include <hpx/runtime/parcelset/parcelhandler.hpp>
 #include <hpx/runtime/parcelset/parcelport.hpp>
-#include <hpx/runtime/threads/policies/callback_notifier.hpp>
+#include <hpx/threading_base/callback_notifier.hpp>
 #include <hpx/runtime/threads/threadmanager.hpp>
 #include <hpx/util/generate_unique_ids.hpp>
-#include <hpx/util/io_service_pool.hpp>
+#include <hpx/io_service/io_service_pool.hpp>
 #include <hpx/util_fwd.hpp>
 
 #include <condition_variable>
@@ -214,6 +214,7 @@ namespace hpx
             return agas_client_;
         }
 
+#if defined(HPX_HAVE_NETWORKING)
         /// \brief Allow access to the parcel handler instance used by the HPX
         ///        runtime.
         parcelset::parcelhandler const& get_parcel_handler() const override
@@ -225,6 +226,7 @@ namespace hpx
         {
             return parcel_handler_;
         }
+#endif
 
         /// \brief Allow access to the thread manager instance used by the HPX
         ///        runtime.
@@ -240,6 +242,7 @@ namespace hpx
             return applier_;
         }
 
+#if defined(HPX_HAVE_NETWORKING)
         /// \brief Allow access to the locality endpoints this runtime instance is
         /// associated with.
         ///
@@ -249,13 +252,18 @@ namespace hpx
         {
             return parcel_handler_.endpoints();
         }
+#endif
 
         /// \brief Returns a string of the locality endpoints (usable in debug output)
         std::string here() const override
         {
+#if defined(HPX_HAVE_NETWORKING)
             std::ostringstream strm;
             strm << get_runtime().endpoints();
             return strm.str();
+#else
+            return "console";
+#endif
         }
 
         std::uint64_t get_runtime_support_lva() const override
@@ -298,7 +306,7 @@ namespace hpx
         void add_startup_function(startup_function_type f) override;
 
         /// Add a function to be executed inside a HPX thread during
-        /// hpx::finalize, but guaranteed before any of teh shutdown functions
+        /// hpx::finalize, but guaranteed before any of the shutdown functions
         /// is executed.
         ///
         /// \param  f   The function 'f' will be called from inside a HPX
@@ -366,8 +374,10 @@ namespace hpx
 #endif
         notification_policy_type notifier_;
         std::unique_ptr<hpx::threads::threadmanager> thread_manager_;
+#if defined(HPX_HAVE_NETWORKING)
         notification_policy_type parcel_handler_notifier_;
         parcelset::parcelhandler parcel_handler_;
+#endif
         naming::resolver_client agas_client_;
         applier::applier applier_;
 

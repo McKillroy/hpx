@@ -15,12 +15,12 @@
 #include <hpx/assertion.hpp>
 #include <hpx/concepts/concepts.hpp>
 #include <hpx/functional/invoke.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/traits/segmented_iterator_traits.hpp>
 #include <hpx/util/tagged_pair.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/tagspec.hpp>
 #include <hpx/parallel/traits/projected.hpp>
 #include <hpx/parallel/util/compare_projected.hpp>
@@ -127,8 +127,8 @@ namespace hpx { namespace parallel { inline namespace v1 {
                     return sequential_min_element(
                         policy, it, part_count, f, proj);
                 };
-                auto f2 = [policy, HPX_CAPTURE_FORWARD(f),
-                              HPX_CAPTURE_FORWARD(proj)](
+                auto f2 = [policy, f = std::forward<F>(f),
+                              proj = std::forward<Proj>(proj)](
                               std::vector<FwdIter>&& positions) -> FwdIter {
                     return min_element::sequential_minmax_element_ind(
                         policy, positions.begin(), positions.size(), f, proj);
@@ -344,8 +344,8 @@ namespace hpx { namespace parallel { inline namespace v1 {
                     return sequential_max_element(
                         policy, it, part_count, f, proj);
                 };
-                auto f2 = [policy, HPX_CAPTURE_FORWARD(f),
-                              HPX_CAPTURE_FORWARD(proj)](
+                auto f2 = [policy, f = std::forward<F>(f),
+                              proj = std::forward<Proj>(proj)](
                               std::vector<FwdIter>&& positions) -> FwdIter {
                     return max_element::sequential_minmax_element_ind(
                         policy, positions.begin(), positions.size(), f, proj);
@@ -582,7 +582,8 @@ namespace hpx { namespace parallel { inline namespace v1 {
                         policy, it, part_count, f, proj);
                 };
                 auto f2 =
-                    [policy, HPX_CAPTURE_FORWARD(f), HPX_CAPTURE_FORWARD(proj)](
+                    [policy, f = std::forward<F>(f),
+                        proj = std::forward<Proj>(proj)](
                         std::vector<result_type>&& positions) -> result_type {
                     return minmax_element::sequential_minmax_element_ind(
                         policy, positions.begin(), positions.size(), f, proj);

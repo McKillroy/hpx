@@ -13,9 +13,9 @@
 
 #include <hpx/traits/segmented_iterator_traits.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
 #include <hpx/parallel/algorithms/exclusive_scan.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/segmented_algorithms/detail/dispatch.hpp>
 #include <hpx/parallel/segmented_algorithms/detail/scan.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
@@ -204,6 +204,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 OutIter>::is_segmented_iterator is_out_seg;
 
             // check if OutIter is segmented in the same way as SegIter
+            // NOLINTNEXTLINE(bugprone-branch-clone)
             if (is_segmented_the_same(first, last, dest, is_out_seg()))
             {
                 return segmented_exclusive_scan_seq(
@@ -231,6 +232,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
             typedef typename hpx::traits::segmented_iterator_traits<
                 OutIter>::is_segmented_iterator is_out_seg;
 
+            // NOLINTNEXTLINE(bugprone-branch-clone)
             if (is_segmented_the_same(first, last, dest, is_out_seg()))
             {
                 return segmented_exclusive_scan_par(

@@ -4,14 +4,22 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#define SHARED_PRIORITY_SCHEDULER_DEBUG true
+#define THREAD_QUEUE_MC_DEBUG true
+#define GUIDED_POOL_EXECUTOR_DEBUG true
+#define QUEUE_HOLDER_NUMA_DEBUG true
+#define QUEUE_HOLDER_THREAD_DEBUG true
+#define NUMA_BINDING_ALLOCATOR_DEBUG true
+#define NUMA_BINDING_ALLOCATOR_INIT_MEMORY true
+
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
 //
 #include <hpx/parallel/algorithms/for_loop.hpp>
-#include <hpx/parallel/executors.hpp>
+#include <hpx/execution/executors.hpp>
 //
-#include <hpx/runtime/resource/partitioner.hpp>
-#include <hpx/runtime/threads/detail/scheduled_thread_pool_impl.hpp>
+#include <hpx/resource_partitioner/partitioner.hpp>
+#include <hpx/thread_pools/scheduled_thread_pool_impl.hpp>
 #include <hpx/runtime/threads/executors/guided_pool_executor.hpp>
 #include <hpx/runtime/threads/executors/pool_executor.hpp>
 #include <hpx/topology/cpu_mask.hpp>
@@ -33,6 +41,8 @@
 // Example binder functions for different page binding mappings
 #include "allocator_binder_linear.hpp"
 #include "allocator_binder_matrix.hpp"
+// Scheduler that honours numa placement hints for tasks
+#include <hpx/schedulers/shared_priority_queue_scheduler.hpp>
 
 // ------------------------------------------------------------------------
 // allocator maker for this test
@@ -76,8 +86,8 @@ void test_binding(std::shared_ptr<Binder<T>> numa_binder, Allocator& allocator)
     std::string domain_string = allocator.get_page_numa_domains(M, num_bytes);
 
     // now generate the 'correct' string of numa domains per page
-    const std::size_t pagesize  = hpx::threads::get_memory_page_size();
-    const std::size_t pageN     = pagesize/sizeof(T);
+    const std::size_t pagesize = hpx::threads::get_memory_page_size();
+    const std::size_t pageN = pagesize / sizeof(T);
     const std::size_t num_pages = (num_bytes + pagesize - 1) / pagesize;
     T* page_ptr = M;
 
@@ -143,8 +153,8 @@ void test_binding(std::shared_ptr<Binder<T>> numa_binder, Allocator& allocator)
         {
             T* page_ptr = &M[i * numa_binder->memory_step(0) +
                 j * numa_binder->memory_step(1)];
-            int d =
-                numa_binder->operator()(M, page_ptr, pagesize, num_numa_domains);
+            int d = numa_binder->operator()(
+                M, page_ptr, pagesize, num_numa_domains);
             std::cout << std::hex << d;
         }
         std::cout << "\n";
@@ -207,6 +217,35 @@ using high_priority_sched =
     hpx::threads::policies::shared_priority_queue_scheduler<>;
 using hpx::threads::policies::scheduler_mode;
 
+void init_resource_partitioner_handler(hpx::resource::partitioner& rp)
+{
+    using numa_scheduler =
+        hpx::threads::policies::shared_priority_queue_scheduler<>;
+    using hpx::threads::policies::scheduler_mode;
+    // setup the default pool with a numa aware scheduler
+    rp.create_thread_pool("default",
+        [](hpx::threads::thread_pool_init_parameters init,
+            hpx::threads::policies::thread_queue_init_parameters
+                thread_queue_init)
+            -> std::unique_ptr<hpx::threads::thread_pool_base> {
+            numa_scheduler::init_parameter_type scheduler_init(
+                init.num_threads_, {1, 1, 64}, init.affinity_data_,
+                thread_queue_init, "shared-priority-scheduler");
+            std::unique_ptr<numa_scheduler> scheduler(
+                new numa_scheduler(scheduler_init));
+
+            scheduler_mode mode =
+                scheduler_mode(scheduler_mode::do_background_work |
+                    scheduler_mode::delay_exit);
+            init.mode_ = mode;
+
+            std::unique_ptr<hpx::threads::thread_pool_base> pool(
+                new hpx::threads::detail::scheduled_thread_pool<
+                    high_priority_sched>(std::move(scheduler), init));
+            return pool;
+        });
+}
+
 // the normal int main function that is called at startup and runs on an OS thread
 // the user must call hpx::init to start the hpx runtime which will execute hpx_main
 // on an hpx thread
@@ -245,35 +284,12 @@ int main(int argc, char* argv[])
             .run(),
         vm);
 
-    // Create the resource partitioner
-    hpx::resource::partitioner rp(desc_cmdline, argc, argv);
+    // Setup the init parameters
+    hpx::init_params init_args;
+    init_args.desc_cmdline = desc_cmdline;
+    // Set the callback to init the thread_pools
+    init_args.rp_callback = &init_resource_partitioner_handler;
 
-    using numa_scheduler =
-        hpx::threads::policies::shared_priority_queue_scheduler<>;
-    using hpx::threads::policies::scheduler_mode;
-    // setup the default pool with a numa aware scheduler
-    rp.create_thread_pool("default",
-        [](hpx::threads::thread_pool_init_parameters init,
-            hpx::threads::policies::thread_queue_init_parameters
-                thread_queue_init)
-            -> std::unique_ptr<hpx::threads::thread_pool_base> {
-            numa_scheduler::init_parameter_type scheduler_init(
-                init.num_threads_, {2, 3, 64}, init.affinity_data_,
-                thread_queue_init, "shared-priority-scheduler");
-            std::unique_ptr<numa_scheduler> scheduler(
-                new numa_scheduler(scheduler_init));
-
-            scheduler_mode mode =
-                scheduler_mode(scheduler_mode::do_background_work |
-                    scheduler_mode::delay_exit);
-            init.mode_ = mode;
-
-            std::unique_ptr<hpx::threads::thread_pool_base> pool(
-                new hpx::threads::detail::scheduled_thread_pool<
-                    high_priority_sched>(std::move(scheduler), init));
-            return pool;
-        });
-
-    hpx::init();
+    hpx::init(argc, argv, init_args);
     return hpx::util::report_errors();
 }

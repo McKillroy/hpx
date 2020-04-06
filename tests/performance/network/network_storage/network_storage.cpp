@@ -9,10 +9,8 @@
 #include <hpx/hpx.hpp>
 #include <hpx/include/actions.hpp>
 #include <hpx/components/iostreams/standard_streams.hpp>
-#include <hpx/lcos/local/detail/sliding_semaphore.hpp>
+#include <hpx/synchronization/detail/sliding_semaphore.hpp>
 #include <hpx/testing.hpp>
-
-#include <boost/assert.hpp>
 
 #include <algorithm>
 #include <array>
@@ -30,7 +28,7 @@
 #include <utility>
 #include <vector>
 
-#include <hpx/runtime/serialization/serialize.hpp>
+#include <hpx/serialization/serialize.hpp>
 #include <simple_profiler.hpp>
 
 //
@@ -248,13 +246,13 @@ public:
 
   pointer allocate(size_type n, void const* hint = nullptr)
   {
-    HPX_TEST(n == size_);
+    HPX_TEST_EQ(n, size_);
     return static_cast<T*>(pointer_);
   }
 
   void deallocate(pointer p, size_type n)
   {
-    HPX_TEST(p == pointer_ && n == size_);
+    HPX_TEST_EQ(p == pointer_ && n, size_);
   }
 
 private:

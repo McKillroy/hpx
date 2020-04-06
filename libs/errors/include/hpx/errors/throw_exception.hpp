@@ -11,13 +11,13 @@
 #define HPX_THROW_EXCEPTION_HPP
 
 #include <hpx/config.hpp>
+#include <hpx/assertion/current_function.hpp>
 #include <hpx/errors/error.hpp>
 #include <hpx/errors/exception_fwd.hpp>
 #include <hpx/preprocessor/cat.hpp>
 #include <hpx/preprocessor/expand.hpp>
 #include <hpx/preprocessor/nargs.hpp>
 
-#include <boost/current_function.hpp>
 #include <boost/system/error_code.hpp>
 
 #include <exception>
@@ -50,9 +50,9 @@ namespace hpx { namespace detail {
         std::string const& file = "<unknown>", long line = -1,
         std::string const& auxinfo = "");
 
-    HPX_EXPORT std::exception_ptr get_exception(boost::system::error_code ec,
-        std::string const& msg, throwmode mode,
-        std::string const& func = "<unknown>",
+    HPX_EXPORT std::exception_ptr get_exception(
+        boost::system::error_code const& ec, std::string const& msg,
+        throwmode mode, std::string const& func = "<unknown>",
         std::string const& file = "<unknown>", long line = -1,
         std::string const& auxinfo = "");
 
@@ -107,20 +107,20 @@ namespace hpx {
 
 ///////////////////////////////////////////////////////////////////////////////
 #define HPX_THROW_IN_CURRENT_FUNC(errcode, msg)                                \
-    HPX_THROW_EXCEPTION(errcode, BOOST_CURRENT_FUNCTION, msg)                  \
+    HPX_THROW_EXCEPTION(errcode, HPX_ASSERTION_CURRENT_FUNCTION, msg)          \
     /**/
 
 #define HPX_RETHROW_IN_CURRENT_FUNC(errcode, msg)                              \
-    HPX_RETHROW_EXCEPTION(errcode, BOOST_CURRENT_FUNCTION, msg)                \
+    HPX_RETHROW_EXCEPTION(errcode, HPX_ASSERTION_CURRENT_FUNCTION, msg)        \
     /**/
 
 ///////////////////////////////////////////////////////////////////////////////
 #define HPX_THROWS_IN_CURRENT_FUNC_IF(ec, errcode, msg)                        \
-    HPX_THROWS_IF(ec, errcode, BOOST_CURRENT_FUNCTION, msg)                    \
+    HPX_THROWS_IF(ec, errcode, HPX_ASSERTION_CURRENT_FUNCTION, msg)            \
     /**/
 
 #define HPX_RETHROWS_IN_CURRENT_FUNC_IF(ec, errcode, msg)                      \
-    HPX_RETHROWS_IF(ec, errcode, BOOST_CURRENT_FUNCTION, msg)                  \
+    HPX_RETHROWS_IF(ec, errcode, HPX_ASSERTION_CURRENT_FUNCTION, msg)          \
     /**/
 
 ///////////////////////////////////////////////////////////////////////////////

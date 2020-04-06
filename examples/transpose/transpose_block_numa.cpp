@@ -13,7 +13,7 @@
 #include <hpx/include/parallel_numeric.hpp>
 #include <hpx/include/serialization.hpp>
 #include <hpx/topology/topology.hpp>
-#include <hpx/util/safe_lexical_cast.hpp>
+#include <hpx/util/from_string.hpp>
 
 #include <hpx/parallel/util/numa_allocator.hpp>
 
@@ -230,7 +230,7 @@ std::size_t get_num_numa_nodes(hpx::threads::topology const& topo,
 
     if (num_numa_domains_str != "all")
     {
-        numa_nodes = hpx::util::safe_lexical_cast<std::size_t>(num_numa_domains_str);
+        numa_nodes = hpx::util::from_string<std::size_t>(num_numa_domains_str);
     }
 
     return numa_nodes;
@@ -247,7 +247,7 @@ std::pair<std::size_t, std::size_t> get_num_numa_pus(
 
     if(num_threads_str != "all")
     {
-        pus = hpx::util::safe_lexical_cast<std::size_t>(num_threads_str);
+        pus = hpx::util::from_string<std::size_t>(num_threads_str);
     }
 
     return std::make_pair(numa_pus, pus);
@@ -371,8 +371,10 @@ int hpx_main(hpx::program_options::variables_map& vm)
                 {
                     for(std::uint64_t j = 0; j != block_order; ++j)
                     {
-                        double col_val = COL_SHIFT * (b*block_order + j);
-                        A_ptr->data_[i * block_order + j] = col_val + ROW_SHIFT * i;
+                        double col_val = COL_SHIFT *
+                            static_cast<double>(b * block_order + j);
+                        A_ptr->data_[i * block_order + j] =
+                            col_val + ROW_SHIFT * i;
                         B_ptr->data_[i * block_order + j] = -1.0;
                     }
                 }
@@ -676,7 +678,9 @@ double test_results(std::uint64_t order, std::uint64_t block_order,
                     for(std::uint64_t j = 0; j < block_order; ++j)
                     {
                         double diff = trans_block[i * block_order + j] -
-                            (col_val + ROW_SHIFT * (b * block_order + j));
+                            (col_val +
+                                ROW_SHIFT *
+                                    static_cast<double>(b * block_order + j));
                         errsq += diff * diff;
                     }
                 }

@@ -7,7 +7,8 @@
 
 function(add_hpx_executable name)
   # retrieve arguments
-  set(options EXCLUDE_FROM_ALL EXCLUDE_FROM_DEFAULT_BUILD AUTOGLOB NOLIBS NOHPX_INIT)
+  set(options EXCLUDE_FROM_ALL EXCLUDE_FROM_DEFAULT_BUILD AUTOGLOB
+    INTERNAL_FLAGS NOLIBS NOHPX_INIT)
   set(one_value_args INI FOLDER SOURCE_ROOT HEADER_ROOT SOURCE_GLOB HEADER_GLOB OUTPUT_SUFFIX INSTALL_SUFFIX LANGUAGE HPX_PREFIX)
   set(multi_value_args SOURCES HEADERS AUXILIARY DEPENDENCIES COMPONENT_DEPENDENCIES COMPILE_FLAGS LINK_FLAGS)
   cmake_parse_arguments(${name} "${options}" "${one_value_args}" "${multi_value_args}" ${ARGN})
@@ -111,6 +112,16 @@ function(add_hpx_executable name)
       INSTALL_FLAGS
         DESTINATION ${install_destination}
     )
+    # install PDB if needed
+    if(MSVC)
+      set(_target_flags ${_target_flags}
+        INSTALL_PDB
+          FILES $<TARGET_PDB_FILE:${name}>
+          DESTINATION ${install_destination}
+          CONFIGURATIONS Debug RelWithDebInfo
+          OPTIONAL
+      )
+    endif()
   endif()
 
   if(${name}_EXCLUDE_FROM_DEFAULT_BUILD)
@@ -140,13 +151,13 @@ function(add_hpx_executable name)
   if(${name}_OUTPUT_SUFFIX)
     if(MSVC)
       set_target_properties(${name} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${CMAKE_BINARY_DIR}/Release/bin/${${name}_OUTPUT_SUFFIX}"
-        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${CMAKE_BINARY_DIR}/Debug/bin/${${name}_OUTPUT_SUFFIX}"
-        RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${CMAKE_BINARY_DIR}/MinSizeRel/bin/${${name}_OUTPUT_SUFFIX}"
-        RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${CMAKE_BINARY_DIR}/RelWithDebInfo/bin/${${name}_OUTPUT_SUFFIX}")
+        RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PROJECT_BINARY_DIR}/Release/bin/${${name}_OUTPUT_SUFFIX}"
+        RUNTIME_OUTPUT_DIRECTORY_DEBUG "${PROJECT_BINARY_DIR}/Debug/bin/${${name}_OUTPUT_SUFFIX}"
+        RUNTIME_OUTPUT_DIRECTORY_MINSIZEREL "${PROJECT_BINARY_DIR}/MinSizeRel/bin/${${name}_OUTPUT_SUFFIX}"
+        RUNTIME_OUTPUT_DIRECTORY_RELWITHDEBINFO "${PROJECT_BINARY_DIR}/RelWithDebInfo/bin/${${name}_OUTPUT_SUFFIX}")
     else()
       set_target_properties(${name} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/${${name}_OUTPUT_SUFFIX}")
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/bin/${${name}_OUTPUT_SUFFIX}")
     endif()
   endif()
 
@@ -162,6 +173,10 @@ function(add_hpx_executable name)
 
   if(${${name}_NOHPX_INIT})
     set(_target_flags ${_target_flags} NOHPX_INIT)
+  endif()
+
+  if(${name}_INTERNAL_FLAGS)
+    set(_target_flags ${_target_flags} INTERNAL_FLAGS)
   endif()
 
   hpx_setup_target(

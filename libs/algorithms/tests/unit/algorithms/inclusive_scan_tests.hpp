@@ -11,9 +11,8 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/parallel_executors.hpp>
 #include <hpx/include/parallel_scan.hpp>
+#include <hpx/iterator_support.hpp>
 #include <hpx/testing.hpp>
-
-#include <boost/iterator/counting_iterator.hpp>
 
 #include <cstddef>
 #include <iostream>
@@ -86,18 +85,6 @@ void test_inclusive_scan1(ExPolicy&& policy, IteratorTag)
         std::begin(c), std::end(c), std::begin(e), val, op);
 
     HPX_TEST(std::equal(std::begin(d), std::end(d), std::begin(e)));
-
-#if defined(HPX_HAVE_INCLUSIVE_SCAN_COMPATIBILITY)
-    std::fill(std::begin(d), std::end(d), std::size_t(0));
-    hpx::parallel::inclusive_scan(std::forward<ExPolicy>(policy),
-        iterator(std::begin(c)), iterator(std::end(c)), std::begin(d), val, op);
-
-    // verify values
-    hpx::parallel::v1::detail::sequential_inclusive_scan(
-        std::begin(c), std::end(c), std::begin(e), val, op);
-
-    HPX_TEST(std::equal(std::begin(d), std::end(d), std::begin(e)));
-#endif
 }
 
 template <typename ExPolicy, typename IteratorTag>
@@ -124,19 +111,6 @@ void test_inclusive_scan1_async(ExPolicy&& p, IteratorTag)
         std::begin(c), std::end(c), std::begin(e), val, op);
 
     HPX_TEST(std::equal(std::begin(d), std::end(d), std::begin(e)));
-
-#if defined(HPX_HAVE_INCLUSIVE_SCAN_COMPATIBILITY)
-    std::fill(std::begin(d), std::end(d), std::size_t(0));
-    f = hpx::parallel::inclusive_scan(std::forward<ExPolicy>(p),
-        iterator(std::begin(c)), iterator(std::end(c)), std::begin(d), val, op);
-    f.wait();
-
-    // verify values
-    hpx::parallel::v1::detail::sequential_inclusive_scan(
-        std::begin(c), std::end(c), std::begin(e), val, op);
-
-    HPX_TEST(std::equal(std::begin(d), std::end(d), std::begin(e)));
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -165,17 +139,6 @@ void test_inclusive_scan2(ExPolicy policy, IteratorTag)
         std::end(c), std::begin(e), std::size_t(0), std::plus<std::size_t>());
 
     HPX_TEST(std::equal(std::begin(d), std::end(d), std::begin(e)));
-
-#if defined(HPX_HAVE_INCLUSIVE_SCAN_COMPATIBILITY)
-    hpx::parallel::inclusive_scan(policy, iterator(std::begin(c)),
-        iterator(std::end(c)), std::begin(d), std::size_t(0));
-
-    // verify values
-    hpx::parallel::v1::detail::sequential_inclusive_scan(std::begin(c),
-        std::end(c), std::begin(e), std::size_t(0), std::plus<std::size_t>());
-
-    HPX_TEST(std::equal(std::begin(d), std::end(d), std::begin(e)));
-#endif
 }
 
 template <typename ExPolicy, typename IteratorTag>
@@ -187,20 +150,6 @@ void test_inclusive_scan2_async(ExPolicy p, IteratorTag)
     std::vector<std::size_t> c(10007);
     std::vector<std::size_t> d(c.size());
     std::fill(std::begin(c), std::end(c), std::size_t(1));
-
-#if defined(HPX_HAVE_INCLUSIVE_SCAN_COMPATIBILITY)
-    std::size_t const val(0);
-    hpx::future<void> f = hpx::parallel::inclusive_scan(
-        p, iterator(std::begin(c)), iterator(std::end(c)), std::begin(d), val);
-    f.wait();
-
-    // verify values
-    std::vector<std::size_t> e(c.size());
-    hpx::parallel::v1::detail::sequential_inclusive_scan(std::begin(c),
-        std::end(c), std::begin(e), val, std::plus<std::size_t>());
-
-    HPX_TEST(std::equal(std::begin(d), std::end(d), std::begin(e)));
-#endif
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -436,8 +385,8 @@ void test_inclusive_scan_validate(
 
     // test 1, fill array with numbers counting from 0, then run scan algorithm
     a.clear();
-    std::copy(boost::counting_iterator<int>(0),
-        boost::counting_iterator<int>(ARRAY_SIZE), std::back_inserter(a));
+    std::copy(hpx::util::counting_iterator<int>(0),
+        hpx::util::counting_iterator<int>(ARRAY_SIZE), std::back_inserter(a));
     b.resize(a.size());
     hpx::parallel::inclusive_scan(
         p, a.begin(), a.end(), b.begin(),
@@ -448,14 +397,14 @@ void test_inclusive_scan_validate(
         // counting from zero,
         int value = b[i];    //-V108
         int expected_value = check_n_triangle(i);
-        if (!HPX_TEST(value == expected_value))
+        if (!HPX_TEST_EQ(value, expected_value))
             break;
     }
 
     // test 2, fill array with numbers counting from 1, then run scan algorithm
     a.clear();
-    std::copy(boost::counting_iterator<int>(1),
-        boost::counting_iterator<int>(ARRAY_SIZE), std::back_inserter(a));
+    std::copy(hpx::util::counting_iterator<int>(1),
+        hpx::util::counting_iterator<int>(ARRAY_SIZE), std::back_inserter(a));
     b.resize(a.size());
     hpx::parallel::inclusive_scan(
         p, a.begin(), a.end(), b.begin(),
@@ -466,7 +415,7 @@ void test_inclusive_scan_validate(
         // counting from 1, use i+1
         int value = b[i];    //-V108
         int expected_value = check_n_triangle(i + 1);
-        HPX_TEST(value == expected_value);
+        HPX_TEST_EQ(value, expected_value);
         if (value != expected_value)
             break;
     }
@@ -483,7 +432,7 @@ void test_inclusive_scan_validate(
     {
         int value = b[i];    //-V108
         int expected_value = check_n_const(i + 1, FILL_VALUE);
-        HPX_TEST(value == expected_value);
+        HPX_TEST_EQ(value, expected_value);
         if (value != expected_value)
             break;
     }

@@ -11,11 +11,11 @@
 
 #include <hpx/config.hpp>
 #include <hpx/functional/invoke.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 
+#include <hpx/execution/algorithms/detail/predicates.hpp>
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/algorithms/detail/predicates.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/loop.hpp>
 #include <hpx/parallel/util/partitioner.hpp>
@@ -78,7 +78,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                     difference_type1;
                 difference_type1 count1 = std::distance(first1, last1);
 
-                // The specifcation of std::mismatch(_binary) states that if FwdIter1
+                // The specification of std::mismatch(_binary) states that if FwdIter1
                 // and FwdIter2 meet the requirements of RandomAccessIterator and
                 // last1 - first1 != last2 - first2 then no applications of the
                 // predicate p are made.
@@ -100,7 +100,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
 
                 util::cancellation_token<std::size_t> tok(count1);
 
-                auto f1 = [tok, HPX_CAPTURE_FORWARD(f)](zip_iterator it,
+                auto f1 = [tok, f = std::forward<F>(f)](zip_iterator it,
                               std::size_t part_count,
                               std::size_t base_idx) mutable -> void {
                     util::loop_idx_n(base_idx, it, part_count, tok,
@@ -278,7 +278,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
 
                 util::cancellation_token<std::size_t> tok(count);
 
-                auto f1 = [tok, HPX_CAPTURE_FORWARD(f)](zip_iterator it,
+                auto f1 = [tok, f = std::forward<F>(f)](zip_iterator it,
                               std::size_t part_count,
                               std::size_t base_idx) mutable -> void {
                     util::loop_idx_n(base_idx, it, part_count, tok,

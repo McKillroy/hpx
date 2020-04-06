@@ -10,12 +10,12 @@
 //  http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/config.hpp>
+#include <hpx/util/to_string.hpp>
 
 #include <algorithm>
 
 #include "deprecated_include_check.hpp"
 #include "boost/regex.hpp"
-#include "boost/lexical_cast.hpp"
 #include "function_hyper.hpp"
 
 namespace boost
@@ -35,6 +35,7 @@ namespace boost
       { "boost/detail/atomic_count\\.hpp", "hpx/thread_support/atomic_count.hpp" },
       { "boost/function\\.hpp", "hpx/util/function.hpp" },
       { "boost/shared_ptr\\.hpp", "memory" },
+      { "boost/intrusive_ptr\\.hpp", "hpx/memory/intrusive_ptr.hpp" },
       { "boost/make_shared\\.hpp", "memory" },
       { "boost/enable_shared_from_this\\.hpp", "memory" },
       { "boost/bind\\.hpp", "hpx/util/bind.hpp" },
@@ -54,6 +55,7 @@ namespace boost
       { "boost/regex.hpp", "regex" },
       { "boost/program_options([^\\s]*)\\.hpp", "hpx/program_options\\2.hpp" },
       { "boost/filesystem([^\\s]*)\\.hpp", "hpx/filesystem.hpp" },
+      { "boost/lexical_cast\\.hpp", "hpx/util/((from_string)|(to_string)).hpp" },
       { nullptr, nullptr }
     };
 
@@ -152,7 +154,7 @@ namespace boost
                   + " deprecated #include ("
                   + found_include
                   + ") on line "
-                  + linelink(full_path, boost::lexical_cast<string>(line_number))
+                  + linelink(full_path, hpx::util::to_string(line_number))
                   + " use " + m.format(d.data->use_instead) + " instead");
             }
           }

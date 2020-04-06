@@ -9,18 +9,17 @@
 
 #include <hpx/config.hpp>
 #include <hpx/assertion.hpp>
-#include <hpx/errors.hpp>
 #include <hpx/custom_exception_info.hpp>
+#include <hpx/errors.hpp>
+#include <hpx/functional/deferred_call.hpp>
+#include <hpx/functional/unique_function.hpp>
 #include <hpx/lcos/local/futures_factory.hpp>
+#include <hpx/memory/intrusive_ptr.hpp>
 #include <hpx/runtime/components/client_base.hpp>
 #include <hpx/runtime/launch_policy.hpp>
-#include <hpx/runtime/threads/thread.hpp>
-#include <hpx/util/annotated_function.hpp>
-#include <hpx/functional/deferred_call.hpp>
-#include <hpx/util/detail/yield_k.hpp>
-#include <hpx/functional/unique_function.hpp>
-
-#include <boost/intrusive_ptr.hpp>
+#include <hpx/threading.hpp>
+#include <hpx/threading_base/annotated_function.hpp>
+#include <hpx/basic_execution/this_thread.hpp>
 
 #include <cstddef>
 #include <exception>
@@ -60,7 +59,7 @@ namespace hpx { namespace lcos { namespace detail
             policy = launch::async;
 
         // launch a new thread executing the given function
-        threads::thread_id_type tid = p.apply(
+        threads::thread_id_type tid = p.apply("run_on_completed_on_new_thread",
             policy, threads::thread_priority_boost,
             threads::thread_stacksize_current,
             threads::thread_schedule_hint());

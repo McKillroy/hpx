@@ -12,9 +12,9 @@
 #include <hpx/config.hpp>
 #include <hpx/assertion.hpp>
 #include <hpx/errors.hpp>
-#include <hpx/lcos/local/condition_variable.hpp>
-#include <hpx/lcos/local/mutex.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/synchronization/condition_variable.hpp>
+#include <hpx/synchronization/mutex.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/performance_counters/counters.hpp>
 #include <hpx/plugin.hpp>
 #include <hpx/plugins/plugin_factory_base.hpp>
@@ -23,7 +23,7 @@
 #include <hpx/runtime/actions/manage_object_action.hpp>
 #include <hpx/runtime/components/component_type.hpp>
 #include <hpx/runtime/components/server/create_component.hpp>
-#include <hpx/runtime/components/static_factory_data.hpp>
+#include <hpx/runtime_configuration/static_factory_data.hpp>
 #include <hpx/runtime/find_here.hpp>
 #include <hpx/runtime/parcelset/locality.hpp>
 #include <hpx/traits/action_does_termination_detection.hpp>
@@ -105,7 +105,7 @@ namespace hpx { namespace components { namespace server
         /// \param self [in] The HPX \a thread used to execute this function.
         /// \param appl [in] The applier to be used for finalization of the
         ///             component instance.
-        HPX_CXX14_CONSTEXPR static void finalize() {}
+        static constexpr void finalize() {}
 
         void delete_function_lists();
         void tidy();
@@ -247,9 +247,11 @@ namespace hpx { namespace components { namespace server
         void remove_here_from_connection_cache();
         void remove_here_from_console_connection_cache();
 
+#if defined(HPX_HAVE_NETWORKING)
         ///////////////////////////////////////////////////////////////////////
         void register_message_handler(char const* message_handler_type,
             char const* action, error_code& ec);
+
         parcelset::policies::message_handler* create_message_handler(
             char const* message_handler_type, char const* action,
             parcelset::parcelport* pp, std::size_t num_messages,
@@ -257,6 +259,7 @@ namespace hpx { namespace components { namespace server
         serialization::binary_filter* create_binary_filter(
             char const* binary_filter_type, bool compress,
             serialization::binary_filter* next_filter, error_code& ec);
+#endif
 
         // notify of message being sent
         void dijkstra_make_black();

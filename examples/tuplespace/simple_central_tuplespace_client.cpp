@@ -8,10 +8,9 @@
 #include <hpx/include/actions.hpp>
 #include <hpx/include/iostreams.hpp>
 #include <hpx/include/lcos.hpp>
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
+#include <hpx/string_util/classification.hpp>
+#include <hpx/string_util/split.hpp>
+#include <hpx/string_util/trim.hpp>
 
 #include <string>
 #include <vector>
@@ -23,7 +22,7 @@ typedef examples::server::simple_central_tuplespace central_tuplespace_type;
 typedef central_tuplespace_type::tuple_type tuple_type;
 typedef central_tuplespace_type::elem_type elem_type;
 
-void print_tuple(const tuple_type& tuple)
+void print_tuple(tuple_type const& tuple)
 {
     if (tuple.empty())
     {
@@ -41,7 +40,7 @@ void print_tuple(const tuple_type& tuple)
 }
 
 void simple_central_tuplespace_test(
-    const std::string& tuplespace_symbol_name, const tuple_type tuple)
+    std::string const& tuplespace_symbol_name, tuple_type const tuple)
 {
     examples::simple_central_tuplespace central_tuplespace;
 
@@ -105,7 +104,7 @@ int hpx_main()
         // Find the localities connected to this application.
         std::vector<hpx::id_type> localities = hpx::find_all_localities();
 
-        const std::string tuplespace_symbol_name = "/tuplespace";
+        std::string const tuplespace_symbol_name = "/tuplespace";
         examples::simple_central_tuplespace central_tuplespace;
 
         if (!central_tuplespace.create(

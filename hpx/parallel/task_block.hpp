@@ -16,17 +16,16 @@
 #include <hpx/functional/bind_back.hpp>
 #include <hpx/lcos/dataflow.hpp>
 #include <hpx/lcos/future.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/lcos/when_all.hpp>
 #include <hpx/traits/is_future.hpp>
 #include <hpx/type_support/decay.hpp>
 
-#include <hpx/parallel/exception_list.hpp>
-#include <hpx/parallel/execution_policy.hpp>
-#include <hpx/parallel/executors/execution.hpp>
+#include <hpx/execution/exception_list.hpp>
+#include <hpx/execution/execution_policy.hpp>
+#include <hpx/execution/executors/execution.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 
-#include <boost/utility/addressof.hpp>      // boost::addressof
 #include <memory>                           // std::addressof
 
 #include <exception>
@@ -524,12 +523,6 @@ namespace hpx { namespace parallel { inline namespace v2
 
 /// \cond NOINTERNAL
 namespace std
-{
-    template <typename ExPolicy>
-    hpx::parallel::v2::task_block<ExPolicy>*
-    addressof(hpx::parallel::v2::task_block<ExPolicy>&) = delete;
-}
-namespace boost
 {
     template <typename ExPolicy>
     hpx::parallel::v2::task_block<ExPolicy>*

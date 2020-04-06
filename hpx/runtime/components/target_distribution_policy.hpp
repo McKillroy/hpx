@@ -22,7 +22,7 @@
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/naming/id_type.hpp>
 #include <hpx/runtime/naming/name.hpp>
-#include <hpx/runtime/serialization/serialization_fwd.hpp>
+#include <hpx/serialization/serialization_fwd.hpp>
 #include <hpx/traits/extract_action.hpp>
 #include <hpx/traits/is_distribution_policy.hpp>
 #include <hpx/traits/promise_local_result.hpp>
@@ -107,7 +107,7 @@ namespace hpx { namespace components
                     id, count, std::forward<Ts>(vs)...);
 
             return f.then(hpx::launch::sync,
-                [HPX_CAPTURE_MOVE(id)](
+                [id = std::move(id)](
                     hpx::future<std::vector<hpx::id_type> > && f
                 ) -> std::vector<bulk_locality_result>
                 {

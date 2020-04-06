@@ -10,15 +10,15 @@
 #include <hpx/config.hpp>
 #include <hpx/concepts/concepts.hpp>
 #include <hpx/functional/invoke.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/type_support/unused.hpp>
 #include <hpx/util/tagged_pair.hpp>
 
+#include <hpx/execution/algorithms/detail/is_negative.hpp>
+#include <hpx/execution/algorithms/detail/predicates.hpp>
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/algorithms/detail/is_negative.hpp>
-#include <hpx/parallel/algorithms/detail/predicates.hpp>
 #include <hpx/parallel/algorithms/detail/transfer.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/tagspec.hpp>
 #include <hpx/parallel/traits/projected.hpp>
 #include <hpx/parallel/util/compare_projected.hpp>
@@ -103,8 +103,8 @@ namespace hpx { namespace parallel { inline namespace v1 {
                     void, util::scan_partitioner_sequential_f3_tag>
                     scan_partitioner_type;
 
-                auto f1 = [HPX_CAPTURE_FORWARD(pred),
-                              HPX_CAPTURE_FORWARD(proj)](
+                auto f1 = [pred = std::forward<Pred>(pred),
+                              proj = std::forward<Proj>(proj)](
                               zip_iterator part_begin,
                               std::size_t part_size) -> std::size_t {
                     FwdIter base = get<0>(part_begin.get_iterator_tuple());
@@ -167,7 +167,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 };
 
                 auto f4 =
-                    [HPX_CAPTURE_MOVE(dest_ptr), first, count, flags](
+                    [dest_ptr = std::move(dest_ptr), first, count, flags](
                         std::vector<hpx::shared_future<std::size_t>>&&,
                         std::vector<hpx::future<void>>&&) mutable -> FwdIter {
                     if (!flags[count - 1])
@@ -408,8 +408,8 @@ namespace hpx { namespace parallel { inline namespace v1 {
                     std::pair<FwdIter1, FwdIter2>, std::size_t>
                     scan_partitioner_type;
 
-                auto f1 = [HPX_CAPTURE_FORWARD(pred),
-                              HPX_CAPTURE_FORWARD(proj)](
+                auto f1 = [pred = std::forward<Pred>(pred),
+                              proj = std::forward<Proj>(proj)](
                               zip_iterator part_begin,
                               std::size_t part_size) -> std::size_t {
                     FwdIter1 base = get<0>(part_begin.get_iterator_tuple());

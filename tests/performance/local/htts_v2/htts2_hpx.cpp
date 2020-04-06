@@ -9,8 +9,8 @@
 
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
-#include <hpx/lcos/local/barrier.hpp>
-#include <hpx/runtime/threads/thread_helpers.hpp>
+#include <hpx/synchronization/barrier.hpp>
+#include <hpx/threading_base/thread_helpers.hpp>
 #include <hpx/functional/bind.hpp>
 #include <hpx/format.hpp>
 
@@ -169,7 +169,7 @@ struct hpx_driver : htts2::driver
         ///////////////////////////////////////////////////////////////////////
         // Compute + Cooldown Phase
 
-        // The use of an atomic and live waiting here does not add any noticable
+        // The use of an atomic and live waiting here does not add any noticeable
         // overhead, as compared to the more complicated continuation-style
         // detection method that checks the threadmanager internal counters
         // (I've measured). Using this technique is preferable as it is more

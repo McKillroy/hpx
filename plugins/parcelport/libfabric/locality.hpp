@@ -8,8 +8,9 @@
 #define HPX_PARCELSET_POLICIES_LIBFABRIC_LOCALITY_HPP
 
 #include <hpx/runtime/parcelset/locality.hpp>
-#include <hpx/runtime/serialization/serialize.hpp>
-#include <hpx/runtime/serialization/array.hpp>
+#include <hpx/serialization/serialize.hpp>
+#include <hpx/serialization/array.hpp>
+#include <hpx/util/ios_flags_saver.hpp>
 //
 #include <utility>
 #include <cstring>
@@ -17,7 +18,7 @@
 #include <array>
 #include <rdma/fabric.h>
 
-// Different providers use different address formats that we must accomodate
+// Different providers use different address formats that we must accommodate
 // in our locality object.
 #ifdef HPX_PARCELPORT_LIBFABRIC_GNI
 # define HPX_PARCELPORT_LIBFABRIC_LOCALITY_SIZE 48
@@ -171,7 +172,7 @@ private:
     }
 
     friend std::ostream & operator<<(std::ostream & os, locality const & loc) {
-        boost::io::ios_flags_saver ifs(os);
+        hpx::util::ios_flags_saver ifs(os);
         for (uint32_t i=0; i<array_length; ++i) {
             os << loc.data_[i];
         }

@@ -13,13 +13,13 @@
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime_fwd.hpp>
 #include <hpx/functional/traits/is_action.hpp>
-#include <hpx/traits/is_executor.hpp>
+#include <hpx/execution/traits/is_executor.hpp>
 #include <hpx/traits/is_launch_policy.hpp>
 #include <hpx/util/bind_action.hpp>
 #include <hpx/functional/deferred_call.hpp>
 
-#include <hpx/parallel/executors/execution.hpp>
-#include <hpx/parallel/executors/parallel_executor.hpp>
+#include <hpx/execution/executors/execution.hpp>
+#include <hpx/execution/executors/parallel_executor.hpp>
 
 #include <exception>
 #include <functional>
@@ -81,15 +81,15 @@ namespace hpx { namespace detail
             traits::is_bound_action<Bound>::value
         >::type>
     {
-        template <typename Action, typename BoundArgs, typename ...Ts>
+        template <typename Action, typename Is, typename... Ts, typename ...Us>
         HPX_FORCEINLINE
         static typename hpx::util::detail::bound_action<
-            Action, BoundArgs
+            Action, Is, Ts...
         >::result_type
-        call(hpx::util::detail::bound_action<Action, BoundArgs> const& bound,
-            Ts&&... ts)
+        call(hpx::util::detail::bound_action<Action, Is, Ts...> const& bound,
+            Us&&... vs)
         {
-            return bound(std::forward<Ts>(ts)...);
+            return bound(std::forward<Us>(vs)...);
         }
     };
 }}

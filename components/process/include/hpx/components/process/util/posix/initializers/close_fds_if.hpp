@@ -15,10 +15,11 @@
 
 #if !defined(HPX_WINDOWS)
 #include <hpx/components/process/util/posix/initializers/initializer_base.hpp>
-#include <boost/iterator/counting_iterator.hpp>
+
 #include <boost/range/adaptor/filtered.hpp>
 #include <boost/range/algorithm/for_each.hpp>
 #include <boost/range/counting_range.hpp>
+
 #include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -66,7 +67,7 @@ private:
         } while (up == -1 && errno == EINTR);
         if (up == -1)
 #endif
-            up = ::sysconf(_SC_OPEN_MAX);
+            up = static_cast<int>(::sysconf(_SC_OPEN_MAX));
         if (up == -1)
             up = HPX_PROCESS_POSIX_MAX_FD;
         return up;

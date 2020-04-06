@@ -8,37 +8,14 @@
 
 #include <hpx/concurrency/barrier.hpp>
 #include <hpx/format.hpp>
-#include <hpx/timing/high_resolution_timer.hpp>
-
-#include <boost/config.hpp>
-#include <boost/thread/tss.hpp>
 #include <hpx/program_options.hpp>
+#include <hpx/timing.hpp>
 
 #include <cstdint>
 #include <functional>
 #include <iostream>
 #include <thread>
 #include <vector>
-
-#if defined(__has_feature)
-#  if __has_feature(cxx_thread_local)
-#    define HPX_NATIVE_TLS thread_local
-#  endif
-#elif defined(HPX_HAVE_CXX11_THREAD_LOCAL)
-#  define HPX_NATIVE_TLS thread_local
-#endif
-
-#if !defined(HPX_NATIVE_TLS)
-#  if defined(_GLIBCXX_HAVE_TLS)
-#    define HPX_NATIVE_TLS __thread
-#  elif defined(HPX_WINDOWS)
-#    define HPX_NATIVE_TLS __declspec(thread)
-#  elif defined(__FreeBSD__) || (defined(__APPLE__) && defined(__MACH__))
-#    define HPX_NATIVE_TLS __thread
-#  else
-#    error Unsupported platform.
-#  endif
-#endif
 
 using hpx::program_options::variables_map;
 using hpx::program_options::options_description;
@@ -51,7 +28,7 @@ using hpx::util::high_resolution_timer;
 
 ///////////////////////////////////////////////////////////////////////////////
 // thread local globals
-static HPX_NATIVE_TLS double* global_scratch;
+static thread_local double* global_scratch;
 
 ///////////////////////////////////////////////////////////////////////////////
 inline void worker(

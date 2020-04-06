@@ -6,29 +6,33 @@
 
 #include <hpx/runtime/threads/executors/this_thread_executors.hpp>
 
-#if defined(HPX_HAVE_STATIC_SCHEDULER) || defined(HPX_HAVE_STATIC_PRIORITY_SCHEDULER)
+#if defined(HPX_HAVE_THREAD_EXECUTORS_COMPATIBILITY) && \
+    defined(HPX_HAVE_EMBEDDED_THREAD_POOLS_COMPATIBILITY) &&                   \
+    (defined(HPX_HAVE_STATIC_SCHEDULER) ||                                     \
+     defined(HPX_HAVE_STATIC_PRIORITY_SCHEDULER))
 
 #if defined(HPX_HAVE_STATIC_PRIORITY_SCHEDULER)
-#  include <hpx/runtime/threads/policies/static_priority_queue_scheduler.hpp>
+#  include <hpx/schedulers/static_priority_queue_scheduler.hpp>
 #endif
 #if defined(HPX_HAVE_STATIC_SCHEDULER)
-#  include <hpx/runtime/threads/policies/static_queue_scheduler.hpp>
+#  include <hpx/schedulers/static_queue_scheduler.hpp>
 #endif
 
 #include <hpx/assertion.hpp>
-#include <hpx/runtime/threads/detail/create_thread.hpp>
-#include <hpx/runtime/threads/detail/scheduling_loop.hpp>
-#include <hpx/runtime/threads/detail/set_thread_state.hpp>
-#include <hpx/runtime/threads/detail/thread_num_tss.hpp>
+#include <hpx/functional/deferred_call.hpp>
+#include <hpx/threading_base/create_thread.hpp>
+#include <hpx/thread_pools/scheduling_loop.hpp>
+#include <hpx/threading_base/set_thread_state.hpp>
+#include <hpx/threading_base/thread_num_tss.hpp>
 #include <hpx/runtime/threads/executors/manage_thread_executor.hpp>
-#include <hpx/runtime/threads/policies/affinity_data.hpp>
+#include <hpx/runtime/threads/thread_helpers.hpp>
+#include <hpx/affinity/affinity_data.hpp>
 #include <hpx/runtime/threads/resource_manager.hpp>
-#include <hpx/runtime/threads/thread_enums.hpp>
-#include <hpx/functional/bind.hpp>
+#include <hpx/coroutines/thread_enums.hpp>
 #include <hpx/functional/deferred_call.hpp>
 #include <hpx/timing/steady_clock.hpp>
-#include <hpx/util/thread_description.hpp>
-#include <hpx/functional/unique_function.hpp>
+#include <hpx/threading_base/thread_description.hpp>
+#include <hpx/basic_execution/this_thread.hpp>
 
 #include <atomic>
 #include <chrono>
@@ -77,17 +81,17 @@ namespace hpx { namespace threads { namespace executors { namespace detail
     {
         // if we're still starting up, give this executor a chance of executing
         // its tasks
-        while (scheduler_.get_state(0) < state_running)
-        {
-            this_thread::suspend();
-        }
+        hpx::util::yield_while(
+            [this]() { return scheduler_.get_state(0) < state_running; },
+            "this_thread_executor<Scheduler>::~this_thread_executor()");
 
         // Wait for work to finish.
-        while (scheduler_.get_thread_count() >
-            scheduler_.get_background_thread_count())
-        {
-            hpx::this_thread::suspend();
-        }
+        hpx::util::yield_while(
+            [this]() {
+                return scheduler_.get_thread_count() >
+                    scheduler_.get_background_thread_count();
+            },
+            "this_thread_executor<Scheduler>::~this_thread_executor()");
 
         // Inform the resource manager that this executor is about to be
         // destroyed. This will cause it to invoke remove_processing_unit below
@@ -151,10 +155,13 @@ namespace hpx { namespace threads { namespace executors { namespace detail
 
 
         // create a new thread
-        thread_init_data data(util::one_shot(util::bind(
-            &this_thread_executor::thread_function_nullary,
-            this, std::move(f))), desc);
-        data.stacksize = threads::get_stack_size(stacksize);
+        thread_init_data data(
+            util::one_shot(
+                util::bind(&this_thread_executor::thread_function_nullary, this,
+                    std::move(f))),
+            desc);
+        data.stacksize =
+            this_thread::get_pool()->get_scheduler()->get_stack_size(stacksize);
 
         // update statistics
         ++tasks_scheduled_;
@@ -190,10 +197,13 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         scheduler_.get_state(0).compare_exchange_strong(expected, state_starting);
 
         // create a new suspended thread
-        thread_init_data data(util::one_shot(util::bind(
-            &this_thread_executor::thread_function_nullary,
-            this, std::move(f))), desc);
-        data.stacksize = threads::get_stack_size(stacksize);
+        thread_init_data data(
+            util::one_shot(
+                util::bind(&this_thread_executor::thread_function_nullary, this,
+                    std::move(f))),
+            desc);
+        data.stacksize =
+            this_thread::get_pool()->get_scheduler()->get_stack_size(stacksize);
 
         threads::thread_id_type id = threads::invalid_thread_id;
         threads::detail::create_thread( //-V601
@@ -286,7 +296,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
                     parent_thread_num_);
                 on_self_reset on_exit(self_);
 
-                this_thread::suspend();
+                hpx::basic_execution::this_thread::yield();
             }
 
             // reset state to running if current state is still suspended
@@ -342,7 +352,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
             HPX_ASSERT(orig_thread_num_ != std::size_t(-1));
 
             threads::detail::reset_tss_helper reset_on_exit(orig_thread_num_);
-            parent_thread_num_ = reset_on_exit.previous_thread_num();
+            parent_thread_num_ = reset_on_exit.previous_global_thread_num();
 
             // FIXME: turn these values into performance counters
             std::int64_t executed_threads = 0, executed_thread_phases = 0;
@@ -434,7 +444,7 @@ namespace hpx { namespace threads { namespace executors { namespace detail
         HPX_ASSERT(std::size_t(-1) == orig_thread_num_);
 
         thread_num_ = thread_num;
-        orig_thread_num_ = threads::detail::get_thread_num_tss();
+        orig_thread_num_ = get_worker_thread_num();
 
         std::atomic<hpx::state>& state = scheduler_.get_state(0);
         hpx::state expected = state_initialized;
@@ -463,8 +473,6 @@ namespace hpx { namespace threads { namespace executors { namespace detail
     }
 }}}}
 
-#endif
-
 namespace hpx { namespace threads { namespace executors
 {
 #if defined(HPX_HAVE_STATIC_SCHEDULER)
@@ -486,3 +494,5 @@ namespace hpx { namespace threads { namespace executors
     {}
 #endif
 }}}
+
+#endif

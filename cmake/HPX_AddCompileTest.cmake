@@ -18,24 +18,23 @@ function(add_hpx_compile_test category name)
 
   string(REGEX REPLACE "\\." "_" test_name "${category}.${name}")
 
-  add_hpx_library(
+  add_hpx_executable(
     ${test_name}
     SOURCE_ROOT ${${name}_SOURCE_ROOT}
     SOURCES ${${name}_SOURCES}
     EXCLUDE_FROM_ALL
     EXCLUDE_FROM_DEFAULT_BUILD
     FOLDER ${${name}_FOLDER}
-    STATIC
     COMPONENT_DEPENDENCIES ${${name}_COMPONENT_DEPENDENCIES}
     DEPENDENCIES ${${name}_DEPENDENCIES}
     ${_additional_flags})
 
   add_test(NAME "${category}.${name}"
     COMMAND ${CMAKE_COMMAND}
-    --build ${CMAKE_BINARY_DIR}
+    --build ${PROJECT_BINARY_DIR}
       --target ${test_name}
       --config $<CONFIGURATION>
-    WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR})
 
   if(${name}_FAILURE_EXPECTED)
     set_tests_properties("${category}.${name}" PROPERTIES WILL_FAIL TRUE)
@@ -129,6 +128,7 @@ function(add_hpx_header_tests category)
         COMPONENT_DEPENDENCIES ${${category}_COMPONENT_DEPENDENCIES}
         DEPENDENCIES ${${category}_DEPENDENCIES}
         ${_additional_flags})
+
     endif()
   endforeach()
 

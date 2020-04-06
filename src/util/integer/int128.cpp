@@ -8,7 +8,7 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/util/integer/int128.hpp>
-#include <hpx/runtime/serialization/serialize.hpp>
+#include <hpx/serialization/serialize.hpp>
 
 #include <cmath>
 #include <cstddef>
@@ -34,7 +34,8 @@ namespace hpx { namespace util { namespace integer
 
         while (!!ii && i) {
             ii = ii.div (radix, r);
-            sz [--i] = r.toInt () + ((r.toInt () > 9) ? 'A' - 10 : '0');
+            // NOLINTNEXTLINE(bugprone-narrowing-conversions)
+            sz[--i] = r.toInt() + ((r.toInt() > 9) ? 'A' - 10 : '0');
         };
 
         if (*this < 0)

@@ -10,11 +10,11 @@
 #define HPX_PARALLEL_ALGORITHM_ADJACENT_DIF_JUL_15
 
 #include <hpx/config.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
-#include <hpx/util/zip_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
+#include <hpx/iterator_support/zip_iterator.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/loop.hpp>
 #include <hpx/parallel/util/partitioner.hpp>
@@ -78,7 +78,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                     return result::get(std::move(dest));
                 }
 
-                auto f1 = [HPX_CAPTURE_FORWARD(op)](zip_iterator part_begin,
+                auto f1 = [op = std::forward<Op>(op)](zip_iterator part_begin,
                               std::size_t part_size) mutable {
                     // VS2015RC bails out when op is captured by ref
                     using hpx::util::get;

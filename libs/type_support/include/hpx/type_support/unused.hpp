@@ -25,25 +25,22 @@ namespace hpx { namespace util {
     ///////////////////////////////////////////////////////////////////////////
     struct unused_type
     {
-        HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE unused_type() noexcept {}
+        constexpr HPX_HOST_DEVICE HPX_FORCEINLINE unused_type() noexcept {}
 
-        HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE unused_type(
+        constexpr HPX_HOST_DEVICE HPX_FORCEINLINE unused_type(
             unused_type const&)
         {
         }
-        HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE unused_type(unused_type&&)
+        constexpr HPX_HOST_DEVICE HPX_FORCEINLINE unused_type(unused_type&&) {}
+
+        template <typename T>
+        constexpr HPX_HOST_DEVICE HPX_FORCEINLINE unused_type(T const&) noexcept
         {
         }
 
         template <typename T>
-        HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE unused_type(
-            T const&) noexcept
-        {
-        }
-
-        template <typename T>
-        HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE unused_type const&
-        operator=(T const&) const noexcept
+        constexpr HPX_HOST_DEVICE HPX_FORCEINLINE unused_type const& operator=(
+            T const&) const noexcept
         {
             return *this;
         }
@@ -55,8 +52,8 @@ namespace hpx { namespace util {
             return *this;
         }
 
-        HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE unused_type const&
-        operator=(unused_type const&) const noexcept
+        constexpr HPX_HOST_DEVICE HPX_FORCEINLINE unused_type const& operator=(
+            unused_type const&) const noexcept
         {
             return *this;
         }
@@ -67,8 +64,8 @@ namespace hpx { namespace util {
             return *this;
         }
 
-        HPX_CONSTEXPR HPX_HOST_DEVICE HPX_FORCEINLINE unused_type const&
-        operator=(unused_type&&) const noexcept
+        constexpr HPX_HOST_DEVICE HPX_FORCEINLINE unused_type const& operator=(
+            unused_type&&) const noexcept
         {
             return *this;
         }
@@ -83,7 +80,7 @@ namespace hpx { namespace util {
 #if defined(HPX_MSVC_NVCC)
     HPX_CONSTANT
 #endif
-    HPX_CONSTEXPR_OR_CONST unused_type unused = unused_type();
+    constexpr unused_type unused = unused_type();
 }}    // namespace hpx::util
 
 //////////////////////////////////////////////////////////////////////////////
@@ -93,6 +90,20 @@ namespace hpx { namespace util {
 #else
 #define HPX_UNUSED(x) ::hpx::util::unused = (x)
 #endif
+
+// clang-format off
+/////////////////////////////////////////////////////////////
+// use this to silence compiler warnings for global variables
+#ifdef HPX_HAVE_CXX17_MAYBE_UNUSED
+#  define HPX_MAYBE_UNUSED [[maybe_unused]]
+#else
+#  if defined(HPX_GCC_VERSION)
+#    define HPX_MAYBE_UNUSED __attribute__((unused))
+#  else
+#    define HPX_MAYBE_UNUSED /* empty */
+#  endif
+#endif
+// clang-format on
 
 #if defined(HPX_MSVC)
 #pragma warning(pop)

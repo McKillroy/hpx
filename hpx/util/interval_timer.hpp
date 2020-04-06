@@ -8,9 +8,10 @@
 #define HPX_UTIL_INTERVAL_TIMER_SEP_27_2011_0434PM
 
 #include <hpx/config.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
-#include <hpx/runtime/threads/thread_enums.hpp>
+#include <hpx/synchronization/spinlock.hpp>
+#include <hpx/coroutines/thread_enums.hpp>
 #include <hpx/functional/function.hpp>
+#include <hpx/threading_base.hpp>
 #include <hpx/timing/steady_clock.hpp>
 
 #include <algorithm>
@@ -54,7 +55,7 @@ namespace hpx { namespace util { namespace detail
         ~interval_timer();
 
         bool start(bool evaluate);
-        bool stop();
+        bool stop(bool terminate = false);
 
         bool restart(bool evaluate);
 
@@ -81,6 +82,8 @@ namespace hpx { namespace util { namespace detail
         util::function_nonser<void()> on_term_; ///< function to call on termination
         std::int64_t microsecs_;    ///< time interval
         threads::thread_id_type id_;  ///< id of currently scheduled thread
+        threads::thread_id_type timerid_;  ///< id of the timer thread for the
+                                           ///< currently scheduled thread
         std::string description_;     ///< description of this interval timer
 
         bool pre_shutdown_;           ///< execute termination during pre-shutdown
@@ -123,9 +126,9 @@ namespace hpx { namespace util
         {
             return timer_->start(evaluate);
         }
-        bool stop()
+        bool stop(bool terminate = false)
         {
-            return timer_->stop();
+            return timer_->stop(terminate);
         }
 
         bool restart(bool evaluate = true)

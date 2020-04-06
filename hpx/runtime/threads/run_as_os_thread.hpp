@@ -9,8 +9,8 @@
 
 #include <hpx/config.hpp>
 #include <hpx/assertion.hpp>
-#include <hpx/parallel/executors/execution.hpp>
-#include <hpx/parallel/executors/service_executors.hpp>
+#include <hpx/execution/executors/execution.hpp>
+#include <hpx/execution/executors/service_executors.hpp>
 #include <hpx/runtime/threads_fwd.hpp>
 #include <hpx/functional/deferred_call.hpp>
 #include <hpx/functional/result_of.hpp>
@@ -27,10 +27,9 @@ namespace hpx { namespace threads
     {
         HPX_ASSERT(get_self_ptr() != nullptr);
 
-        parallel::execution::io_pool_executor scheduler;
-        auto result = parallel::execution::async_execute(scheduler,
+        parallel::execution::io_pool_executor executor;
+        auto result = parallel::execution::async_execute(executor,
             std::forward<F>(f), std::forward<Ts>(vs)...);
-        scheduler.detach();
         return result;
     }
 }}

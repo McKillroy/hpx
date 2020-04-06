@@ -4,7 +4,7 @@
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-cmake_minimum_required(VERSION 3.3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 set(type_support_headers
   hpx/type_support/detail/wrap_int.hpp
@@ -14,6 +14,7 @@ set(type_support_headers
   hpx/type_support/identity.hpp
   hpx/type_support/lazy_conditional.hpp
   hpx/type_support/lazy_enable_if.hpp
+  hpx/type_support/pack.hpp
   hpx/type_support/static.hpp
   hpx/type_support/unwrap_ref.hpp
   hpx/type_support/unused.hpp
@@ -50,6 +51,5 @@ add_hpx_module(type_support
   DEPENDENCIES
     hpx_assertion
     hpx_config
-    hpx_concepts
   CMAKE_SUBDIRS examples tests
 )

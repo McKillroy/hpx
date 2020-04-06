@@ -9,28 +9,22 @@
 #define HPX_RUNTIME_THREADS_FWD_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/runtime/threads/thread_data_fwd.hpp>
-#include <hpx/runtime/threads/thread_enums.hpp>
+#include <hpx/coroutines/thread_enums.hpp>
+#include <hpx/threading_base/thread_pool_base.hpp>
+#include <hpx/threading_base/scheduler_base.hpp>
 
 namespace hpx
 {
+    namespace parallel { namespace execution {
+        class HPX_EXPORT thread_pool_executor;
+    }}
+
     namespace threads
     {
-        namespace policies
-        {
-            struct scheduler_base;
-            namespace detail {
-                struct HPX_EXPORT affinity_data;
-            }
-        }
-
         namespace executors
         {
-            struct HPX_EXPORT current_executor;
+            using current_executor = parallel::execution::thread_pool_executor;
         }
-
-        class HPX_EXPORT thread_pool_base;
-        struct HPX_EXPORT thread_pool_init_parameters;
     }
 }
 

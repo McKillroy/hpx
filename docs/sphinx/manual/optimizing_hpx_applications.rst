@@ -284,6 +284,10 @@ The following table summarizes the available command line options:
    * * ``--hpx:reset-counters``
      * reset all performance counter(s) specified with ``--hpx:print-counter``
        after they have been evaluated)
+   * * ``--hpx:print-counter-types``
+     * each locality prints only its own local counters
+   * * ``--hpx:print-counters-locally``
+     * append counter type description to generated output
 
 While the options ``--hpx:list-counters`` and ``--hpx:list-counter-infos`` give
 a short listing of all available counters, the full documentation for those can
@@ -364,6 +368,12 @@ counter data as gathered at application shutdown. These lines have 6 fields, the
 counter name, the sequence number of the counter invocation, the time stamp at
 which this information has been sampled, the unit of measure for the time stamp,
 the actual counter value, and an optional unit of measure for the counter value.
+
+.. note::
+
+   The command line option ``--hpx:print-counter-types` will append a seventh
+   field to the generated output. This field will hold an abbreviated counter
+   type.
 
 The actual counter value can be represented by a single number (for counters
 returning singular values) or a list of numbers separated by ``':'`` (for
@@ -1021,9 +1031,9 @@ system and application performance.
 
        Please see :ref:`cmake_variables` for more details.
      * If the configure-time option ``-DHPX_WITH_PARCELPORT_ACTION_COUNTERS=On``
-       was specified, this counter allows to specify an optional action name as
-       its parameter. In this case the counter will report the number of bytes
-       transmitted for the given action only.
+       was specified, this counter allows one to specify an optional action name
+       as its parameter. In this case the counter will report the number of
+       bytes transmitted for the given action only.
    * * ``/serialize/time/<connection_type>/<operation>``
 
        where:
@@ -1050,8 +1060,8 @@ system and application performance.
 
        Please see :ref:`cmake_variables` for more details.
      * If the configure-time option ``-DHPX_WITH_PARCELPORT_ACTION_COUNTERS=On``
-       was specified, this counter allows to specify an optional action name as
-       its parameter. In this case the counter will report the serialization
+       was specified, this counter allows one to specify an optional action name
+       as its parameter. In this case the counter will report the serialization
        time for the given action only.
    * * ``/parcels/count/routed``
      * ``locality#*/total``
@@ -1072,9 +1082,9 @@ system and application performance.
        :term:`AGAS` service component will deliver the parcel to its final
        target.
      * If the configure-time option ``-DHPX_WITH_PARCELPORT_ACTION_COUNTERS=On``
-       was specified, this counter allows to specify an optional action name as
-       its parameter. In this case the counter will report the number of parcels
-       for the given action only.
+       was specified, this counter allows one to specify an optional action name
+       as its parameter. In this case the counter will report the number of
+       parcels for the given action only.
    * * ``/parcels/count/<connection_type>/<operation>``
 
        where:
@@ -2356,7 +2366,7 @@ system and application performance.
        events changes depending on the used architecture.
 
        For a full list of available PAPI events and their (short) description
-       use the ``--hpx:list-counters`` and ``--papi-event-info=all`` command
+       use the ``--hpx:list-counters`` and ``--hpx:papi-event-info=all`` command
        line options.
 
      * ``locality#*/total`` or

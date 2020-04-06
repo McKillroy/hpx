@@ -7,10 +7,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <hpx/datastructures/any.hpp>
-#include <hpx/hpx_init.hpp>
 #include <hpx/testing.hpp>
-
-#include <hpx/util/storage/tuple.hpp>
 
 #include <iostream>
 #include <sstream>
@@ -24,11 +21,8 @@ using hpx::util::any_cast;
 using hpx::util::any_nonser;
 using hpx::util::streamable_any_nonser;
 
-using hpx::finalize;
-using hpx::init;
-
 ///////////////////////////////////////////////////////////////////////////////
-int hpx_main()
+int main()
 {
     {
         streamable_any_nonser any1(big_object(30, 40));
@@ -36,7 +30,7 @@ int hpx_main()
 
         buffer << any1;
 
-        HPX_TEST_EQ(buffer.str(), "3040");
+        HPX_TEST(buffer.str() == "3040");
     }
 
     // non serializable version
@@ -46,11 +40,11 @@ int hpx_main()
             any_nonser any1_nonser(7), any2_nonser(7), any3_nonser(10),
                 any4_nonser(std::string("seven"));
 
-            HPX_TEST(any_cast<int>(any1_nonser) == 7);
-            HPX_TEST(any_cast<int>(any1_nonser) != 10);
-            HPX_TEST(any_cast<int>(any1_nonser) != 10.0f);
-            HPX_TEST(any_cast<int>(any1_nonser) == any_cast<int>(any1_nonser));
-            HPX_TEST(any_cast<int>(any1_nonser) == any_cast<int>(any2_nonser));
+            HPX_TEST_EQ(any_cast<int>(any1_nonser), 7);
+            HPX_TEST_NEQ(any_cast<int>(any1_nonser), 10);
+            HPX_TEST_NEQ(any_cast<int>(any1_nonser), 10.0f);
+            HPX_TEST_EQ(any_cast<int>(any1_nonser), any_cast<int>(any1_nonser));
+            HPX_TEST_EQ(any_cast<int>(any1_nonser), any_cast<int>(any2_nonser));
             HPX_TEST(any1_nonser.type() == any3_nonser.type());
             HPX_TEST(any1_nonser.type() != any4_nonser.type());
 
@@ -62,8 +56,8 @@ int hpx_main()
             any3_nonser = other_str;
             any4_nonser = 10.0f;
 
-            HPX_TEST(any_cast<std::string>(any1_nonser) == long_str);
-            HPX_TEST(any_cast<std::string>(any1_nonser) != other_str);
+            HPX_TEST_EQ(any_cast<std::string>(any1_nonser), long_str);
+            HPX_TEST_NEQ(any_cast<std::string>(any1_nonser), other_str);
             HPX_TEST(any1_nonser.type() == typeid(std::string));
             HPX_TEST(any_cast<std::string>(any1_nonser) ==
                 any_cast<std::string>(any1_nonser));
@@ -134,13 +128,5 @@ int hpx_main()
         }
     }
 
-    finalize();
     return hpx::util::report_errors();
-}
-
-///////////////////////////////////////////////////////////////////////////////
-int main(int argc, char* argv[])
-{
-    // Initialize and run HPX
-    return init(argc, argv);
 }

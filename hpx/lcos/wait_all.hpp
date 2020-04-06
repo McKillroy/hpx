@@ -5,9 +5,6 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-// hpxinspect:nodeprecatedinclude:boost/ref.hpp
-// hpxinspect:nodeprecatedname:boost::reference_wrapper
-
 /// \file lcos/wait_all.hpp
 
 #if !defined(HPX_LCOS_WAIT_ALL_APR_19_2012_1140AM)
@@ -106,8 +103,11 @@ namespace hpx
 #include <hpx/config.hpp>
 #include <hpx/lcos_fwd.hpp>     // forward declare wait_all()
 
+#include <hpx/datastructures/tuple.hpp>
+#include <hpx/iterator_support/range.hpp>
 #include <hpx/lcos/detail/future_data.hpp>
 #include <hpx/lcos/future.hpp>
+#include <hpx/memory/intrusive_ptr.hpp>
 #include <hpx/traits/acquire_shared_state.hpp>
 #include <hpx/traits/future_access.hpp>
 #include <hpx/traits/future_traits.hpp>
@@ -115,11 +115,6 @@ namespace hpx
 #include <hpx/type_support/always_void.hpp>
 #include <hpx/type_support/decay.hpp>
 #include <hpx/type_support/unwrap_ref.hpp>
-#include <hpx/iterator_support/range.hpp>
-#include <hpx/datastructures/tuple.hpp>
-
-#include <boost/intrusive_ptr.hpp>
-#include <boost/ref.hpp>
 
 #include <algorithm>
 #include <array>
@@ -143,17 +138,12 @@ namespace hpx { namespace lcos
 
         template <typename R>
         struct is_future_or_shared_state<
-                boost::intrusive_ptr<future_data_base<R> > >
+                hpx::intrusive_ptr<future_data_base<R> > >
           : std::true_type
         {};
 
         template <typename R>
         struct is_future_or_shared_state<std::reference_wrapper<R> >
-          : is_future_or_shared_state<R>
-        {};
-
-        template <typename R>
-        struct is_future_or_shared_state<boost::reference_wrapper<R> >
           : is_future_or_shared_state<R>
         {};
 
@@ -185,7 +175,7 @@ namespace hpx { namespace lcos
 
         template <typename R>
         struct future_or_shared_state_result<
-            boost::intrusive_ptr<future_data_base<R> > >
+            hpx::intrusive_ptr<future_data_base<R> > >
         {
             typedef R type;
         };
@@ -260,7 +250,7 @@ namespace hpx { namespace lcos
                             // in the sequence (if any).
                             next_future_data->set_on_completed(
                                 [this,
-                                    HPX_CAPTURE_MOVE(next), HPX_CAPTURE_MOVE(end)
+                                    next = std::move(next), end = std::move(end)
                                 ]() mutable -> void {
                                     return await_range<I>(
                                         std::move(next), std::move(end));

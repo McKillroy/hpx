@@ -12,13 +12,13 @@
 
 #include <hpx/config.hpp>
 #include <hpx/concepts/concepts.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/traits/segmented_iterator_traits.hpp>
 
+#include <hpx/execution/algorithms/detail/is_negative.hpp>
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/algorithms/detail/is_negative.hpp>
 #include <hpx/parallel/algorithms/for_each.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/projection_identity.hpp>
 
@@ -58,7 +58,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 return for_each_n<FwdIter>().call(
                     std::forward<ExPolicy>(policy), std::false_type(), first,
                     std::distance(first, last),
-                    [HPX_CAPTURE_FORWARD(f)](type& v) mutable { v = f(); },
+                    [f = std::forward<F>(f)](type& v) mutable { v = f(); },
                     util::projection_identity());
             }
         };
@@ -184,7 +184,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 return for_each_n<FwdIter>().call(
                     std::forward<ExPolicy>(policy), std::false_type(), first,
                     count,
-                    [HPX_CAPTURE_FORWARD(f)](type& v) mutable { v = f(); },
+                    [f = std::forward<F>(f)](type& v) mutable { v = f(); },
                     util::projection_identity());
             }
         };

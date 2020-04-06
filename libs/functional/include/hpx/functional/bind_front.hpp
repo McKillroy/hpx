@@ -9,14 +9,14 @@
 #define HPX_UTIL_BIND_FRONT_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/datastructures/detail/pack.hpp>
-#include <hpx/datastructures/tuple.hpp>
+#include <hpx/datastructures/member_pack.hpp>
 #include <hpx/functional/invoke.hpp>
 #include <hpx/functional/one_shot.hpp>
 #include <hpx/functional/result_of.hpp>
 #include <hpx/functional/traits/get_function_address.hpp>
 #include <hpx/functional/traits/get_function_annotation.hpp>
 #include <hpx/type_support/decay.hpp>
+#include <hpx/type_support/pack.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -28,82 +28,27 @@ namespace hpx { namespace util {
         struct invoke_bound_front_result;
 
         template <typename F, typename... Ts, typename... Us>
-        struct invoke_bound_front_result<F, util::tuple<Ts...>, Us...>
+        struct invoke_bound_front_result<F, util::pack<Ts...>, Us...>
           : util::invoke_result<F, Ts..., Us...>
         {
         };
 
         ///////////////////////////////////////////////////////////////////////
-        template <typename F, typename Ts, typename Is>
-        struct bound_front_impl;
+        template <typename F, typename Is, typename... Ts>
+        class bound_front;
 
-        template <typename F, typename... Ts, std::size_t... Is>
-        struct bound_front_impl<F, util::tuple<Ts...>,
-            pack_c<std::size_t, Is...>>
+        template <typename F, std::size_t... Is, typename... Ts>
+        class bound_front<F, index_pack<Is...>, Ts...>
         {
-            template <typename... Us>
-            HPX_CXX14_CONSTEXPR HPX_HOST_DEVICE
-                typename invoke_bound_front_result<F&, util::tuple<Ts&...>,
-                    Us&&...>::type
-                operator()(Us&&... vs) &
-            {
-                return HPX_INVOKE(
-                    _f, util::get<Is>(_args)..., std::forward<Us>(vs)...);
-            }
-
-            template <typename... Us>
-            HPX_CONSTEXPR HPX_HOST_DEVICE
-                typename invoke_bound_front_result<F const&,
-                    util::tuple<Ts const&...>, Us&&...>::type
-                operator()(Us&&... vs) const&
-            {
-                return HPX_INVOKE(
-                    _f, util::get<Is>(_args)..., std::forward<Us>(vs)...);
-            }
-
-            template <typename... Us>
-            HPX_CXX14_CONSTEXPR HPX_HOST_DEVICE
-                typename invoke_bound_front_result<F&&, util::tuple<Ts&&...>,
-                    Us&&...>::type
-                operator()(Us&&... vs) &&
-            {
-                return HPX_INVOKE(std::move(_f),
-                    util::get<Is>(std::move(_args))...,
-                    std::forward<Us>(vs)...);
-            }
-
-            template <typename... Us>
-            HPX_CONSTEXPR HPX_HOST_DEVICE
-                typename invoke_bound_front_result<F const&&,
-                    util::tuple<Ts const&&...>, Us&&...>::type
-                operator()(Us&&... vs) const&&
-            {
-                return HPX_INVOKE(std::move(_f),
-                    util::get<Is>(std::move(_args))...,
-                    std::forward<Us>(vs)...);
-            }
-
-            F _f;
-            util::tuple<Ts...> _args;
-        };
-
-        template <typename F, typename... Ts>
-        class bound_front
-          : private bound_front_impl<F, util::tuple<Ts...>,
-                typename detail::make_index_pack<sizeof...(Ts)>::type>
-        {
-            using base_type = detail::bound_front_impl<F, util::tuple<Ts...>,
-                typename detail::make_index_pack<sizeof...(Ts)>::type>;
-
         public:
-            bound_front() {}    // needed for serialization
+            bound_front() = default;    // needed for serialization
 
             template <typename F_, typename... Ts_,
                 typename = typename std::enable_if<
                     std::is_constructible<F, F_>::value>::type>
-            HPX_CONSTEXPR explicit bound_front(F_&& f, Ts_&&... vs)
-              : base_type{std::forward<F_>(f),
-                    util::forward_as_tuple(std::forward<Ts_>(vs)...)}
+            constexpr explicit bound_front(F_&& f, Ts_&&... vs)
+              : _f(std::forward<F_>(f))
+              , _args(std::piecewise_construct, std::forward<Ts_>(vs)...)
             {
             }
 
@@ -111,20 +56,60 @@ namespace hpx { namespace util {
             bound_front(bound_front const&) = default;
             bound_front(bound_front&&) = default;
 #else
-            HPX_CONSTEXPR HPX_HOST_DEVICE bound_front(bound_front const& other)
-              : base_type{other}
+            constexpr HPX_HOST_DEVICE bound_front(bound_front const& other)
+              : _f(other._f)
+              , _args(other._args)
             {
             }
 
-            HPX_CONSTEXPR HPX_HOST_DEVICE bound_front(bound_front&& other)
-              : base_type{std::move(other)}
+            constexpr HPX_HOST_DEVICE bound_front(bound_front&& other)
+              : _f(std::move(other._f))
+              , _args(std::move(other._args))
             {
             }
 #endif
 
             bound_front& operator=(bound_front const&) = delete;
 
-            using base_type::operator();
+            template <typename... Us>
+            constexpr HPX_HOST_DEVICE typename invoke_bound_front_result<F&,
+                util::pack<Ts&...>, Us&&...>::type
+            operator()(Us&&... vs) &
+            {
+                return HPX_INVOKE(
+                    _f, _args.template get<Is>()..., std::forward<Us>(vs)...);
+            }
+
+            template <typename... Us>
+            constexpr HPX_HOST_DEVICE
+                typename invoke_bound_front_result<F const&,
+                    util::pack<Ts const&...>, Us&&...>::type
+                operator()(Us&&... vs) const&
+            {
+                return HPX_INVOKE(
+                    _f, _args.template get<Is>()..., std::forward<Us>(vs)...);
+            }
+
+            template <typename... Us>
+            constexpr HPX_HOST_DEVICE typename invoke_bound_front_result<F&&,
+                util::pack<Ts&&...>, Us&&...>::type
+            operator()(Us&&... vs) &&
+            {
+                return HPX_INVOKE(std::move(_f),
+                    std::move(_args).template get<Is>()...,
+                    std::forward<Us>(vs)...);
+            }
+
+            template <typename... Us>
+            constexpr HPX_HOST_DEVICE
+                typename invoke_bound_front_result<F const&&,
+                    util::pack<Ts const&&...>, Us&&...>::type
+                operator()(Us&&... vs) const&&
+            {
+                return HPX_INVOKE(std::move(_f),
+                    std::move(_args).template get<Is>()...,
+                    std::forward<Us>(vs)...);
+            }
 
             template <typename Archive>
             void serialize(Archive& ar, unsigned int const /*version*/)
@@ -160,18 +145,20 @@ namespace hpx { namespace util {
 #endif
 
         private:
-            using base_type::_args;
-            using base_type::_f;
+            F _f;
+            util::member_pack_for<Ts...> _args;
         };
     }    // namespace detail
 
     template <typename F, typename... Ts>
-    HPX_CONSTEXPR detail::bound_front<typename std::decay<F>::type,
-        typename std::decay<Ts>::type...>
+    constexpr detail::bound_front<typename std::decay<F>::type,
+        typename util::make_index_pack<sizeof...(Ts)>::type,
+        typename util::decay_unwrap<Ts>::type...>
     bind_front(F&& f, Ts&&... vs)
     {
         typedef detail::bound_front<typename std::decay<F>::type,
-            typename std::decay<Ts>::type...>
+            typename util::make_index_pack<sizeof...(Ts)>::type,
+            typename util::decay_unwrap<Ts>::type...>
             result_type;
 
         return result_type(std::forward<F>(f), std::forward<Ts>(vs)...);
@@ -179,7 +166,7 @@ namespace hpx { namespace util {
 
     // nullary functions do not need to be bound again
     template <typename F>
-    HPX_CONSTEXPR typename std::decay<F>::type bind_front(F&& f)
+    constexpr typename std::decay<F>::type bind_front(F&& f)
     {
         return std::forward<F>(f);
     }

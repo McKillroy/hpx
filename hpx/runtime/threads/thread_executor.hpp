@@ -8,17 +8,19 @@
 #define HPX_RUNTIME_THREADS_THREAD_EXECUTOR_HPP
 
 #include <hpx/config.hpp>
+
+#if defined(HPX_HAVE_THREAD_EXECUTORS_COMPATIBILITY)
+#include <hpx/coroutines/thread_enums.hpp>
+#include <hpx/functional/unique_function.hpp>
+#include <hpx/memory/intrusive_ptr.hpp>
 #include <hpx/runtime/get_os_thread_count.hpp>
-#include <hpx/topology/cpu_mask.hpp>
-#include <hpx/runtime/threads/policies/scheduler_mode.hpp>
-#include <hpx/runtime/threads/thread_enums.hpp>
+#include <hpx/threading_base/scheduler_mode.hpp>
+#include <hpx/threading_base/thread_pool_base.hpp>
 #include <hpx/thread_support/atomic_count.hpp>
 #include <hpx/timing/steady_clock.hpp>
+#include <hpx/topology/cpu_mask.hpp>
 #include <hpx/topology/topology.hpp>
-#include <hpx/util/thread_description.hpp>
-#include <hpx/functional/unique_function.hpp>
-
-#include <boost/intrusive_ptr.hpp>
+#include <hpx/threading_base/thread_description.hpp>
 
 #include <chrono>
 #include <cstddef>
@@ -32,19 +34,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 namespace hpx { namespace threads
 {
-    /// \brief Data structure which stores statistics collected by an
-    ///        executor instance.
-    struct executor_statistics
-    {
-        executor_statistics()
-          : tasks_scheduled_(0), tasks_completed_(0), queue_length_(0)
-        {}
-
-        std::uint64_t tasks_scheduled_;
-        std::uint64_t tasks_completed_;
-        std::uint64_t queue_length_;
-    };
-
     ///////////////////////////////////////////////////////////////////////////
     namespace detail
     {
@@ -115,41 +104,6 @@ namespace hpx { namespace threads
     namespace detail
     {
         ///////////////////////////////////////////////////////////////////////
-        enum executor_parameter
-        {
-            min_concurrency = 1,
-            max_concurrency = 2,
-            current_concurrency = 3
-        };
-
-        ///////////////////////////////////////////////////////////////////////
-        // The interface below is used by the resource manager to
-        // interact with the executor.
-        struct manage_executor
-        {
-            virtual ~manage_executor() {}
-
-            // Return the requested policy element
-            virtual std::size_t get_policy_element(executor_parameter p,
-                error_code& ec) const = 0;
-
-            // Return statistics collected by this scheduler
-            virtual void get_statistics(executor_statistics& stats,
-                error_code& ec) const = 0;
-
-            // Provide the given processing unit to the scheduler.
-            virtual void add_processing_unit(std::size_t virt_core,
-                std::size_t thread_num, error_code& ec) = 0;
-
-            // Remove the given processing unit from the scheduler.
-            virtual void remove_processing_unit(std::size_t thread_num,
-                error_code& ec) = 0;
-
-            // return the description string of the underlying scheduler
-            virtual char const* get_description() const = 0;
-        };
-
-        ///////////////////////////////////////////////////////////////////////
         // Main executor interface
         void intrusive_ptr_add_ref(executor_base* p);
         void intrusive_ptr_release(executor_base* p);
@@ -218,7 +172,7 @@ namespace hpx { namespace threads
             util::atomic_count count_;
         };
 
-        /// support functions for boost::intrusive_ptr
+        /// support functions for hpx::intrusive_ptr
         inline void intrusive_ptr_add_ref(executor_base* p)
         {
             ++p->count_;
@@ -377,7 +331,7 @@ namespace hpx { namespace threads
         }
 
     protected:
-        boost::intrusive_ptr<detail::executor_base> executor_data_;
+        hpx::intrusive_ptr<detail::executor_base> executor_data_;
     };
 
     ///////////////////////////////////////////////////////////////////////////
@@ -422,8 +376,9 @@ namespace hpx { namespace threads
             threads::thread_stacksize stacksize = threads::thread_stacksize_default,
             error_code& ec = throws)
         {
-            boost::static_pointer_cast<detail::scheduled_executor_base>(
-                executor_data_)->add_at(abs_time, std::move(f), desc, stacksize, ec);
+            hpx::static_pointer_cast<detail::scheduled_executor_base>(
+                executor_data_)
+                ->add_at(abs_time, std::move(f), desc, stacksize, ec);
         }
 
         void add_at(util::steady_time_point const& abs_time,
@@ -449,8 +404,9 @@ namespace hpx { namespace threads
             threads::thread_stacksize stacksize = threads::thread_stacksize_default,
             error_code& ec = throws)
         {
-            boost::static_pointer_cast<detail::scheduled_executor_base>(
-                executor_data_)->add_after(rel_time, std::move(f), desc, stacksize, ec);
+            hpx::static_pointer_cast<detail::scheduled_executor_base>(
+                executor_data_)
+                ->add_after(rel_time, std::move(f), desc, stacksize, ec);
         }
 
         void add_after(util::steady_duration const& rel_time,
@@ -476,25 +432,10 @@ namespace hpx { namespace threads
             return static_cast<detail::scheduled_executor_base*>
                     (executor_data_.get())->get_stacksize();
         }
-
-        /// Return a reference to the default executor for this process.
-        static scheduled_executor& default_executor();
     };
-
-    ///////////////////////////////////////////////////////////////////////////
-    /// Returns: the default executor defined by the
-    /// active process. If set_default_executor hasn't been called then the
-    /// return value is a pointer to an executor of unspecified type.
-    HPX_EXPORT scheduled_executor default_executor();
-
-    /// Effect: the default executor of the active process is set to the given
-    /// executor instance.
-    /// Requires: executor shall not be null.
-    /// Synchronization: Changing and using the default executor is sequentially
-    /// consistent.
-    HPX_EXPORT void set_default_executor(scheduled_executor executor);
 }}
 
 #include <hpx/config/warnings_suffix.hpp>
 
+#endif
 #endif /*HPX_RUNTIME_THREADS_THREAD_EXECUTOR_HPP*/

@@ -10,11 +10,11 @@
 #define HPX_PARALLEL_DETAIL_ADJACENT_FIND_SEP_20_2014_0731PM
 
 #include <hpx/config.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 
+#include <hpx/execution/algorithms/detail/predicates.hpp>
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/algorithms/detail/predicates.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/loop.hpp>
 #include <hpx/parallel/util/partitioner.hpp>
@@ -70,7 +70,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 difference_type count = std::distance(first, last);
                 util::cancellation_token<difference_type> tok(count);
 
-                auto f1 = [HPX_CAPTURE_FORWARD(op), tok](zip_iterator it,
+                auto f1 = [op = std::forward<Pred>(op), tok](zip_iterator it,
                               std::size_t part_size,
                               std::size_t base_idx) mutable {
                     util::loop_idx_n(base_idx, it, part_size, tok,

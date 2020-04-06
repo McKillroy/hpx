@@ -9,16 +9,18 @@
 
 #include <hpx/config.hpp>
 
-#if defined(HPX_HAVE_STATIC_SCHEDULER) || defined(HPX_HAVE_STATIC_PRIORITY_SCHEDULER)
+#if defined(HPX_HAVE_THREAD_EXECUTORS_COMPATIBILITY) && \
+    (defined(HPX_HAVE_STATIC_SCHEDULER) || \
+     defined(HPX_HAVE_STATIC_PRIORITY_SCHEDULER))
 
 #include <hpx/errors.hpp>
-#include <hpx/lcos/local/counting_semaphore.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
-#include <hpx/runtime/threads/policies/affinity_data.hpp>
-#include <hpx/runtime/threads/thread_enums.hpp>
+#include <hpx/affinity/affinity_data.hpp>
+#include <hpx/synchronization/counting_semaphore.hpp>
+#include <hpx/synchronization/spinlock.hpp>
+#include <hpx/coroutines/thread_enums.hpp>
 #include <hpx/runtime/threads/thread_executor.hpp>
 #include <hpx/timing/steady_clock.hpp>
-#include <hpx/util/thread_description.hpp>
+#include <hpx/threading_base/thread_description.hpp>
 #include <hpx/functional/unique_function.hpp>
 
 #include <atomic>

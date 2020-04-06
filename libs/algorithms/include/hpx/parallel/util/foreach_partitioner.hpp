@@ -16,10 +16,10 @@
 #include <hpx/lcos/wait_all.hpp>
 #include <hpx/type_support/unused.hpp>
 
-#include <hpx/parallel/algorithms/detail/predicates.hpp>
-#include <hpx/parallel/execution_policy.hpp>
-#include <hpx/parallel/executors/execution.hpp>
-#include <hpx/parallel/executors/execution_parameters.hpp>
+#include <hpx/execution/algorithms/detail/predicates.hpp>
+#include <hpx/execution/execution_policy.hpp>
+#include <hpx/execution/executors/execution.hpp>
+#include <hpx/execution/executors/execution_parameters.hpp>
 #include <hpx/parallel/util/detail/chunk_size.hpp>
 #include <hpx/parallel/util/detail/handle_local_exceptions.hpp>
 #include <hpx/parallel/util/detail/partitioner_iteration.hpp>
@@ -134,6 +134,9 @@ namespace hpx { namespace parallel { namespace util {
                     // rethrow either bad_alloc or exception_list
                     handle_local_exceptions::call(std::current_exception());
                 }
+
+                HPX_ASSERT(false);
+                return last;
             }
         };
 
@@ -203,9 +206,9 @@ namespace hpx { namespace parallel { namespace util {
 #else
                 // wait for all tasks to finish
                 return hpx::dataflow(
-                    [last, HPX_CAPTURE_MOVE(errors),
-                        HPX_CAPTURE_MOVE(scoped_params),
-                        HPX_CAPTURE_FORWARD(f)](
+                    [last, errors = std::move(errors),
+                        scoped_params = std::move(scoped_params),
+                        f = std::forward<F>(f)](
                         std::vector<hpx::future<Result>>&& r1,
                         std::vector<hpx::future<Result>>&& r2) mutable
                     -> FwdIter {

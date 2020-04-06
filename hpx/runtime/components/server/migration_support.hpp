@@ -10,8 +10,8 @@
 #include <hpx/config.hpp>
 #include <hpx/assertion.hpp>
 #include <hpx/lcos/future.hpp>
-#include <hpx/lcos/local/promise.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/local_lcos/promise.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/runtime/agas/interface.hpp>
 #include <hpx/runtime/components/pinned_ptr.hpp>
 #include <hpx/runtime/naming/id_type.hpp>
@@ -71,7 +71,7 @@ namespace hpx { namespace components
         }
 
         // This component type supports migration.
-        HPX_CONSTEXPR static bool supports_migration() { return true; }
+        static constexpr bool supports_migration() { return true; }
 
         // Pinning functionality
         void pin()
@@ -188,7 +188,7 @@ namespace hpx { namespace components
 
         /// This hook is invoked on the newly created object after the migration
         /// has been finished
-        HPX_CXX14_CONSTEXPR void on_migrated() {}
+        constexpr void on_migrated() {}
 
         typedef void decorates_action;
 

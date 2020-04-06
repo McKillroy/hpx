@@ -34,60 +34,58 @@
 # Vc_SSE_INTRINSICS_BROKEN
 # Vc_AVX_INTRINSICS_BROKEN
 
-find_package(Vc ${Vc_FIND_VERSION} QUIET)
+if(HPX_WITH_DATAPAR_VC AND NOT TARGET Vc::vc)
+  find_package(Vc ${Vc_FIND_VERSION} QUIET)
 
-if(NOT Vc_FOUND)
-  if(NOT Vc_VERSION_STRING)
-    # didn't find any version of Vc
-    hpx_error("Vc was not found while datapar support was requested. Set Vc_DIR to the installation path of Vc")
-  elseif(${Vc_VERSION_STRING} VERSION_LESS "1.70.0")
-    # didn't find current version of Vc
-    hpx_error("The Vc was found for requested datapar support was too old. Set Vc_DIR to the installation path of Vc (V1.70.0 is required)")
+  if(NOT Vc_FOUND)
+    if(NOT Vc_VERSION_STRING)
+      # didn't find any version of Vc
+      hpx_error("Vc was not found while datapar support was requested. Set Vc_DIR to the installation path of Vc")
+    elseif(${Vc_VERSION_STRING} VERSION_LESS "1.70.0")
+      # didn't find current version of Vc
+      hpx_error("The Vc was found for requested datapar support was too old. Set Vc_DIR to the installation path of Vc (V1.70.0 is required)")
+    endif()
   endif()
-endif()
 
-if(Vc_VERSION_STRING AND (NOT ${Vc_VERSION_STRING} VERSION_LESS "1.70.0"))
-  # found Vc V2
-  if(NOT Vc_INCLUDE_DIR)
-    hpx_error("Vc was not found while datapar support was requested. Set Vc_DIR to the installation path of Vc")
+  if(Vc_VERSION_STRING AND (NOT ${Vc_VERSION_STRING} VERSION_LESS "1.70.0"))
+    # found Vc V2
+    if(NOT Vc_INCLUDE_DIR)
+      hpx_error("Vc was not found while datapar support was requested. Set Vc_DIR to the installation path of Vc")
+    endif()
+    set(HPX_WITH_DATAPAR_VC_NO_LIBRARY On)
   endif()
-  set(HPX_WITH_DATAPAR_VC_NO_LIBRARY On)
-endif()
 
-include_directories(SYSTEM ${Vc_INCLUDE_DIR})
-if(NOT HPX_WITH_DATAPAR_VC_NO_LIBRARY)
-  link_directories(${Vc_LIB_DIR})
+  add_library(Vc::vc INTERFACE IMPORTED)
+  target_include_directories(Vc::vc SYSTEM INTERFACE ${Vc_INCLUDE_DIR})
 
-  hpx_library_dir(${Vc_LIB_DIR})
-  hpx_libraries(${Vc_LIBRARIES})
-endif()
-
-foreach(_flag ${Vc_DEFINITIONS})
-  # remove leading '-D'
-  string(STRIP ${_flag} _flag)
-  string(FIND ${_flag} "-D" _flagpos)
-  if(${_flagpos} EQUAL 0)
-    string(SUBSTRING ${_flag} 2 -1 _flag)
+  if(NOT HPX_WITH_DATAPAR_VC_NO_LIBRARY)
+    target_link_libraries(Vc::vc INTERFACE ${Vc_LIBRARIES})
+    target_link_directories(Vc::vc INTERFACE ${Vc_LIB_DIR})
   endif()
-  hpx_add_target_compile_definition(${_flag})
-endforeach()
 
-# do not include Vc build flags for MSVC builds as this breaks building the
-# core HPX libraries itself
-if(NOT MSVC)
-  foreach(_flag ${Vc_COMPILE_FLAGS})
-    hpx_add_compile_flag(${_flag})
+  foreach(_flag ${Vc_DEFINITIONS})
+    # remove leading '-D'
+    string(STRIP ${_flag} _flag)
+    string(FIND ${_flag} "-D" _flagpos)
+    if(${_flagpos} EQUAL 0)
+      string(SUBSTRING ${_flag} 2 -1 _flag)
+    endif()
+
+    target_compile_definitions(Vc::vc INTERFACE ${_flag})
   endforeach()
 
-  foreach(_flag ${Vc_ARCHITECTURE_FLAGS})
-    hpx_add_compile_flag(${_flag})
-  endforeach()
-else()
-  hpx_add_config_cond_define(_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
+  include(HPX_AddDefinitions)
+
+  # do not include Vc build flags for MSVC builds as this breaks building the
+  # core HPX libraries itself
+  if(NOT MSVC)
+    target_compile_options(Vc::vc INTERFACE ${Vc_COMPILE_FLAGS} ${Vc_ARCHITECTURE_FLAGS})
+  else()
+    hpx_add_config_cond_define(_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
+  endif()
+
+  hpx_add_config_define(HPX_HAVE_DATAPAR)
+  hpx_add_config_define(HPX_HAVE_DATAPAR_VC)
+
+  hpx_info("Found Vc (vectorization):" ${Vc_INCLUDE_DIR} "- version:" ${Vc_VERSION_STRING})
 endif()
-
-hpx_add_config_define(HPX_HAVE_DATAPAR)
-hpx_add_config_define(HPX_HAVE_DATAPAR_VC)
-
-hpx_info("Found Vc (vectorization):" ${Vc_INCLUDE_DIR} "- version:" ${Vc_VERSION_STRING})
-

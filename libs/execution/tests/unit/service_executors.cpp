@@ -4,9 +4,9 @@
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <hpx/execution/executors/service_executors.hpp>
 #include <hpx/hpx.hpp>
 #include <hpx/hpx_init.hpp>
-#include <hpx/parallel/executors/service_executors.hpp>
 #include <hpx/testing.hpp>
 
 #include <algorithm>
@@ -61,7 +61,7 @@ void test_then(Executor& exec)
 ///////////////////////////////////////////////////////////////////////////////
 void bulk_test(int value, std::thread::id tid, int passed_through)
 {
-    HPX_TEST(tid != std::this_thread::get_id());
+    HPX_TEST_NEQ(tid, std::this_thread::get_id());
     HPX_TEST_EQ(passed_through, 42);
 }
 
@@ -108,7 +108,7 @@ void bulk_test_f(int value, hpx::shared_future<void> f, hpx::thread::id tid,
 
     f.get();    // propagate exceptions
 
-    HPX_TEST(tid != hpx::this_thread::get_id());
+    HPX_TEST_NEQ(tid, hpx::this_thread::get_id());
     HPX_TEST_EQ(passed_through, 42);
 }
 
@@ -149,7 +149,7 @@ void test_service_executor(Executor& exec)
 int hpx_main(int argc, char* argv[])
 {
     using namespace hpx::parallel;
-    using hpx::threads::executors::service_executor_type;
+    using hpx::parallel::execution::service_executor_type;
 
 #if defined(HPX_HAVE_IO_POOL)
     {

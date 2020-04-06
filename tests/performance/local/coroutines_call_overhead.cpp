@@ -9,9 +9,8 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/hpx.hpp>
 #include <hpx/format.hpp>
-
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
+#include <hpx/string_util/split.hpp>
+#include <hpx/string_util/classification.hpp>
 
 #include <chrono>
 #include <cstdint>
@@ -243,11 +242,11 @@ int hpx_main(
             for (std::uint64_t i = 0; i < raw_counters.size(); ++i)
             {
                 std::vector<std::string> entry;
-                boost::algorithm::split(entry, raw_counters[i],
-                    boost::algorithm::is_any_of(","),
-                    boost::algorithm::token_compress_on);
+                hpx::string_util::split(entry, raw_counters[i],
+                    hpx::string_util::is_any_of(","),
+                    hpx::string_util::token_compress_mode::on);
 
-                HPX_TEST(entry.size() == 2);
+                HPX_TEST_EQ(entry.size(), 2);
 
                 counter_shortnames.push_back(entry[0]);
                 counters.push_back(entry[1]);
@@ -289,7 +288,7 @@ int main(
         ( "seed"
         , value<std::uint64_t>(&seed)->default_value(0)
         , "seed for the pseudo random number generator (if 0, a seed is "
-          "choosen based on the current system time)")
+          "chosen based on the current system time)")
 
 /*
         ( "counter"

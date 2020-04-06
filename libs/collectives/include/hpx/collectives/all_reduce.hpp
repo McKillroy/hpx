@@ -90,25 +90,25 @@ namespace hpx { namespace lcos {
         std::size_t generation = std::size_t(-1),
         std::size_t this_site = std::size_t(-1), std::size_t root_site = 0);
 
-    /// \def HPX_REGISTER_ALLREDUCE_DECLARATION(type, name)
-    ///
-    /// \brief Declare a all_reduce object named \a name for a given data type \a type.
-    ///
-    /// The macro \a HPX_REGISTER_ALLREDUCE_DECLARATION can be used to declare
-    /// all facilities necessary for a (possibly remote) all_reduce operation.
-    ///
-    /// The parameter \a type specifies for which data type the all_reduce
-    /// operations should be enabled.
-    ///
-    /// The (optional) parameter \a name should be a unique C-style identifier
-    /// that will be internally used to identify a particular all_reduce operation.
-    /// If this defaults to \a \<type\>_all_reduce if not specified.
-    ///
-    /// \note The macro \a HPX_REGISTER_ALLREDUCE_DECLARATION can be used with 1
-    ///       or 2 arguments. The second argument is optional and defaults to
-    ///       \a \<type\>_all_reduce.
-    ///
-    #define HPX_REGISTER_ALLREDUCE_DECLARATION(type, name)
+/// \def HPX_REGISTER_ALLREDUCE_DECLARATION(type, name)
+///
+/// \brief Declare a all_reduce object named \a name for a given data type \a type.
+///
+/// The macro \a HPX_REGISTER_ALLREDUCE_DECLARATION can be used to declare
+/// all facilities necessary for a (possibly remote) all_reduce operation.
+///
+/// The parameter \a type specifies for which data type the all_reduce
+/// operations should be enabled.
+///
+/// The (optional) parameter \a name should be a unique C-style identifier
+/// that will be internally used to identify a particular all_reduce operation.
+/// If this defaults to \a \<type\>_all_reduce if not specified.
+///
+/// \note The macro \a HPX_REGISTER_ALLREDUCE_DECLARATION can be used with 1
+///       or 2 arguments. The second argument is optional and defaults to
+///       \a \<type\>_all_reduce.
+///
+#define HPX_REGISTER_ALLREDUCE_DECLARATION(type, name)
 
     /// \def HPX_REGISTER_ALLREDUCE(type, name)
     ///
@@ -138,11 +138,12 @@ namespace hpx { namespace lcos {
 #if !defined(HPX_COMPUTE_DEVICE_CODE)
 
 #include <hpx/assertion.hpp>
+#include <hpx/basic_execution/register_locks.hpp>
 #include <hpx/dataflow.hpp>
 #include <hpx/functional/bind_back.hpp>
 #include <hpx/lcos/future.hpp>
-#include <hpx/lcos/local/and_gate.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/local_lcos/and_gate.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/parallel/algorithms/reduce.hpp>
 #include <hpx/preprocessor/cat.hpp>
 #include <hpx/preprocessor/expand.hpp>
@@ -165,7 +166,9 @@ namespace hpx { namespace lcos {
 #include <vector>
 
 namespace hpx { namespace lcos {
+
     namespace detail {
+
         ////////////////////////////////////////////////////////////////////////
         template <typename T>
         class all_reduce_server
@@ -194,7 +197,7 @@ namespace hpx { namespace lcos {
             {
                 std::unique_lock<mutex_type> l(mtx_);
 
-                auto on_ready = [this, HPX_CAPTURE_MOVE(op)](
+                auto on_ready = [this, op = std::move(op)](
                                     hpx::shared_future<void> f) mutable -> T {
                     f.get();    // propagate any exceptions
 
@@ -203,6 +206,9 @@ namespace hpx { namespace lcos {
 
                     {
                         std::unique_lock<mutex_type> l(mtx_);
+                        util::ignore_while_checking<
+                            std::unique_lock<mutex_type>>
+                            il(&l);
                         data = data_;
                         std::swap(name, name_);
                     }
@@ -262,7 +268,7 @@ namespace hpx { namespace lcos {
                 basename, hpx::unmanaged(target), site);
 
             return result.then(hpx::launch::sync,
-                [HPX_CAPTURE_MOVE(target), HPX_CAPTURE_MOVE(basename)](
+                [target = std::move(target), basename = std::move(basename)](
                     hpx::future<bool>&& f) -> hpx::id_type {
                     bool result = f.get();
                     if (!result)
@@ -286,7 +292,10 @@ namespace hpx { namespace lcos {
         std::size_t this_site = std::size_t(-1))
     {
         if (num_sites == std::size_t(-1))
-            num_sites = hpx::get_num_localities(hpx::launch::sync);
+        {
+            num_sites = static_cast<std::size_t>(
+                hpx::get_num_localities(hpx::launch::sync));
+        }
         if (this_site == std::size_t(-1))
             this_site = static_cast<std::size_t>(hpx::get_locality_id());
 
@@ -317,7 +326,7 @@ namespace hpx { namespace lcos {
             this_site = static_cast<std::size_t>(hpx::get_locality_id());
 
         auto all_reduce_data =
-            [HPX_CAPTURE_FORWARD(op), this_site](hpx::future<hpx::id_type>&& f,
+            [op = std::forward<F>(op), this_site](hpx::future<hpx::id_type>&& f,
                 hpx::future<T>&& local_result) mutable -> hpx::future<T> {
             using func_type = typename std::decay<F>::type;
             using action_type = typename detail::all_reduce_server<
@@ -329,7 +338,7 @@ namespace hpx { namespace lcos {
                 local_result.get(), std::forward<F>(op));
 
             return result.then(hpx::launch::sync,
-                [HPX_CAPTURE_MOVE(id)](hpx::future<T>&& f) -> T {
+                [id = std::move(id)](hpx::future<T>&& f) -> T {
                     HPX_UNUSED(id);
                     return f.get();
                 });
@@ -347,7 +356,10 @@ namespace hpx { namespace lcos {
         std::size_t this_site = std::size_t(-1), std::size_t root_site = 0)
     {
         if (num_sites == std::size_t(-1))
-            num_sites = hpx::get_num_localities(hpx::launch::sync);
+        {
+            num_sites = static_cast<std::size_t>(
+                hpx::get_num_localities(hpx::launch::sync));
+        }
         if (this_site == std::size_t(-1))
             this_site = static_cast<std::size_t>(hpx::get_locality_id());
 
@@ -378,7 +390,8 @@ namespace hpx { namespace lcos {
 
         using arg_type = typename std::decay<T>::type;
         auto all_reduce_data_direct =
-            [HPX_CAPTURE_FORWARD(op), HPX_CAPTURE_FORWARD(local_result),
+            [op = std::forward<F>(op),
+                local_result = std::forward<T>(local_result),
                 this_site](hpx::future<hpx::id_type>&& f) mutable
             -> hpx::future<arg_type> {
             using func_type = typename std::decay<F>::type;
@@ -391,7 +404,7 @@ namespace hpx { namespace lcos {
                 std::forward<T>(local_result), std::forward<F>(op));
 
             return result.then(hpx::launch::sync,
-                [HPX_CAPTURE_MOVE(id)](hpx::future<arg_type>&& f) -> arg_type {
+                [id = std::move(id)](hpx::future<arg_type>&& f) -> arg_type {
                     HPX_UNUSED(id);
                     return f.get();
                 });
@@ -409,7 +422,10 @@ namespace hpx { namespace lcos {
         std::size_t this_site = std::size_t(-1), std::size_t root_site = 0)
     {
         if (num_sites == std::size_t(-1))
-            num_sites = hpx::get_num_localities(hpx::launch::sync);
+        {
+            num_sites = static_cast<std::size_t>(
+                hpx::get_num_localities(hpx::launch::sync));
+        }
         if (this_site == std::size_t(-1))
             this_site = static_cast<std::size_t>(hpx::get_locality_id());
 

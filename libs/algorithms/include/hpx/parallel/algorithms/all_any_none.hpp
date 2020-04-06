@@ -10,12 +10,12 @@
 #define HPX_PARALLEL_DETAIL_ALL_ANY_NONE_JUL_05_2014_0940PM
 
 #include <hpx/config.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
 #include <hpx/iterator_support/range.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/type_support/void_guard.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/traits/projected.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/invoke_projected.hpp>
@@ -65,8 +65,9 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 }
 
                 util::cancellation_token<> tok;
-                auto f1 = [HPX_CAPTURE_FORWARD(op), tok,
-                              HPX_CAPTURE_FORWARD(proj)](FwdIter part_begin,
+                auto f1 = [op = std::forward<F>(op), tok,
+                              proj = std::forward<Proj>(proj)](
+                              FwdIter part_begin,
                               std::size_t part_count) mutable -> bool {
                     util::loop_n<ExPolicy>(part_begin, part_count, tok,
                         [&op, &tok, &proj](FwdIter const& curr) {
@@ -229,8 +230,9 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 }
 
                 util::cancellation_token<> tok;
-                auto f1 = [HPX_CAPTURE_FORWARD(op), tok,
-                              HPX_CAPTURE_FORWARD(proj)](FwdIter part_begin,
+                auto f1 = [op = std::forward<F>(op), tok,
+                              proj = std::forward<Proj>(proj)](
+                              FwdIter part_begin,
                               std::size_t part_count) mutable -> bool {
                     util::loop_n<ExPolicy>(part_begin, part_count, tok,
                         [&op, &tok, &proj](FwdIter const& curr) {
@@ -393,8 +395,9 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 }
 
                 util::cancellation_token<> tok;
-                auto f1 = [HPX_CAPTURE_FORWARD(op), tok,
-                              HPX_CAPTURE_FORWARD(proj)](FwdIter part_begin,
+                auto f1 = [op = std::forward<F>(op), tok,
+                              proj = std::forward<Proj>(proj)](
+                              FwdIter part_begin,
                               std::size_t part_count) mutable -> bool {
                     util::loop_n<ExPolicy>(part_begin, part_count, tok,
                         [&op, &tok, &proj](FwdIter const& curr) {

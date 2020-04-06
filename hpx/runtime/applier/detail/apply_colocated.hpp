@@ -8,6 +8,8 @@
 #define HPX_RUNTIME_APPLIER_APPLY_COLOCATED_FEB_04_2014_0755PM
 
 #include <hpx/config.hpp>
+
+#if !defined(HPX_COMPUTE_DEVICE_CODE)
 #include <hpx/runtime/actions/action_support.hpp>
 #include <hpx/runtime/agas/primary_namespace.hpp>
 #include <hpx/runtime/agas/server/primary_namespace.hpp>
@@ -71,7 +73,7 @@ namespace hpx { namespace detail
         // shortcut co-location code if target already is a locality
         if (naming::is_locality(gid))
         {
-            return apply_c<Action>(std::forward<Continuation>(cont), gid,
+            return apply_continue<Action>(std::forward<Continuation>(cont), gid,
                 std::forward<Ts>(vs)...);
         }
 
@@ -106,4 +108,5 @@ namespace hpx { namespace detail
     }
 }}
 
+#endif
 #endif

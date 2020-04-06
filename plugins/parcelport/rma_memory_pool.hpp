@@ -7,8 +7,8 @@
 #ifndef HPX_PARCELSET_POLICIES_RMA_MEMORY_POOL
 #define HPX_PARCELSET_POLICIES_RMA_MEMORY_POOL
 
-#include <hpx/lcos/local/mutex.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/synchronization/mutex.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/thread_support/atomic_count.hpp>
 //
 #include <hpx/config/parcelport_defines.hpp>
@@ -249,7 +249,7 @@ namespace parcelset
         }
 
         // ------------------------------------------------------------------------
-        // at shutdown we can disregrad any bocks still prepoted as we can't
+        // at shutdown we can disregard any bocks still prepoted as we can't
         // unpost them
         void decrement_used_count(uint32_t N) {
             in_use_ -= N;

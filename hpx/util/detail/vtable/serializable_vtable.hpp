@@ -10,7 +10,7 @@
 #define HPX_UTIL_DETAIL_VTABLE_SERIALIZABLE_VTABLE_HPP
 
 #include <hpx/config.hpp>
-#include <hpx/runtime/serialization/serialization_fwd.hpp>
+#include <hpx/serialization/serialization_fwd.hpp>
 #include <hpx/functional/detail/vtable/vtable.hpp>
 
 #include <cstddef>
@@ -42,7 +42,7 @@ namespace hpx { namespace util { namespace detail
             serialization::input_archive&, unsigned);
 
         template <typename T>
-        HPX_CONSTEXPR serializable_vtable(construct_vtable<T>) noexcept
+        constexpr serializable_vtable(construct_vtable<T>) noexcept
           : save_object(&serializable_vtable::template _save_object<T>)
           , load_object(&serializable_vtable::template _load_object<T>)
         {}

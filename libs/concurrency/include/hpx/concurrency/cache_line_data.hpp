@@ -1,4 +1,4 @@
-//  Copyright (c) 2019 Hartmut Kaiser
+//  Copyright (c) 2019-2020 Hartmut Kaiser
 //  Copyright (c) 2019 Thomas Heller
 //
 //  SPDX-License-Identifier: BSL-1.0
@@ -11,6 +11,8 @@
 #include <hpx/config.hpp>
 
 #include <cstddef>
+#include <type_traits>
+#include <utility>
 
 namespace hpx {
 
@@ -22,7 +24,13 @@ namespace hpx {
 #if defined(HPX_HAVE_CXX17_HARDWARE_DESTRUCTIVE_INTERFERENCE_SIZE)
             return std::hardware_destructive_interference_size;
 #else
+#if defined(__s390__) || defined(__s390x__)
+            return 256;    // assume 256 byte cache-line size
+#elif defined(powerpc) || defined(__powerpc__) || defined(__ppc__)
+            return 128;    // assume 128 byte cache-line size
+#else
             return 64;    // assume 64 byte cache-line size
+#endif
 #endif
         }
     }    // namespace threads
@@ -39,57 +47,81 @@ namespace hpx {
                            (data_size % threads::get_cache_line_size())) %
                     threads::get_cache_line_size();
             }
+
+            template <typename Data>
+            struct needs_padding
+              : std::integral_constant<bool,
+                    // NOLINTNEXTLINE(bugprone-sizeof-expression)
+                    detail::get_cache_line_padding_size(sizeof(Data)) != 0>
+            {
+            };
         }    // namespace detail
+
+        // NOTE: We do not use alignas here because asking for overaligned
+        // memory is significantly more expensive than asking for unaligned
+        // memory. Padding the struct is cheaper and enough for internal
+        // purposes.
+
+        // NOTE: The implementations below are currently identical because of
+        // the above issue. Both names are kept for compatibility.
 
         ///////////////////////////////////////////////////////////////////////////
         // special struct to ensure cache line alignment of a data type
-#if defined(HPX_HAVE_CXX11_ALIGNAS) && defined(HPX_HAVE_CXX17_ALIGNED_NEW) &&  \
-    !defined(__NVCC__)
-        template <typename Data>
-        struct alignas(threads::get_cache_line_size()) cache_aligned_data
-        {
-            Data data_;
-        };
-#else
-        template <typename Data>
+        template <typename Data,
+            typename NeedsPadding = typename detail::needs_padding<Data>::type>
         struct cache_aligned_data
         {
+            cache_aligned_data()
+              : data_{}
+            {
+            }
+
+            cache_aligned_data(Data&& data)
+              : data_{std::move(data)}
+            {
+            }
+
+            cache_aligned_data(Data const& data)
+              : data_{data}
+            {
+            }
+
             // pad to cache line size bytes
             Data data_;
 
             //  cppcheck-suppress unusedVariable
             char cacheline_pad[detail::get_cache_line_padding_size(
+                // NOLINTNEXTLINE(bugprone-sizeof-expression)
                 sizeof(Data))];
         };
-#endif
+
+        template <typename Data>
+        struct cache_aligned_data<Data, std::false_type>
+        {
+            cache_aligned_data()
+              : data_{}
+            {
+            }
+
+            cache_aligned_data(Data&& data)
+              : data_{std::move(data)}
+            {
+            }
+
+            cache_aligned_data(Data const& data)
+              : data_{data}
+            {
+            }
+
+            // no need to pad to cache line size
+            Data data_;
+        };
 
         ///////////////////////////////////////////////////////////////////////////
         // special struct to data type is cache line aligned and fully occupies a
         // cache line
-#if defined(HPX_HAVE_CXX11_ALIGNAS) && defined(HPX_HAVE_CXX17_ALIGNED_NEW) &&  \
-    !defined(__NVCC__)
         template <typename Data>
-        struct alignas(threads::get_cache_line_size()) cache_line_data
-        {
-            Data data_;
-
-            //  cppcheck-suppress unusedVariable
-            char cacheline_pad[detail::get_cache_line_padding_size(
-                sizeof(Data))];
-        };
-#else
-        template <typename Data>
-        struct cache_line_data
-        {
-            // pad to cache line size bytes
-            Data data_;
-
-            // cppcheck-suppress unusedVariable
-            char cacheline_pad[detail::get_cache_line_padding_size(
-                sizeof(Data))];
-        };
-#endif
-
+        using cache_line_data = cache_aligned_data<Data>;
     }    // namespace util
 
 }    // namespace hpx

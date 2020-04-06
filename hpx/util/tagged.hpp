@@ -13,8 +13,8 @@
 #include <hpx/config.hpp>
 #include <hpx/concepts/concepts.hpp>
 #include <hpx/type_support/decay.hpp>
-#include <hpx/datastructures/detail/pack.hpp>
 #include <hpx/datastructures/tuple.hpp>
+#include <hpx/type_support/pack.hpp>
 
 #include <cstddef>
 #include <functional>
@@ -57,7 +57,7 @@ namespace hpx { namespace util
             struct collect_;
 
             template <typename T, std::size_t ...Is, typename ...Tags>
-            struct collect_<T, detail::pack_c<std::size_t, Is...>, Tags...>
+            struct collect_<T, index_pack<Is...>, Tags...>
               : unpack_getter<T, Tags, Is>::type...
             {};
 
@@ -66,7 +66,7 @@ namespace hpx { namespace util
             struct collect
               : collect_<
                     T,
-                    typename detail::make_index_pack<sizeof...(Tags)>::type,
+                    typename util::make_index_pack<sizeof...(Tags)>::type,
                     Tags...
                 >
             {};
@@ -229,7 +229,7 @@ namespace tag                                                                 \
             {                                                                 \
                 return hpx::util::get<I>(static_cast<Derived&>(*this));       \
             }                                                                 \
-            HPX_CONSTEXPR HPX_FORCEINLINE Type const& NAME() const            \
+            constexpr HPX_FORCEINLINE Type const& NAME() const                \
             {                                                                 \
                 return hpx::util::get<I>(static_cast<Derived const&>(*this)); \
             }                                                                 \

@@ -6,14 +6,32 @@
 
 #include <hpx/config.hpp>
 #include <hpx/datastructures/config/defines.hpp>
-#include <hpx/datastructures/detail/pack.hpp>
+#include <hpx/type_support/pack.hpp>
 
 #if defined(HPX_DATASTRUCTURES_HAVE_DEPRECATION_WARNINGS)
 #if defined(HPX_MSVC)
 #pragma message("The header hpx/util/detail/pack.hpp is deprecated, \
-    please include hpx/datastructures/detail/pack.hpp instead")
+    please include hpx/type_support/pack.hpp instead")
 #else
 #warning "The header hpx/util/detail/pack.hpp is deprecated, \
-    please include hpx/datastructures/detail/pack.hpp instead"
+    please include hpx/type_support/pack.hpp instead"
 #endif
 #endif
+
+namespace hpx { namespace util { namespace detail {
+
+    using hpx::util::pack;
+    using hpx::util::pack_c;
+
+    ///////////////////////////////////////////////////////////////////////////
+    using hpx::util::make_index_pack;
+
+    ///////////////////////////////////////////////////////////////////////////
+    using hpx::util::all_of;
+    using hpx::util::any_of;
+    using hpx::util::contains;
+    using hpx::util::none_of;
+
+    ///////////////////////////////////////////////////////////////////////////
+    using hpx::util::at_index;
+}}}    // namespace hpx::util::detail

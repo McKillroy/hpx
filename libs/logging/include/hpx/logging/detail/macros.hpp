@@ -21,7 +21,6 @@
 #ifndef JT28092007_macros_HPP_DEFINED
 #define JT28092007_macros_HPP_DEFINED
 
-#include <boost/current_function.hpp>
 #include <string>
 
 namespace hpx { namespace util { namespace logging {
@@ -152,7 +151,10 @@ HPX_DEFINE_LOG(g_l, logger_type)
     if (!(NAME##_logger()->is_enabled(LEVEL)))                                 \
         ;                                                                      \
     else                                                                       \
-        NAME##_logger()->gather().out()
+        NAME##_logger()->gather()
+
+#define HPX_LOG_FORMAT(NAME, LEVEL, FORMAT, ...)                               \
+    HPX_LOG_USE_LOG(NAME, LEVEL).format(FORMAT, __VA_ARGS__)
 
 }}}    // namespace hpx::util::logging
 

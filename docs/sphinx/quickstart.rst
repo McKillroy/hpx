@@ -33,7 +33,7 @@ It is also recommended that you check out the latest stable tag:
 
 .. code-block:: sh
 
-    git checkout 1.3.0
+    git checkout 1.4.1
 
 |hpx| dependencies
 ==================
@@ -149,6 +149,24 @@ the distributed aspects of |hpx|.
    It is also possible to build e.g. all quickstart examples using ``make
    examples.quickstart``.
 
+Installing and building |hpx| via vcpkg
+=======================================
+
+You can download and install |hpx| using the `vcpkg <https://github.com/Microsoft/vcpkg>` 
+dependency manager:
+
+.. code-block:: sh
+
+    git clone https://github.com/Microsoft/vcpkg.git
+    cd vcpkg
+    ./bootstrap-vcpkg.sh
+    ./vcpkg integrate install
+    vcpkg install hpx
+
+The |hpx| port in vcpkg is kept up to date by Microsoft team members and community 
+contributors. If the version is out of date, please `create an issue or pull request 
+<https://github.com/Microsoft/vcpkg>` on the vcpkg repository.
+
 Hello, World!
 =============
 
@@ -157,12 +175,11 @@ build an executable using |cmake|_ and |hpx|:
 
 .. code-block:: cmake
 
-   cmake_minimum_required(VERSION 3.3.2)
+   cmake_minimum_required(VERSION 3.13)
    project(my_hpx_project CXX)
    find_package(HPX REQUIRED)
-   add_hpx_executable(my_hpx_program
-       SOURCES main.cpp
-       COMPONENT_DEPENDENCIES iostreams)
+   add_executable(my_hpx_program main.cpp)
+   target_link_libraries(my_hpx_program HPX::hpx HPX::iostreams_component)
 
 .. note::
 
@@ -172,9 +189,9 @@ build an executable using |cmake|_ and |hpx|:
 
 .. note::
 
-   ``COMPONENT_DEPENDENCIES iostreams`` is optional for a minimal project but
-   lets us use the |hpx| equivalent of ``std::cout``, i.e. the |hpx|
-   :ref:`iostreams` functionality in our application.
+   ``HPX::iostreams_component`` is optional for a minimal project but lets us
+   use the |hpx| equivalent of ``std::cout``, i.e. the |hpx| :ref:`iostreams`
+   functionality in our application.
 
 Create a new project directory and a ``CMakeLists.txt`` with the contents above.
 Also create a ``main.cpp`` with the contents below.

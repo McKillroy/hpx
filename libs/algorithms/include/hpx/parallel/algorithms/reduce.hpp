@@ -10,14 +10,14 @@
 #define HPX_PARALLEL_DETAIL_REDUCE_JUN_01_2014_0903AM
 
 #include <hpx/config.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
 #include <hpx/iterator_support/range.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/util/unwrap.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/accumulate.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
 #include <hpx/parallel/algorithms/detail/distance.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/loop.hpp>
 #include <hpx/parallel/util/partitioner.hpp>
@@ -73,12 +73,12 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 return util::partitioner<ExPolicy, T>::call(
                     std::forward<ExPolicy>(policy), first,
                     detail::distance(first, last), std::move(f1),
-                    hpx::util::unwrapping(
-                        [HPX_CAPTURE_FORWARD(init), HPX_CAPTURE_FORWARD(r)](
-                            std::vector<T>&& results) -> T {
-                            return util::accumulate_n(hpx::util::begin(results),
-                                hpx::util::size(results), init, r);
-                        }));
+                    hpx::util::unwrapping([init = std::forward<T_>(init),
+                                              r = std::forward<Reduce>(r)](
+                                              std::vector<T>&& results) -> T {
+                        return util::accumulate_n(hpx::util::begin(results),
+                            hpx::util::size(results), init, r);
+                    }));
             }
         };
         /// \endcond

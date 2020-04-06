@@ -10,12 +10,12 @@
 #define HPX_PARALLEL_ALGORITH_INCLUDES_MAR_10_2015_0737PM
 
 #include <hpx/config.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
 #include <hpx/iterator_support/range.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 
+#include <hpx/execution/algorithms/detail/predicates.hpp>
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/algorithms/detail/predicates.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/cancellation_token.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/partitioner.hpp>
@@ -153,7 +153,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 return util::partitioner<ExPolicy, bool>::call(
                     std::forward<ExPolicy>(policy), first2,
                     std::distance(first2, last2),
-                    [first1, last1, first2, last2, tok, HPX_CAPTURE_FORWARD(f)](
+                    [first1, last1, first2, last2, tok, f = std::forward<F>(f)](
                         FwdIter2 part_begin,
                         std::size_t part_count) mutable -> bool {
                         FwdIter2 part_end =

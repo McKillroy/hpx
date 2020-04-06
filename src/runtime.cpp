@@ -2,7 +2,6 @@
 //  Copyright (c)      2011 Bryce Lelbach
 //
 //  SPDX-License-Identifier: BSL-1.0
-//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -11,6 +10,7 @@
 #include <hpx/concurrency/thread_name.hpp>
 #include <hpx/custom_exception_info.hpp>
 #include <hpx/errors.hpp>
+#include <hpx/static_reinit/static_reinit.hpp>
 #include <hpx/logging.hpp>
 #include <hpx/performance_counters/counter_creators.hpp>
 #include <hpx/performance_counters/counters.hpp>
@@ -26,17 +26,17 @@
 #include <hpx/runtime/launch_policy.hpp>
 #include <hpx/runtime/parcelset/parcelhandler.hpp>
 #include <hpx/runtime/thread_hooks.hpp>
-#include <hpx/runtime/threads/coroutines/coroutine.hpp>
-#include <hpx/runtime/threads/policies/scheduler_mode.hpp>
+#include <hpx/coroutines/coroutine.hpp>
+#include <hpx/threading_base/scheduler_mode.hpp>
 #include <hpx/runtime/threads/threadmanager.hpp>
 #include <hpx/topology/topology.hpp>
 #include <hpx/state.hpp>
 #include <hpx/timing/high_resolution_clock.hpp>
-#include <hpx/util/backtrace.hpp>
-#include <hpx/util/command_line_handling.hpp>
+#include <hpx/debugging/backtrace.hpp>
+#include <hpx/command_line_handling.hpp>
 #include <hpx/util/debugging.hpp>
+#include <hpx/util/from_string.hpp>
 #include <hpx/util/query_counters.hpp>
-#include <hpx/util/static_reinit.hpp>
 #include <hpx/util/thread_mapper.hpp>
 #include <hpx/version.hpp>
 
@@ -150,8 +150,15 @@ namespace hpx
     ///////////////////////////////////////////////////////////////////////////
     // There is no need to protect these global from thread concurrent access
     // as they are access during early startup only.
-    std::vector<hpx::util::tuple<char const*, char const*> >
-        message_handler_registrations;
+#if defined(HPX_HAVE_NETWORKING)
+    std::vector<hpx::util::tuple<char const*, char const*>>&
+        get_message_handler_registrations()
+    {
+        static std::vector<hpx::util::tuple<char const*, char const*>>
+            message_handler_registrations;
+        return message_handler_registrations;
+    }
+#endif
 
     ///////////////////////////////////////////////////////////////////////////
     HPX_EXPORT void HPX_CDECL new_handler()
@@ -160,6 +167,26 @@ namespace hpx
             "new allocator failed to allocate memory");
     }
 
+    ///////////////////////////////////////////////////////////////////////////
+    namespace detail
+    {
+        // Sometimes the HPX library gets simply unloaded as a result of some
+        // extreme error handling. Avoid hangs in the end by setting a flag.
+        static bool exit_called = false;
+
+        void on_exit() noexcept
+        {
+            exit_called = true;
+        }
+
+        void on_abort(int) noexcept
+        {
+            exit_called = true;
+            std::exit(-1);
+        }
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
     void set_error_handlers()
     {
 #if defined(HPX_WINDOWS)
@@ -185,34 +212,6 @@ namespace hpx
 
 
     ///////////////////////////////////////////////////////////////////////////
-    namespace strings
-    {
-        char const* const runtime_mode_names[] =
-        {
-            "invalid",    // -1
-            "console",    // 0
-            "worker",     // 1
-            "connect",    // 2
-            "default",    // 3
-        };
-    }
-
-    char const* get_runtime_mode_name(runtime_mode state)
-    {
-        if (state < runtime_mode_invalid || state >= runtime_mode_last)
-            return "invalid (value out of bounds)";
-        return strings::runtime_mode_names[state+1];
-    }
-
-    runtime_mode get_runtime_mode_from_name(std::string const& mode)
-    {
-        for (std::size_t i = 0; i < runtime_mode_last; ++i) {
-            if (mode == strings::runtime_mode_names[i])
-                return static_cast<runtime_mode>(i-1);
-        }
-        return runtime_mode_invalid;
-    }
-
     namespace strings
     {
         char const* const runtime_state_names[] =
@@ -293,7 +292,7 @@ namespace hpx
     namespace {
         std::uint64_t& runtime_uptime()
         {
-            static HPX_NATIVE_TLS std::uint64_t uptime;
+            static thread_local std::uint64_t uptime;
             return uptime;
         }
     }
@@ -376,15 +375,16 @@ namespace hpx
         char const* description, error_code& ec)
     {
         if (active_counters_.get())
-            active_counters_->evaluate_counters(reset, description, ec);
+            active_counters_->evaluate_counters(reset, description, true, ec);
     }
 
-    void runtime::stop_evaluating_counters()
+    void runtime::stop_evaluating_counters(bool terminate)
     {
         if (active_counters_.get())
-            active_counters_->stop_evaluating_counters();
+            active_counters_->stop_evaluating_counters(terminate);
     }
 
+#if defined(HPX_HAVE_NETWORKING)
     void runtime::register_message_handler(char const* message_handler_type,
         char const* action, error_code& ec)
     {
@@ -408,6 +408,7 @@ namespace hpx
         return runtime_support_->create_binary_filter(binary_filter_type,
             compress, next_filter, ec);
     }
+#endif
 
     /// \brief Register all performance counter types related to this runtime
     ///        instance
@@ -536,7 +537,8 @@ namespace hpx
             },
 
             // action invocation counters
-            { "/runtime/count/action-invocation", performance_counters::counter_raw,
+            { "/runtime/count/action-invocation",
+              performance_counters::counter_monotonically_increasing,
               "returns the number of (local) invocations of a specific action "
               "on this locality (the action type has to be specified as the "
               "counter parameter)",
@@ -545,9 +547,9 @@ namespace hpx
               &performance_counters::local_action_invocation_counter_discoverer,
               ""
             },
-
+#if defined(HPX_HAVE_NETWORKING)
             { "/runtime/count/remote-action-invocation",
-              performance_counters::counter_raw,
+              performance_counters::counter_monotonically_increasing,
               "returns the number of (remote) invocations of a specific action "
               "on this locality (the action type has to be specified as the "
               "counter parameter)",
@@ -556,6 +558,7 @@ namespace hpx
               &performance_counters::remote_action_invocation_counter_discoverer,
               ""
             }
+#endif
         };
         performance_counters::install_counter_types(
             statistic_counter_types,
@@ -692,7 +695,8 @@ namespace hpx
     {
         // adjust thread assignments to allow for more than one locality per
         // node
-        std::size_t first_core = this->get_config().get_first_used_core();
+        std::size_t first_core =
+            static_cast<std::size_t>(this->get_config().get_first_used_core());
         std::size_t cores_needed =
             hpx::resource::get_partitioner().assign_cores(first_core);
 
@@ -848,7 +852,7 @@ namespace hpx
 
     runtime*& get_runtime_ptr()
     {
-        static HPX_NATIVE_TLS runtime* runtime_;
+        static thread_local runtime* runtime_;
         return runtime_;
     }
 
@@ -860,7 +864,7 @@ namespace hpx
     std::string get_thread_name()
     {
         std::string& thread_name = detail::thread_name();
-        if (thread_name.empty()) return "<unkown>";
+        if (thread_name.empty()) return "<unknown>";
         return thread_name;
     }
 
@@ -1014,6 +1018,47 @@ namespace hpx
             return;
         }
     }
+
+    namespace util {
+        ///////////////////////////////////////////////////////////////////////////
+        // retrieve the command line arguments for the current locality
+        bool retrieve_commandline_arguments(
+            hpx::program_options::options_description const& app_options,
+            hpx::program_options::variables_map& vm)
+        {
+            // The command line for this application instance is available from
+            // this configuration section:
+            //
+            //     [hpx]
+            //     cmd_line=....
+            //
+            std::string cmdline;
+            std::size_t node = std::size_t(-1);
+
+            hpx::util::section& cfg = hpx::get_runtime().get_config();
+            if (cfg.has_entry("hpx.cmd_line"))
+                cmdline = cfg.get_entry("hpx.cmd_line");
+            if (cfg.has_entry("hpx.locality"))
+                node = hpx::util::from_string<std::size_t>(
+                    cfg.get_entry("hpx.locality"));
+
+            return parse_commandline(
+                cfg, app_options, cmdline, vm, node, allow_unregistered);
+        }
+
+        ///////////////////////////////////////////////////////////////////////////
+        // retrieve the command line arguments for the current locality
+        bool retrieve_commandline_arguments(
+            std::string const& appname, hpx::program_options::variables_map& vm)
+        {
+            using hpx::program_options::options_description;
+
+            options_description desc_commandline(
+                "Usage: " + appname + " [options]");
+
+            return retrieve_commandline_arguments(desc_commandline, vm);
+        }
+    }    // namespace util
 
     ///////////////////////////////////////////////////////////////////////////
     // Helpers
@@ -1213,6 +1258,7 @@ namespace hpx
         return rt->get_config().get_os_thread_count();
     }
 
+#if defined(HPX_HAVE_THREAD_EXECUTORS_COMPATIBILITY)
     std::size_t get_os_thread_count(threads::executor const& exec)
     {
         runtime* rt = get_runtime_ptr();
@@ -1232,16 +1278,7 @@ namespace hpx
         return exec.executor_data_->get_policy_element(
             threads::detail::current_concurrency, ec);
     }
-
-    std::size_t get_worker_thread_num()
-    {
-        return get_worker_thread_num(throws);
-    }
-
-    std::size_t get_worker_thread_num(error_code& ec)
-    {
-        return threads::detail::get_thread_num_tss();
-    }
+#endif
 
     std::size_t get_num_worker_threads()
     {
@@ -1296,16 +1333,19 @@ namespace hpx
 
     bool is_stopped()
     {
-        runtime* rt = get_runtime_ptr();
-        if (nullptr != rt)
-            return rt->get_state() == state_stopped;
+        if (!detail::exit_called)
+        {
+            runtime* rt = get_runtime_ptr();
+            if (nullptr != rt)
+                return rt->get_state() == state_stopped;
+        }
         return true;        // assume stopped
     }
 
     bool is_stopped_or_shutting_down()
     {
         runtime* rt = get_runtime_ptr();
-        if (nullptr != rt)
+        if (!detail::exit_called && nullptr != rt)
         {
             state st = rt->get_state();
             return st >= state_shutdown;
@@ -1360,6 +1400,7 @@ namespace hpx { namespace naming
 }}
 
 ///////////////////////////////////////////////////////////////////////////////
+#if defined(HPX_HAVE_NETWORKING)
 namespace hpx { namespace parcelset
 {
     bool do_background_work(
@@ -1369,6 +1410,7 @@ namespace hpx { namespace parcelset
             num_thread, mode);
     }
 }}
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 namespace hpx { namespace threads
@@ -1521,6 +1563,7 @@ namespace hpx
         }
     }
 
+#if defined(HPX_HAVE_NETWORKING)
     ///////////////////////////////////////////////////////////////////////////
     // Create an instance of a message handler plugin
     void register_message_handler(char const* message_handler_type,
@@ -1532,7 +1575,7 @@ namespace hpx
         }
 
         // store the request for later
-        message_handler_registrations.push_back(
+        get_message_handler_registrations().push_back(
             hpx::util::make_tuple(message_handler_type, action));
     }
 
@@ -1566,12 +1609,14 @@ namespace hpx
             "the runtime system is not available at this time");
         return nullptr;
     }
+#endif
 
     // helper function to stop evaluating counters during shutdown
-    void stop_evaluating_counters()
+    void stop_evaluating_counters(bool terminate)
     {
         runtime* rt = get_runtime_ptr();
-        if (nullptr != rt) rt->stop_evaluating_counters();
+        if (nullptr != rt)
+            rt->stop_evaluating_counters(terminate);
     }
 
     ///////////////////////////////////////////////////////////////////////////

@@ -6,19 +6,16 @@
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 ////////////////////////////////////////////////////////////////////////////////
 
-// make inspect happy: hpxinspect:nodeprecatedname:boost::is_any_of
-
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/actions.hpp>
 #include <hpx/include/util.hpp>
 #include <hpx/include/lcos.hpp>
+#include <hpx/string_util.hpp>
 
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include <boost/algorithm/string.hpp>
 
 std::vector<std::string> words;
 
@@ -51,7 +48,7 @@ std::string search(int start, int end, std::string const &word)
             bool sub = true;
             for (int i = 0; i < size; i++)
             {
-                char check_char = tolower(check[i]);
+                char check_char = static_cast<char>(tolower(check[i]));
                 char word_char = word[i];
                 if (word_char != check_char)
                 {
@@ -83,7 +80,7 @@ std::string search(int start, int end, std::string const &word)
         size = word.length();
     for (int i = 0; i < size; i++)
     {
-        char check_char = tolower(check[i]);
+        char check_char = static_cast<char>(tolower(check[i]));
         char word_char = word[i];
         if (check_char != word_char)
         {
@@ -146,7 +143,7 @@ int hpx_main()
         vector<string> strs;
         {
             vector<string> temp;
-            boost::split(temp, word, boost::is_any_of("\n\t -"));
+            hpx::string_util::split(temp, word, hpx::string_util::is_any_of("\n\t -"));
             for (string::size_type i = 0; i < temp.size(); i++)
             {
                 bool isContraction = false;
@@ -166,7 +163,7 @@ int hpx_main()
                     }
                     //remove any garbage characters
                     if (toupper(temp[i][j]) >= 'A' && toupper(temp[i][j]) <= 'Z')
-                        holder.push_back(tolower(temp[i][j]));
+                        holder.push_back(static_cast<char>(tolower(temp[i][j])));
                 }
                 if (holder.size() > 0)
                 {
@@ -188,7 +185,7 @@ int hpx_main()
             {
                 getline(fin, temp);
                 for (string::size_type i = 0; i < temp.length(); i++)
-                temp[i] = tolower(temp[i]);
+                temp[i] = static_cast<char>(tolower(temp[i]));
                 words.push_back(temp);
                 wordcount++;
             }

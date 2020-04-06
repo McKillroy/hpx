@@ -20,7 +20,7 @@
 #include <hpx/assertion.hpp>
 #include <hpx/datastructures/tuple.hpp>
 #include <hpx/errors.hpp>
-#include <hpx/lcos/local/spinlock.hpp>
+#include <hpx/synchronization/spinlock.hpp>
 #include <hpx/logging.hpp>
 #include <hpx/util/get_and_reset_value.hpp>
 
@@ -148,8 +148,8 @@ namespace hpx { namespace util
             std::size_t& max_connections = max_num_connections(e);
             if (num_connections > max_connections * 2)
             {
-                max_connections =
-                    static_cast<std::size_t>(max_connections * 1.5); //-V113
+                max_connections = static_cast<std::size_t>(
+                    static_cast<double>(max_connections) * 1.5);
             }
         }
 
@@ -165,8 +165,8 @@ namespace hpx { namespace util
             std::size_t& max_connections = max_num_connections(e);
             if (num_connections < max_connections / 2)
             {
-                max_connections =
-                    static_cast<std::size_t>(max_connections / 1.5); //-V113
+                max_connections = static_cast<std::size_t>(
+                    static_cast<double>(max_connections) / 1.5);
             }
         }
 

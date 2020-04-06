@@ -5,9 +5,7 @@
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 set(subdirs
-    lcos
     network_storage
-    osu
    )
 
 foreach(subdir ${subdirs})
@@ -28,12 +26,13 @@ foreach(benchmark ${benchmarks})
 
   # add example executable
   add_hpx_executable(${benchmark}
-                     SOURCES ${sources}
-                     ${${benchmark}_FLAGS}
-                     COMPONENT_DEPENDENCIES iostreams
-                     EXCLUDE_FROM_ALL
-                     HPX_PREFIX ${HPX_BUILD_PREFIX}
-                     FOLDER "Benchmarks/Network/${benchmark}")
+    INTERNAL_FLAGS
+    SOURCES ${sources}
+    ${${benchmark}_FLAGS}
+    COMPONENT_DEPENDENCIES iostreams
+    EXCLUDE_FROM_ALL
+    HPX_PREFIX ${HPX_BUILD_PREFIX}
+    FOLDER "Benchmarks/Network/${benchmark}")
 
   # add a custom target for this example
   add_hpx_pseudo_target(tests.performance.network.${benchmark})

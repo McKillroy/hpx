@@ -1,10 +1,10 @@
-# Copyright (c) 2019 The STE||AR-Group
+# Copyright (c) 2019-2020 The STE||AR-Group
 #
 # SPDX-License-Identifier: BSL-1.0
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
 # file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-cmake_minimum_required(VERSION 3.3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 set(util_headers
   hpx/util/detail/reserve.hpp
@@ -12,8 +12,9 @@ set(util_headers
   hpx/util/calculate_fanout.hpp
   hpx/util/get_and_reset_value.hpp
   hpx/util/insert_checked.hpp
+  hpx/util/ios_flags_saver.hpp
   hpx/util/manage_config.hpp
-  hpx/util/safe_lexical_cast.hpp
+  hpx/util/sed_transform.hpp
 )
 
 set(util_compat_headers
@@ -22,6 +23,7 @@ set(util_compat_headers
 
 set(util_sources
   manage_config.cpp
+  sed_transform.cpp
 )
 
 include(HPX_AddModule)
@@ -38,6 +40,7 @@ add_hpx_module(util
   DEPENDENCIES
     hpx_config
     hpx_concepts
+    hpx_format
     hpx_iterator_support
   CMAKE_SUBDIRS examples tests
 )

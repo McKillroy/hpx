@@ -10,14 +10,14 @@
 #include <hpx/config.hpp>
 
 #if defined(HPX_HAVE_DATAPAR)
-#include <hpx/parallel/algorithms/detail/predicates.hpp>
-#include <hpx/parallel/datapar/execution_policy_fwd.hpp>
+#include <hpx/execution/algorithms/detail/predicates.hpp>
+#include <hpx/execution/datapar/execution_policy_fwd.hpp>
+#include <hpx/execution/parallel/traits/vector_pack_alignment_size.hpp>
+#include <hpx/execution/parallel/traits/vector_pack_load_store.hpp>
+#include <hpx/execution/parallel/traits/vector_pack_type.hpp>
+#include <hpx/execution/traits/is_execution_policy.hpp>
 #include <hpx/parallel/datapar/iterator_helpers.hpp>
-#include <hpx/parallel/traits/vector_pack_alignment_size.hpp>
-#include <hpx/parallel/traits/vector_pack_load_store.hpp>
-#include <hpx/parallel/traits/vector_pack_type.hpp>
 #include <hpx/parallel/util/loop.hpp>
-#include <hpx/traits/is_execution_policy.hpp>
 #include <hpx/type_support/decay.hpp>
 
 #include <algorithm>
@@ -129,7 +129,7 @@ namespace hpx { namespace parallel { namespace util {
                     datapar_loop_step<Begin>::call1(f, first);
                 }
 
-                static std::size_t HPX_CONSTEXPR_OR_CONST size =
+                static std::size_t constexpr size =
                     traits::vector_pack_size<V>::value;
 
                 End const lastV = last - (size + 1);
@@ -188,7 +188,7 @@ namespace hpx { namespace parallel { namespace util {
                     return std::make_pair(std::move(it1), std::move(it2));
                 }
 
-                static std::size_t HPX_CONSTEXPR_OR_CONST size =
+                static std::size_t constexpr size =
                     traits::vector_pack_size<V>::value;
 
                 InIter1 const last1V = last1 - (size + 1);
@@ -249,7 +249,7 @@ namespace hpx { namespace parallel { namespace util {
                     datapar_loop_step<InIter>::call1(f, first);
                 }
 
-                static std::size_t HPX_CONSTEXPR_OR_CONST size =
+                static std::size_t constexpr size =
                     traits::vector_pack_size<V>::value;
 
                 for (std::int64_t lenV = std::int64_t(count - (size + 1));

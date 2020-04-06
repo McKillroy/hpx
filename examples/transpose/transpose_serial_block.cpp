@@ -66,7 +66,8 @@ int hpx_main(hpx::program_options::variables_map& vm)
         {
             for(std::uint64_t j = 0; j < block_order; ++j)
             {
-                double col_val = COL_SHIFT * (b*block_order + j);
+                double col_val =
+                    COL_SHIFT * static_cast<double>(b * block_order + j);
 
                 A[b][i * block_order + j] = col_val + ROW_SHIFT * i;
                 B[b][i * block_order + j] = -1.0;
@@ -156,8 +157,8 @@ int main(int argc, char* argv[])
         ( "verbose", "Verbose output")
     ;
 
-    // Initialize and run HPX, this example is serial and therefor only needs
-    // on thread. We just use hpx::init to parse our command line arguments
+    // Initialize and run HPX, this example is serial and therefore only needs
+    // one thread. We just use hpx::init to parse our command line arguments
     std::vector<std::string> const cfg = {
         "hpx.os_threads!=1"
     };
@@ -211,7 +212,8 @@ double test_results(std::uint64_t order, std::uint64_t block_order,
             for(std::uint64_t j = 0; j < block_order; ++j)
             {
                 double diff = trans[b][i * block_order + j] -
-                  (col_val + ROW_SHIFT * (b * block_order + j));
+                    (col_val +
+                        ROW_SHIFT * static_cast<double>(b * block_order + j));
                 errsq += diff * diff;
             }
         }

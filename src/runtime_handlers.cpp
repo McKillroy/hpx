@@ -4,7 +4,6 @@
 //  Copyright (c)      2011 Bryce Lelbach
 //
 //  SPDX-License-Identifier: BSL-1.0
-//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -13,10 +12,14 @@
 #include <hpx/custom_exception_info.hpp>
 #include <hpx/errors.hpp>
 #include <hpx/logging.hpp>
+#include <hpx/runtime.hpp>
 #include <hpx/runtime/config_entry.hpp>
-#include <hpx/runtime/threads/thread_data.hpp>
+#include <hpx/runtime/get_num_localities.hpp>
+#include <hpx/threading_base/thread_data.hpp>
+#include <hpx/threading_base/thread_pool_base.hpp>
 #include <hpx/runtime_handlers.hpp>
-#include <hpx/util/backtrace.hpp>
+#include <hpx/threadmanager.hpp>
+#include <hpx/debugging/backtrace.hpp>
 #include <hpx/util/debugging.hpp>
 
 #include <cstddef>
@@ -25,6 +28,7 @@
 #include <string>
 
 namespace hpx { namespace detail {
+
     HPX_NORETURN void assertion_handler(
         hpx::assertion::source_location const& loc, const char* expr,
         std::string const& msg)
@@ -44,6 +48,13 @@ namespace hpx { namespace detail {
                   << std::endl;
         std::abort();
     }
+
+#if defined(HPX_HAVE_APEX)
+    bool enable_parent_task_handler()
+    {
+        return !hpx::is_networking_enabled();
+    }
+#endif
 
     void test_failure_handler()
     {
@@ -94,4 +105,30 @@ namespace hpx { namespace detail {
         return threads::get_self_ptr() != nullptr;
     }
 #endif
+
+    threads::thread_pool_base* get_default_pool()
+    {
+        hpx::runtime* rt = get_runtime_ptr();
+        if (rt == nullptr)
+        {
+            HPX_THROW_EXCEPTION(invalid_status,
+                "hpx::detail::get_default_pool",
+                "The runtime system is not active");
+        }
+
+        return &rt->get_thread_manager().default_pool();
+    }
+
+    boost::asio::io_service* get_default_timer_service()
+    {
+        hpx::runtime* rt = get_runtime_ptr();
+        if (rt == nullptr)
+        {
+            HPX_THROW_EXCEPTION(invalid_status,
+                "hpx::detail::get_default_timer_service",
+                "The runtime system is not active");
+        }
+
+        return &get_thread_pool("timer-pool")->get_io_service();
+    }
 }}    // namespace hpx::detail

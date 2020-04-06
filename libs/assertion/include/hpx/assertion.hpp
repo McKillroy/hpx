@@ -7,6 +7,7 @@
 //  Make HPX inspect tool happy:
 //                               hpxinspect:noinclude:HPX_ASSERT
 //                               hpxinspect:noinclude:HPX_ASSERT_MSG
+//                               hpxinspect:noassert_macro
 
 //  Note: There are no include guards. This is intentional.
 
@@ -16,6 +17,9 @@
 #include <hpx/assertion/source_location.hpp>
 #include <hpx/preprocessor/stringize.hpp>
 
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+#include <assert.h>
+#endif
 #include <string>
 #include <type_traits>
 
@@ -53,22 +57,25 @@ namespace hpx { namespace assertion {
 #else
 /// \cond NOINTERNAL
 #define HPX_ASSERT_(expr, msg)                                                 \
-    ::hpx::assertion::detail::evaluate_assert(                                 \
-        [&]() -> bool { return !!(expr); },                                    \
-        ::hpx::assertion::source_location{__FILE__,                            \
-            static_cast<unsigned>(__LINE__), HPX_ASSERT_CURRENT_FUNCTION},     \
-        HPX_PP_STRINGIZE(expr), [&]() { return msg; });                        \
-    /**/
+    (!!(expr) ? void() :                                                       \
+                ::hpx::assertion::detail::handle_assert(                       \
+                    ::hpx::assertion::source_location{__FILE__,                \
+                        static_cast<unsigned>(__LINE__),                       \
+                        HPX_ASSERT_CURRENT_FUNCTION},                          \
+                    HPX_PP_STRINGIZE(expr), msg)) /**/
 
 #if defined(HPX_DEBUG)
+#if defined(HPX_COMPUTE_DEVICE_CODE)
+#define HPX_ASSERT(expr) assert(expr)
+#define HPX_ASSERT_MSG(expr, msg) HPX_ASSERT(expr)
+#else
 #define HPX_ASSERT(expr) HPX_ASSERT_(expr, std::string())
 #define HPX_ASSERT_MSG(expr, msg) HPX_ASSERT_(expr, msg)
+#endif
+#define HPX_NOEXCEPT_WITH_ASSERT
 #else
-#define HPX_ASSERT(expr)                                                       \
-    {                                                                          \
-    }
-#define HPX_ASSERT_MSG(expr, msg)                                              \
-    {                                                                          \
-    }
+#define HPX_ASSERT(expr)
+#define HPX_ASSERT_MSG(expr, msg)
+#define HPX_NOEXCEPT_WITH_ASSERT noexcept
 #endif
 #endif

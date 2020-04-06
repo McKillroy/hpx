@@ -8,7 +8,7 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/lcos.hpp>
 #include <hpx/include/iostreams.hpp>
-#include <hpx/timing/high_resolution_timer.hpp>
+#include <hpx/timing.hpp>
 
 #include <hpx/program_options.hpp>
 
@@ -45,7 +45,7 @@ double measure_one(Policy policy)
     hpx::wait_all(threads);
 
     std::uint64_t stop = hpx::util::high_resolution_clock::now();
-    return (stop - start) / 1e9;
+    return static_cast<double>(stop - start) / 1e9;
 }
 
 template <typename Policy>

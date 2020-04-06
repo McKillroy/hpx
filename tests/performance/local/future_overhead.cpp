@@ -1,4 +1,5 @@
-//  Copyright (c) 2018 Mikael Simberg
+//  Copyright (c) 2018-2020 Mikael Simberg
+//  Copyright (c) 2018-2019 John Biddiscombe
 //  Copyright (c) 2011 Bryce Adelstein-Lelbach
 //
 //  SPDX-License-Identifier: BSL-1.0
@@ -16,19 +17,21 @@
 #include <hpx/runtime/actions/continuation.hpp>
 #include <hpx/runtime/actions/plain_action.hpp>
 #include <hpx/testing.hpp>
-#include <hpx/timing/high_resolution_timer.hpp>
-#include <hpx/util/annotated_function.hpp>
-#include <hpx/util/yield_while.hpp>
+#include <hpx/timing.hpp>
+#include <hpx/threading_base/annotated_function.hpp>
+#include <hpx/basic_execution/this_thread.hpp>
 
 #include <hpx/include/parallel_execution.hpp>
-#include <hpx/lcos/local/sliding_semaphore.hpp>
 #include <hpx/runtime/threads/executors/limiting_executor.hpp>
 #include <hpx/runtime/threads/executors/pool_executor.hpp>
+#include <hpx/synchronization.hpp>
 
 #include <array>
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
+#include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -64,36 +67,44 @@ static std::string info_string = "";
 void print_stats(const char* title, const char* wait, const char* exec,
     std::int64_t count, double duration, bool csv)
 {
+    std::ostringstream temp;
     double us = 1e6 * duration / count;
     if (csv)
     {
-        hpx::util::format_to(cout,
+        hpx::util::format_to(temp,
             "{1}, {:27}, {:15}, {:18}, {:8}, {:8}, {:20}, {:4}, {:4}, "
-            "{:20}\n",
+            "{:20}",
             count, title, wait, exec, duration, us, queuing, numa_sensitive,
-            num_threads, info_string)
-            << flush;
+            num_threads, info_string);
     }
     else
     {
-        hpx::util::format_to(cout,
+        hpx::util::format_to(temp,
             "invoked {:1}, futures {:27} {:15} {:18} in {:8} seconds : {:8} "
-            "us/future, queue {:20}, numa {:4}, threads {:4}, info {:20}\n",
+            "us/future, queue {:20}, numa {:4}, threads {:4}, info {:20}",
             count, title, wait, exec, duration, us, queuing, numa_sensitive,
-            num_threads, info_string)
-            << flush;
+            num_threads, info_string);
     }
+    std::cout << temp.str() << std::endl;
     // CDash graph plotting
     //hpx::util::print_cdash_timing(title, duration);
 }
 
-const char* ExecName(const hpx::parallel::execution::parallel_executor& exec)
+const char* exec_name(hpx::parallel::execution::parallel_executor const& exec)
 {
     return "parallel_executor";
 }
-const char* ExecName(const hpx::parallel::execution::default_executor& exec)
+
+const char* exec_name(
+    hpx::parallel::execution::parallel_executor_aggregated const& exec)
 {
-    return "default_executor";
+    return "parallel_executor_aggregated";
+}
+
+const char* exec_name(
+    hpx::parallel::execution::thread_pool_executor const& exec)
+{
+    return "thread_pool_executor";
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -102,7 +113,7 @@ double global_scratch = 0;
 std::uint64_t num_iterations = 0;
 
 ///////////////////////////////////////////////////////////////////////////////
-double null_function()
+double null_function() noexcept
 {
     if (num_iterations > 0)
     {
@@ -182,7 +193,7 @@ void measure_function_futures_wait_each(
 
     // stop the clock
     const double duration = walltime.elapsed();
-    print_stats("async", "WaitEach", ExecName(exec), count, duration, csv);
+    print_stats("async", "WaitEach", exec_name(exec), count, duration, csv);
 }
 
 template <typename Executor>
@@ -199,7 +210,7 @@ void measure_function_futures_wait_all(
     wait_all(futures);
 
     const double duration = walltime.elapsed();
-    print_stats("async", "WaitAll", ExecName(exec), count, duration, csv);
+    print_stats("async", "WaitAll", exec_name(exec), count, duration, csv);
 }
 
 template <typename Executor>
@@ -231,12 +242,12 @@ void measure_function_futures_thread_count(
 
     if (sanity_check != 0)
     {
-        int count = this_pool->get_thread_count_unknown(std::size_t(-1), false);
+        auto count = this_pool->get_thread_count_unknown(std::size_t(-1), false);
         throw std::runtime_error(
             "This test is faulty " + std::to_string(count));
     }
 
-    print_stats("apply", "ThreadCount", ExecName(exec), count, duration, csv);
+    print_stats("apply", "ThreadCount", exec_name(exec), count, duration, csv);
 }
 
 template <typename Executor>
@@ -248,13 +259,34 @@ void measure_function_futures_limiting_executor(
     std::uint64_t const tasks = num_threads * 2000;
     std::atomic<std::uint64_t> sanity_check(count);
 
+    auto const sched = hpx::threads::get_self_id_data()->get_scheduler_base();
+    if (std::string("core-shared_priority_queue_scheduler") ==
+        sched->get_description())
+    {
+        sched->add_remove_scheduler_mode(
+            // add these flags
+            hpx::threads::policies::scheduler_mode(
+                hpx::threads::policies::enable_stealing |
+                hpx::threads::policies::assign_work_round_robin |
+                hpx::threads::policies::steal_after_local),
+            // remove these flags
+            hpx::threads::policies::scheduler_mode(
+                hpx::threads::policies::enable_stealing_numa |
+                hpx::threads::policies::assign_work_thread_parent |
+                hpx::threads::policies::steal_high_priority_first));
+    }
+
+    // test a parallel algorithm on custom pool with high priority
+    auto const chunk_size = count / (num_threads * 2);
+    hpx::parallel::execution::static_chunk_size fixed(chunk_size);
+
     // start the clock
     high_resolution_timer walltime;
     {
         hpx::threads::executors::limiting_executor<Executor> signal_exec(
             exec, tasks, tasks + 1000);
-        hpx::parallel::for_loop(
-            hpx::parallel::execution::par, 0, count, [&](int) {
+        hpx::parallel::for_loop(hpx::parallel::execution::par.with(fixed), 0,
+            count, [&](std::uint64_t) {
                 hpx::apply(signal_exec, [&]() {
                     null_function();
                     sanity_check--;
@@ -270,7 +302,8 @@ void measure_function_futures_limiting_executor(
 
     // stop the clock
     const double duration = walltime.elapsed();
-    print_stats("apply", "limiting-Exec", ExecName(exec), count, duration, csv);
+    print_stats(
+        "apply", "limiting-Exec", exec_name(exec), count, duration, csv);
 }
 
 template <typename Executor>
@@ -293,14 +326,14 @@ void measure_function_futures_sliding_semaphore(
 
     // stop the clock
     const double duration = walltime.elapsed();
-    print_stats("apply", "Sliding-Sem", ExecName(exec), count, duration, csv);
+    print_stats("apply", "Sliding-Sem", exec_name(exec), count, duration, csv);
 }
 
 struct unlimited_number_of_chunks
 {
     template <typename Executor>
     std::size_t maximal_number_of_chunks(
-        Executor&& executor, std::size_t cores, std::size_t num_tasks)
+        Executor&& /*executor*/, std::size_t /*cores*/, std::size_t num_tasks)
     {
         return num_tasks;
     }
@@ -313,20 +346,21 @@ namespace hpx { namespace parallel { namespace execution {
     };
 }}}    // namespace hpx::parallel::execution
 
-void measure_function_futures_for_loop(std::uint64_t count, bool csv)
+template <typename Executor>
+void measure_function_futures_for_loop(std::uint64_t count, bool csv,
+    Executor& exec, char const* executor_name = nullptr)
 {
     // start the clock
     high_resolution_timer walltime;
-    hpx::parallel::for_loop(hpx::parallel::execution::par.with(
+    hpx::parallel::for_loop(hpx::parallel::execution::par.on(exec).with(
                                 hpx::parallel::execution::static_chunk_size(1),
                                 unlimited_number_of_chunks()),
-        0, count, [](std::uint64_t) {
-            null_function();
-        });
+        0, count, [](std::uint64_t) { null_function(); });
 
     // stop the clock
     const double duration = walltime.elapsed();
-    print_stats("for_loop", "par", "parallel_executor", count, duration, csv);
+    print_stats("for_loop", "par",
+        executor_name ? executor_name : exec_name(exec), count, duration, csv);
 }
 
 void measure_function_futures_register_work(std::uint64_t count, bool csv)
@@ -337,7 +371,7 @@ void measure_function_futures_register_work(std::uint64_t count, bool csv)
     high_resolution_timer walltime;
     for (std::uint64_t i = 0; i < count; ++i)
     {
-        hpx::applier::register_work_nullary([&l]() {
+        hpx::threads::register_work_nullary([&l]() {
             null_function();
             l.count_down(1);
         });
@@ -353,13 +387,13 @@ void measure_function_futures_create_thread(std::uint64_t count, bool csv)
 {
     hpx::lcos::local::latch l(count);
 
-    auto const sched = hpx::threads::get_self_id()->get_scheduler_base();
+    auto const sched = hpx::threads::get_self_id_data()->get_scheduler_base();
     auto func = [&l]() {
         null_function();
         l.count_down(1);
     };
     auto const thread_func =
-        hpx::applier::detail::thread_function_nullary<decltype(func)>{func};
+        hpx::threads::detail::thread_function_nullary<decltype(func)>{func};
     auto const desc = hpx::util::thread_description();
     auto const prio = hpx::threads::thread_priority_normal;
     auto const hint = hpx::threads::thread_schedule_hint();
@@ -388,15 +422,29 @@ void measure_function_futures_create_thread_hierarchical_placement(
 {
     hpx::lcos::local::latch l(count);
 
-    auto sched = hpx::threads::get_self_id()->get_scheduler_base();
+    auto sched = hpx::threads::get_self_id_data()->get_scheduler_base();
+
+    if (std::string("core-shared_priority_queue_scheduler") ==
+        sched->get_description())
+    {
+        sched->add_remove_scheduler_mode(
+            hpx::threads::policies::scheduler_mode(
+                hpx::threads::policies::assign_work_thread_parent),
+            hpx::threads::policies::scheduler_mode(
+                hpx::threads::policies::enable_stealing |
+                hpx::threads::policies::enable_stealing_numa |
+                hpx::threads::policies::assign_work_round_robin |
+                hpx::threads::policies::steal_after_local |
+                hpx::threads::policies::steal_high_priority_first));
+    }
     auto const func = [&l]() {
         null_function();
         l.count_down(1);
     };
     auto const thread_func =
-        hpx::applier::detail::thread_function_nullary<decltype(func)>{func};
+        hpx::threads::detail::thread_function_nullary<decltype(func)>{func};
     auto const desc = hpx::util::thread_description();
-    auto const prio = hpx::threads::thread_priority_normal;
+    auto prio = hpx::threads::thread_priority_normal;
     auto const stack_size =
         hpx::threads::get_stack_size(hpx::threads::thread_stacksize_small);
     auto const num_threads = hpx::get_num_worker_threads();
@@ -406,9 +454,10 @@ void measure_function_futures_create_thread_hierarchical_placement(
     high_resolution_timer walltime;
     for (std::size_t t = 0; t < num_threads; ++t)
     {
-        auto const hint = hpx::threads::thread_schedule_hint(t);
+        auto const hint =
+            hpx::threads::thread_schedule_hint(static_cast<std::int16_t>(t));
         auto spawn_func = [&thread_func, sched, hint, t, count, num_threads,
-                              desc, stack_size]() {
+                              desc, stack_size, prio]() {
             std::uint64_t const count_start = t * count / num_threads;
             std::uint64_t const count_end = (t + 1) * count / num_threads;
             hpx::error_code ec;
@@ -422,7 +471,7 @@ void measure_function_futures_create_thread_hierarchical_placement(
             }
         };
         auto const thread_spawn_func =
-            hpx::applier::detail::thread_function_nullary<decltype(spawn_func)>{
+            hpx::threads::detail::thread_function_nullary<decltype(spawn_func)>{
                 spawn_func};
 
         hpx::threads::thread_init_data init(
@@ -453,9 +502,10 @@ void measure_function_futures_apply_hierarchical_placement(
     high_resolution_timer walltime;
     for (std::size_t t = 0; t < num_threads; ++t)
     {
-        auto const hint = hpx::threads::thread_schedule_hint(t);
+        auto const hint =
+            hpx::threads::thread_schedule_hint(static_cast<std::int16_t>(t));
         auto spawn_func = [&func, hint, t, count, num_threads]() {
-            auto exec = hpx::threads::executors::default_executor(hint);
+            auto exec = hpx::parallel::execution::parallel_executor(hint);
             std::uint64_t const count_start = t * count / num_threads;
             std::uint64_t const count_end = (t + 1) * count / num_threads;
 
@@ -465,14 +515,14 @@ void measure_function_futures_apply_hierarchical_placement(
             }
         };
 
-        auto exec = hpx::threads::executors::default_executor(hint);
+        auto exec = hpx::parallel::execution::parallel_executor(hint);
         hpx::apply(exec, spawn_func);
     }
     l.wait();
 
     // stop the clock
     const double duration = walltime.elapsed();
-    print_stats("apply_hierarchical", "latch", "default_executor", count,
+    print_stats("apply_hierarchical", "latch", "parallel_executor", count,
         duration, csv);
 }
 
@@ -503,30 +553,38 @@ int hpx_main(variables_map& vm)
         if (HPX_UNLIKELY(0 == count))
             throw std::logic_error("error: count of 0 futures specified\n");
 
-        hpx::parallel::execution::default_executor def;
         hpx::parallel::execution::parallel_executor par;
+        hpx::parallel::execution::parallel_executor_aggregated par_agg;
+        hpx::parallel::execution::thread_pool_executor tpe;
+        hpx::parallel::execution::thread_pool_executor tpe_nostack(
+            hpx::threads::thread_priority_default,
+            hpx::threads::thread_stacksize_nostack);
 
         for (int i = 0; i < repetitions; i++)
         {
-            measure_function_futures_limiting_executor(count, csv, def);
             measure_function_futures_limiting_executor(count, csv, par);
+            measure_function_futures_create_thread_hierarchical_placement(
+                count, csv);
             if (test_all)
             {
+                measure_function_futures_limiting_executor(count, csv, tpe);
                 measure_action_futures_wait_each(count, csv);
                 measure_action_futures_wait_all(count, csv);
-                measure_function_futures_wait_each(count, csv, def);
                 measure_function_futures_wait_each(count, csv, par);
-                measure_function_futures_wait_all(count, csv, def);
+                measure_function_futures_wait_each(count, csv, tpe);
                 measure_function_futures_wait_all(count, csv, par);
-                measure_function_futures_thread_count(count, csv, def);
+                measure_function_futures_wait_all(count, csv, tpe);
                 measure_function_futures_thread_count(count, csv, par);
-                measure_function_futures_sliding_semaphore(count, csv, def);
+                measure_function_futures_thread_count(count, csv, tpe);
                 measure_function_futures_sliding_semaphore(count, csv, par);
-                measure_function_futures_for_loop(count, csv);
+                measure_function_futures_sliding_semaphore(count, csv, tpe);
+                measure_function_futures_for_loop(count, csv, par);
+                measure_function_futures_for_loop(count, csv, par_agg);
+                measure_function_futures_for_loop(count, csv, tpe);
+                measure_function_futures_for_loop(
+                    count, csv, tpe_nostack, "thread_pool_executor_nostack");
                 measure_function_futures_register_work(count, csv);
                 measure_function_futures_create_thread(count, csv);
-                measure_function_futures_create_thread_hierarchical_placement(
-                    count, csv);
                 measure_function_futures_apply_hierarchical_placement(
                     count, csv);
             }
@@ -555,7 +613,7 @@ int main(int argc, char* argv[])
         ("repetitions", value<int>()->default_value(1),
          "number of repetitions of the full benchmark")
 
-        ("info", value<std::string>()->default_value("none"),
+        ("info", value<std::string>()->default_value("no-info"),
          "extra info for plot output (e.g. branch name)");
     // clang-format on
 

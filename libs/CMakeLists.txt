@@ -1,4 +1,4 @@
-# Copyright (c) 2019 The STE||AR-Group
+# Copyright (c) 2019-2020 The STE||AR-Group
 #
 # SPDX-License-Identifier: BSL-1.0
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -11,14 +11,23 @@ include(HPX_AddPseudoDependencies)
 include(HPX_AddPseudoTarget)
 
 set(HPX_LIBS
+  affinity
   algorithms
   allocator_support
+  asio
   assertion
+  basic_execution
+  batch_environments
   cache
+  checkpoint
   collectives
+  command_line_handling
+  compute
+  compute_cuda
   concepts
   concurrency
   config
+  coroutines
   datastructures
   debugging
   errors
@@ -28,22 +37,42 @@ set(HPX_LIBS
   functional
   hardware
   hashing
+  include
+  io_service
   iterator_support
+  local_lcos
   logging
+  memory
+  naming_base
+  performance_counters
   plugin
+  prefix
   preprocessor
   program_options
   resiliency
+  resource_partitioner
+  runtime_configuration
+  schedulers
   segmented_algorithms
+  serialization
+  static_reinit
   statistics
+  string_util
+  synchronization
   testing
+  thread_pools
   thread_support
+  threading
+  threading_base
+  threadmanager
   timing
   topology
   type_support
   util
+  version
   CACHE INTERNAL "list of HPX modules" FORCE
 )
+
 
 # add example pseudo targets needed for modules
 if(HPX_WITH_EXAMPLES)
@@ -74,17 +103,18 @@ if(HPX_WITH_TESTS)
   endif()
 
   if (HPX_WITH_TESTS_HEADERS)
-    add_custom_target(tests.headers.modules)
+    add_hpx_pseudo_target(tests.headers.modules)
     add_hpx_pseudo_dependencies(tests.headers tests.headers.modules)
   endif()
 endif()
 
 
+hpx_info("")
 hpx_info("Configuring modules:")
 
 # variables needed for modules.cpp
 set(MODULE_FORCE_LINKING_INCLUDES)
-set(MODULE_FORCE_LINKING_INCLUDES)
+set(MODULE_FORCE_LINKING_CALLS)
 
 # variables needed for config_strings_modules.hpp
 set(CONFIG_STRINGS_MODULES_INCLUDES)
@@ -95,6 +125,7 @@ foreach(lib ${HPX_LIBS})
 
   set(MODULE_FORCE_LINKING_INCLUDES
     "${MODULE_FORCE_LINKING_INCLUDES}#include <hpx/${lib}/force_linking.hpp>\n")
+
   set(MODULE_FORCE_LINKING_CALLS
     "${MODULE_FORCE_LINKING_CALLS}\n        ${lib}::force_linking();")
 
@@ -105,16 +136,15 @@ foreach(lib ${HPX_LIBS})
 endforeach()
 
 configure_file(
-  "${PROJECT_SOURCE_DIR}/cmake/templates/modules.cpp.in"
-  "${CMAKE_BINARY_DIR}/libs/modules.cpp"
-  @ONLY)
+    "${PROJECT_SOURCE_DIR}/cmake/templates/modules.cpp.in"
+    "${PROJECT_BINARY_DIR}/libs/modules.cpp"
+    @ONLY)
 
 configure_file(
   "${PROJECT_SOURCE_DIR}/cmake/templates/config_defines_strings_modules.hpp.in"
-  "${CMAKE_BINARY_DIR}/hpx/config/config_defines_strings_modules.hpp"
+  "${PROJECT_BINARY_DIR}/hpx/config/config_defines_strings_modules.hpp"
   @ONLY)
 configure_file(
   "${PROJECT_SOURCE_DIR}/cmake/templates/config_defines_strings_modules.hpp.in"
-  "${CMAKE_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/hpx/config/config_defines_strings_modules.hpp"
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/hpx/config/config_defines_strings_modules.hpp"
   @ONLY)
-

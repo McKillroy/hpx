@@ -4,7 +4,6 @@
 //  Copyright (c)      2011 Bryce Lelbach
 //
 //  SPDX-License-Identifier: BSL-1.0
-//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
@@ -13,8 +12,9 @@
 #include <hpx/apply.hpp>
 #include <hpx/assertion.hpp>
 #include <hpx/async.hpp>
+#include <hpx/basic_execution/register_locks.hpp>
+#include <hpx/coroutines/detail/context_impl.hpp>
 #include <hpx/custom_exception_info.hpp>
-#include <hpx/datastructures/tuple.hpp>
 #include <hpx/errors.hpp>
 #include <hpx/filesystem.hpp>
 #include <hpx/format.hpp>
@@ -28,22 +28,28 @@
 #include <hpx/runtime/components/runtime_support.hpp>
 #include <hpx/runtime/config_entry.hpp>
 #include <hpx/runtime/find_localities.hpp>
-#include <hpx/runtime/resource/detail/create_partitioner.hpp>
+#include <hpx/resource_partitioner/partitioner.hpp>
 #include <hpx/runtime/shutdown_function.hpp>
 #include <hpx/runtime/startup_function.hpp>
-#include <hpx/runtime/threads/policies/schedulers.hpp>
+#include <hpx/schedulers.hpp>
 #include <hpx/runtime_handlers.hpp>
 #include <hpx/runtime_impl.hpp>
+#include <hpx/string_util/split.hpp>
+#include <hpx/string_util/classification.hpp>
 #include <hpx/testing.hpp>
-#include <hpx/util/apex.hpp>
+#include <hpx/timing.hpp>
+#include <hpx/type_support/pack.hpp>
 #include <hpx/util/bind_action.hpp>
-#include <hpx/util/command_line_handling.hpp>
+#include <hpx/command_line_handling/command_line_handling.hpp>
 #include <hpx/util/debugging.hpp>
+#include <hpx/util/from_string.hpp>
+#include <hpx/util/init_logging.hpp>
 #include <hpx/util/query_counters.hpp>
+#include <hpx/util/register_locks_globally.hpp>
 
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/lexical_cast.hpp>
+#if defined(HPX_HAVE_NETWORKING) && defined(HPX_HAVE_PARCELPORT_MPI)
+#include <hpx/plugins/parcelport/mpi/mpi_environment.hpp>
+#endif
 
 #include <hpx/program_options/options_description.hpp>
 #include <hpx/program_options/parsers.hpp>
@@ -100,11 +106,10 @@ HPX_PLAIN_ACTION_ID(hpx::detail::list_component_type,
 typedef
     hpx::util::detail::bound_action<
         list_component_type_action
-      , hpx::util::tuple<
-            hpx::naming::id_type
-          , hpx::util::detail::placeholder<1>
-          , hpx::util::detail::placeholder<2>
-        >
+      , hpx::util::index_pack<0, 1, 2>
+      , hpx::naming::id_type
+      , hpx::util::detail::placeholder<1>
+      , hpx::util::detail::placeholder<2>
     >
     bound_list_component_type_action;
 
@@ -291,6 +296,7 @@ namespace hpx { namespace detail
     }
 }}
 
+///////////////////////////////////////////////////////////////////////////////
 #if (HPX_HAVE_DYNAMIC_HPX_MAIN != 0) && \
     (defined(__linux) || defined(__linux__) || defined(linux) || \
     defined(__APPLE__))
@@ -315,6 +321,7 @@ namespace hpx
 
     ///////////////////////////////////////////////////////////////////////////
     namespace detail {
+
         ///////////////////////////////////////////////////////////////////////
         struct dump_config
         {
@@ -330,6 +337,69 @@ namespace hpx
 
             std::reference_wrapper<hpx::runtime const> rt_;
         };
+
+        ///////////////////////////////////////////////////////////////////////
+        void activate_global_options(util::command_line_handling& cms,
+            int argc, char** argv)
+        {
+#if defined(__linux) || defined(linux) || defined(__linux__) ||                \
+    defined(__FreeBSD__)
+            threads::coroutines::detail::posix::use_guard_pages =
+                cms.rtcfg_.use_stack_guard_pages();
+#endif
+#ifdef HPX_HAVE_VERIFY_LOCKS
+            if (cms.rtcfg_.enable_lock_detection())
+            {
+                util::enable_lock_detection();
+            }
+            else
+            {
+                util::disable_lock_detection();
+            }
+#endif
+#ifdef HPX_HAVE_VERIFY_LOCKS_GLOBALLY
+            if (cms.rtcfg_.enable_global_lock_detection())
+            {
+                util::enable_global_lock_detection();
+            }
+            else
+            {
+                util::disable_global_lock_detection();
+            }
+#endif
+#ifdef HPX_HAVE_THREAD_MINIMAL_DEADLOCK_DETECTION
+            threads::policies::set_minimal_deadlock_detection_enabled(
+                cms.rtcfg_.enable_minimal_deadlock_detection());
+#endif
+#ifdef HPX_HAVE_SPINLOCK_DEADLOCK_DETECTION
+            util::detail::spinlock_break_on_deadlock =
+                cms.rtcfg_.enable_spinlock_deadlock_detection();
+            util::detail::spinlock_deadlock_detection_limit =
+                cms.rtcfg_.get_spinlock_deadlock_detection_limit();
+#endif
+
+            // initialize logging
+            util::detail::init_logging(
+                cms.rtcfg_, cms.rtcfg_.mode_ == runtime_mode_console);
+
+#if defined(HPX_HAVE_NETWORKING)
+#if defined(HPX_HAVE_PARCELPORT_MPI)
+            // getting localities from MPI environment (support mpirun)
+            if (util::detail::check_mpi_environment(cms.rtcfg_))
+            {
+                util::mpi_environment::init(&argc, &argv, cms);
+                cms.num_localities_ =
+                    static_cast<std::size_t>(util::mpi_environment::size());
+            }
+#endif
+
+            if (cms.num_localities_ != 1 || cms.node_ != 0 ||
+                cms.rtcfg_.enable_networking())
+            {
+                parcelset::parcelhandler::init(&argc, &argv, cms);
+            }
+#endif
+        }
 
         ///////////////////////////////////////////////////////////////////////
         void handle_list_and_print_options(hpx::runtime& rt,
@@ -375,23 +445,28 @@ namespace hpx
                 rt.add_startup_function(&list_component_types);
             }
 
-            if (vm.count("hpx:print-counter") || vm.count("hpx:print-counter-reset"))
+            if (vm.count("hpx:print-counter") ||
+                vm.count("hpx:print-counter-reset"))
             {
                 std::size_t interval = 0;
                 if (vm.count("hpx:print-counter-interval"))
-                    interval = vm["hpx:print-counter-interval"].as<std::size_t>();
+                {
+                    interval =
+                        vm["hpx:print-counter-interval"].as<std::size_t>();
+                }
 
                 std::vector<std::string> counters;
                 if (vm.count("hpx:print-counter"))
                 {
-                    counters = vm["hpx:print-counter"]
-                        .as<std::vector<std::string> >();
+                    counters =
+                        vm["hpx:print-counter"].as<std::vector<std::string>>();
                 }
+
                 std::vector<std::string> reset_counters;
                 if (vm.count("hpx:print-counter-reset"))
                 {
                     reset_counters = vm["hpx:print-counter-reset"]
-                        .as<std::vector<std::string> >();
+                                         .as<std::vector<std::string>>();
                 }
 
                 std::vector<std::string> counter_shortnames;
@@ -401,9 +476,9 @@ namespace hpx
                     if (counter_format == "csv-short"){
                         for (std::size_t i = 0; i != counters.size() ; ++i) {
                             std::vector<std::string> entry;
-                            boost::algorithm::split(entry, counters[i],
-                                boost::algorithm::is_any_of(","),
-                                boost::algorithm::token_compress_on);
+                            hpx::string_util::split(entry, counters[i],
+                                hpx::string_util::is_any_of(","),
+                                hpx::string_util::token_compress_mode::on);
 
                             if (entry.size() != 2)
                             {
@@ -419,27 +494,31 @@ namespace hpx
                 }
 
                 bool csv_header = true;
-                if(vm.count("hpx:no-csv-header"))
+                if (vm.count("hpx:no-csv-header"))
                     csv_header = false;
 
                 std::string destination("cout");
                 if (vm.count("hpx:print-counter-destination"))
                     destination = vm["hpx:print-counter-destination"].as<std::string>();
 
+                bool counter_types = false;
+                if (vm.count("hpx:print-counter-types"))
+                    counter_types = true;
+
                 // schedule the query function at startup, which will schedule
                 // itself to run after the given interval
                 std::shared_ptr<util::query_counters> qc =
-                    std::make_shared<util::query_counters>(
-                        std::ref(counters), std::ref(reset_counters), interval,
-                        destination, counter_format, counter_shortnames, csv_header,
-                        print_counters_locally);
+                    std::make_shared<util::query_counters>(std::ref(counters),
+                        std::ref(reset_counters), interval, destination,
+                        counter_format, counter_shortnames, csv_header,
+                        print_counters_locally, counter_types);
 
                 // schedule to print counters at shutdown, if requested
                 if (get_config_entry("hpx.print_counter.shutdown", "0") == "1")
                 {
                     // schedule to run at shutdown
-                    rt.add_pre_shutdown_function(
-                        util::bind_front(&util::query_counters::evaluate, qc));
+                    rt.add_pre_shutdown_function(util::bind_front(
+                        &util::query_counters::evaluate, qc, true));
                 }
 
                 // schedule to start all counters
@@ -555,33 +634,34 @@ namespace hpx
             util::command_line_handling& cfg,
             startup_function_type startup, shutdown_function_type shutdown)
         {
-            if (blocking) {
+            if (blocking)
+            {
                 return run(*rt, cfg.hpx_main_f_, cfg.vm_, cfg.rtcfg_.mode_,
                     std::move(startup), std::move(shutdown));
             }
 
             // non-blocking version
-            start(*rt, cfg.hpx_main_f_, cfg.vm_, cfg.rtcfg_.mode_, std::move(startup),
-                std::move(shutdown));
+            start(*rt, cfg.hpx_main_f_, cfg.vm_, cfg.rtcfg_.mode_,
+                std::move(startup), std::move(shutdown));
 
-            (void)rt.release();          // pointer to runtime is stored in TLS
+            // pointer to runtime is stored in TLS
+            hpx::runtime* p = rt.release();
+            (void)p;
+
             return 0;
         }
 
-        ///////////////////////////////////////////////////////////////////////
-        HPX_EXPORT int run_or_start(
-            util::function_nonser<
-                int(hpx::program_options::variables_map& vm)
-            > const& f,
-            hpx::program_options::options_description const& desc_cmdline,
-            int argc, char** argv, std::vector<std::string> && ini_config,
-            startup_function_type startup, shutdown_function_type shutdown,
-            hpx::runtime_mode mode, bool blocking)
+        ////////////////////////////////////////////////////////////////////////
+        void init_environment()
         {
             HPX_UNUSED(hpx::filesystem::initial_path());
 
             hpx::assertion::set_assertion_handler(&detail::assertion_handler);
             hpx::util::set_test_failure_handler(&detail::test_failure_handler);
+#if defined(HPX_HAVE_APEX)
+            hpx::util::set_enable_parent_task_handler(
+                    &detail::enable_parent_task_handler);
+#endif
             hpx::set_custom_exception_info_handler(&detail::custom_exception_info);
             hpx::set_pre_exception_handler(&detail::pre_exception_handler);
             hpx::set_thread_termination_handler(
@@ -595,6 +675,12 @@ namespace hpx
 #if !defined(HPX_HAVE_DISABLED_SIGNAL_EXCEPTION_HANDLERS)
             set_error_handlers();
 #endif
+            hpx::threads::detail::set_get_default_pool(
+                &detail::get_default_pool);
+            hpx::threads::detail::set_get_default_timer_service(
+                &hpx::detail::get_default_timer_service);
+            hpx::threads::detail::set_get_locality_id(
+                &get_locality_id);
 
 #if defined(HPX_NATIVE_MIC) || defined(__bgq__) || defined(__bgqion__)
             unsetenv("LANG");
@@ -612,41 +698,64 @@ namespace hpx
             unsetenv("LC_IDENTIFICATION");
             unsetenv("LC_ALL");
 #endif
+        }
+
+        // make sure the runtime system is not active yet
+        int ensure_no_runtime_is_up()
+        {
+            // make sure the runtime system is not active yet
+            if (get_runtime_ptr() != nullptr)
+            {
+#if (HPX_HAVE_DYNAMIC_HPX_MAIN != 0) &&                                        \
+    (defined(__linux) || defined(__linux__) || defined(linux) ||               \
+        defined(__APPLE__))
+                // make sure the runtime system is not initialized
+                // after its activation from int main()
+                if(hpx_start::include_libhpx_wrap)
+                {
+                    std::cerr << "hpx is already initialized from main.\n"
+                        "Note: Delete hpx_main.hpp to initialize hpx system "
+                        "using hpx::init. Exiting...\n";
+                    return -1;
+                }
+#endif
+                std::cerr << "hpx::init: can't initialize runtime system "
+                    "more than once! Exiting...\n";
+                return -1;
+            }
+            return 0;
+        }
+
+        ///////////////////////////////////////////////////////////////////////
+        HPX_EXPORT int run_or_start(
+            util::function_nonser<
+                int(hpx::program_options::variables_map& vm)
+            > const& f, int argc, char** argv,
+            init_params const& params, bool blocking)
+        {
+            init_environment();
 
             int result = 0;
             try {
                 // make sure the runtime system is not active yet
-                if (get_runtime_ptr() != nullptr)
+                if ((result = ensure_no_runtime_is_up()) != 0)
                 {
-                #if (HPX_HAVE_DYNAMIC_HPX_MAIN != 0) && \
-                (defined(__linux) || defined(__linux__) || defined(linux) || \
-                defined(__APPLE__))
-                    // make sure the runtime system is not initialized
-                    // after its activation from int main()
-                    if(hpx_start::include_libhpx_wrap)
-                    {
-                        std::cerr << "hpx is already initialized from main.\n"
-                            "Note: Delete hpx_main.hpp to initialize hpx system "
-                            "using hpx::init. Exiting...\n";
-                        return -1;
-                    }
-                #endif
-
-                    std::cerr << "hpx::init: can't initialize runtime system "
-                        "more than once! Exiting...\n";
-                    return -1;
+                    return result;
                 }
 
                 // scope exception handling to resource partitioner initialization
                 // any exception thrown during run_or_start below are handled
                 // separately
                 try {
-                    // Construct resource partitioner if this has not been done yet
-                    // and get a handle to it
-                    // (if the command-line parsing has not yet been done, do it now)
-                    auto& rp = hpx::resource::detail::create_partitioner(f,
-                        desc_cmdline, argc, argv, std::move(ini_config),
-                        resource::mode_default, mode, false, &result);
+                    // Construct resource partitioner if this has not been done
+                    // yet and get a handle to it (if the command-line parsing
+                    // has not yet been done, do it now)
+                    hpx::resource::partitioner rp(f, params.desc_cmdline, argc,
+                        argv, hpx_startup::user_main_config(params.cfg),
+                        params.rp_mode, params.mode, false, &result);
+
+                    activate_global_options(rp.get_command_line_switches(),
+                        argc, argv);
 
                     // check whether HPX should be exited at this point
                     // (parse_result is returning a result > 0, if the program options
@@ -658,6 +767,11 @@ namespace hpx
                         return result;
                     }
 
+                    // If thread_pools initialization in user main
+                    if (params.rp_callback) {
+                        params.rp_callback(rp);
+                    }
+
                     // Setup all internal parameters of the resource_partitioner
                     rp.configure_pools();
                 }
@@ -666,8 +780,6 @@ namespace hpx
                               << hpx::get_error_what(e) << "\n";
                     return -1;
                 }
-
-                util::apex_wrapper_init apex(argc, argv);
 
                 // Initialize and start the HPX runtime.
                 LPROGRESS_ << "run_local: create runtime";
@@ -680,7 +792,7 @@ namespace hpx
                 std::unique_ptr<hpx::runtime> rt(new runtime_type(cms.rtcfg_));
 
                 result = run_or_start(blocking, std::move(rt),
-                    cms, std::move(startup), std::move(shutdown));
+                    cms, std::move(params.startup), std::move(params.shutdown));
             }
             catch (detail::command_line_error const& e) {
                 std::cerr << "hpx::init: std::exception caught: " << e.what()
@@ -690,16 +802,17 @@ namespace hpx
             return result;
         }
 
+        ////////////////////////////////////////////////////////////////////////
         template <typename T>
         inline T
         get_option(std::string const& config, T default_ = T())
         {
             if (!config.empty()) {
                 try {
-                    return boost::lexical_cast<T>(
+                    return hpx::util::from_string<T>(
                         get_runtime().get_config().get_entry(config, default_));
                 }
-                catch (boost::bad_lexical_cast const&) {
+                catch (hpx::util::bad_lexical_cast const&) {
                     ;   // do nothing
                 }
             }
@@ -746,7 +859,6 @@ namespace hpx
         apply<components::server::runtime_support::shutdown_all_action>(
             hpx::find_root_locality(), shutdown_timeout);
 
-        //util::apex_finalize();
         return 0;
     }
 
@@ -783,8 +895,6 @@ namespace hpx
 
         if (std::abs(shutdown_timeout + 1.0) < 1e-16)
             shutdown_timeout = detail::get_option("hpx.shutdown_timeout", -1.0);
-
-        //util::apex_finalize();
 
         components::server::runtime_support* p =
             reinterpret_cast<components::server::runtime_support*>(
@@ -914,7 +1024,7 @@ namespace hpx
                     argv[argcount++] = const_cast<char*>(args[i].data());
                 }
                 else if (6 == args[i].find("positional", 6)) {
-                    std::string::size_type p = args[i].find_first_of("=");
+                    std::string::size_type p = args[i].find_first_of('=');
                     if (p != std::string::npos) {
                         args[i] = args[i].substr(p+1);
                         argv[argcount++] = const_cast<char*>(args[i].data());
@@ -928,5 +1038,5 @@ namespace hpx
             // Invoke custom startup functions
             return f(static_cast<int>(argcount), argv.data());
         }
-    }
-}
+    } // namespace detail
+} // namespace hpx

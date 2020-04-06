@@ -12,12 +12,12 @@
 
 #include <hpx/config.hpp>
 #include <hpx/functional/invoke.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/lcos/future.hpp>
 #include <hpx/type_support/unused.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/cancellation_token.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/loop.hpp>
@@ -89,7 +89,8 @@ namespace hpx { namespace parallel { inline namespace v1 {
                     return result::get(true);
 
                 util::cancellation_token<> tok;
-                auto f1 = [tok, HPX_CAPTURE_FORWARD(pred)](Iter part_begin,
+                auto f1 = [tok, pred = std::forward<Pred>(pred)](
+                              Iter part_begin,
                               std::size_t part_count) mutable -> bool {
                     bool fst_bool = hpx::util::invoke(pred, *part_begin);
                     if (part_count == 1)

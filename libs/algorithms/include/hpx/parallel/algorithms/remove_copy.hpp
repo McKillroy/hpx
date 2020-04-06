@@ -12,12 +12,12 @@
 #include <hpx/config.hpp>
 #include <hpx/concepts/concepts.hpp>
 #include <hpx/functional/invoke.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/util/tagged_pair.hpp>
 
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/copy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/tagspec.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/projection_identity.hpp>
@@ -228,7 +228,7 @@ namespace hpx { namespace parallel { inline namespace v1 {
                 return copy_if<IterPair>().call(
                     std::forward<ExPolicy>(policy), std::false_type(), first,
                     last, dest,
-                    [HPX_CAPTURE_FORWARD(f)](value_type const& a) -> bool {
+                    [f = std::forward<F>(f)](value_type const& a) -> bool {
                         return !hpx::util::invoke(f, a);
                     },
                     std::forward<Proj>(proj));

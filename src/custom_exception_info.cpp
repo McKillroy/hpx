@@ -2,29 +2,30 @@
 //  Copyright (c)      2011 Bryce Lelbach
 //
 //  SPDX-License-Identifier: BSL-1.0
-//  SPDX-License-Identifier: BSL-1.0
 //  Distributed under the Boost Software License, Version 1.0. (See accompanying
 //  file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <hpx/config.hpp>
 #include <hpx/assertion.hpp>
+#include <hpx/async.hpp>
+#include <hpx/basic_execution/register_locks.hpp>
+#include <hpx/custom_exception_info.hpp>
 #include <hpx/errors.hpp>
+#include <hpx/format.hpp>
+#include <hpx/logging.hpp>
 #include <hpx/runtime.hpp>
 #include <hpx/runtime/config_entry.hpp>
 #include <hpx/runtime/get_locality_id.hpp>
 #include <hpx/runtime/get_worker_thread_num.hpp>
 #include <hpx/runtime/naming/name.hpp>
-#include <hpx/runtime/threads/thread_helpers.hpp>
+#include <hpx/threading_base/thread_helpers.hpp>
 #include <hpx/runtime/threads/threadmanager.hpp>
 #include <hpx/state.hpp>
-#include <hpx/util/backtrace.hpp>
-#include <hpx/util/command_line_handling.hpp>
+#include <hpx/threading.hpp>
+#include <hpx/debugging/backtrace.hpp>
+#include <hpx/command_line_handling/command_line_handling.hpp>
 #include <hpx/util/debugging.hpp>
-#include <hpx/format.hpp>
-#include <hpx/logging.hpp>
-#include <hpx/concurrency/register_locks.hpp>
 #include <hpx/version.hpp>
-#include <hpx/custom_exception_info.hpp>
 
 #if defined(HPX_WINDOWS)
 #  include <process.h>
@@ -166,6 +167,47 @@ namespace hpx
     }
 }
 
+namespace hpx { namespace util {
+    // This is a local helper used to get the backtrace on a new new stack if
+    // possible.
+    std::string trace_on_new_stack(
+        std::size_t frames_no = HPX_HAVE_THREAD_BACKTRACE_DEPTH)
+    {
+#if defined(HPX_HAVE_STACKTRACES)
+        if(frames_no == 0)
+        {
+            return std::string();
+        }
+
+        backtrace bt(frames_no);
+
+        auto* self = threads::get_self_ptr();
+        if (nullptr == self ||
+            self->get_thread_id() == threads::invalid_thread_id)
+        {
+            return bt.trace();
+        }
+
+        lcos::local::futures_factory<std::string()> p([&bt]() { return bt.trace(); });
+
+        error_code ec(lightweight);
+        threads::thread_id_type tid = p.apply("hpx::util::trace_on_new_stack",
+            launch::fork, threads::thread_priority_default,
+            threads::thread_stacksize_medium, threads::thread_schedule_hint(),
+            ec);
+        if (ec)
+            return "<couldn't retrieve stack backtrace>";
+
+        // make sure this thread is executed last
+        hpx::this_thread::yield_to(thread::id(std::move(tid)));
+
+        return p.get_future().get(ec);
+#else
+        return "";
+#endif
+    }
+}}
+
 namespace hpx { namespace detail
 {
     void pre_exception_handler()
@@ -204,8 +246,7 @@ namespace hpx { namespace detail
         std::abort();
     }
 
-    template <typename Exception>
-    HPX_EXPORT std::exception_ptr construct_exception(Exception const& e,
+    HPX_EXPORT hpx::exception_info construct_exception_info(
         std::string const& func, std::string const& file, long line,
         std::string const& back_trace, std::uint32_t node,
         std::string const& hostname, std::int64_t pid, std::size_t shepherd,
@@ -213,26 +254,29 @@ namespace hpx { namespace detail
         std::string const& env, std::string const& config,
         std::string const& state_name, std::string const& auxinfo)
     {
+        return hpx::exception_info().set(
+            hpx::detail::throw_stacktrace(back_trace),
+            hpx::detail::throw_locality(node),
+            hpx::detail::throw_hostname(hostname), hpx::detail::throw_pid(pid),
+            hpx::detail::throw_shepherd(shepherd),
+            hpx::detail::throw_thread_id(thread_id),
+            hpx::detail::throw_thread_name(thread_name),
+            hpx::detail::throw_function(func), hpx::detail::throw_file(file),
+            hpx::detail::throw_line(line), hpx::detail::throw_env(env),
+            hpx::detail::throw_config(config),
+            hpx::detail::throw_state(state_name),
+            hpx::detail::throw_auxinfo(auxinfo));
+    }
+
+    template <typename Exception>
+    HPX_EXPORT std::exception_ptr construct_exception(
+        Exception const& e, hpx::exception_info info)
+    {
         // create a std::exception_ptr object encapsulating the Exception to
         // be thrown and annotate it with all the local information we have
         try
         {
-            throw_with_info(e,
-                std::move(hpx::exception_info().set(
-                    hpx::detail::throw_stacktrace(back_trace),
-                    hpx::detail::throw_locality(node),
-                    hpx::detail::throw_hostname(hostname),
-                    hpx::detail::throw_pid(pid),
-                    hpx::detail::throw_shepherd(shepherd),
-                    hpx::detail::throw_thread_id(thread_id),
-                    hpx::detail::throw_thread_name(thread_name),
-                    hpx::detail::throw_function(func),
-                    hpx::detail::throw_file(file),
-                    hpx::detail::throw_line(line),
-                    hpx::detail::throw_env(env),
-                    hpx::detail::throw_config(config),
-                    hpx::detail::throw_state(state_name),
-                    hpx::detail::throw_auxinfo(auxinfo))));
+            throw_with_info(e, std::move(info));
         }
         catch (...)
         {
@@ -240,138 +284,42 @@ namespace hpx { namespace detail
         }
 
         // need this return to silence a warning with icc
-        HPX_ASSERT(false);
+        HPX_ASSERT(false);  // -V779
         return std::exception_ptr();
     }
 
     template HPX_EXPORT std::exception_ptr construct_exception(
-        hpx::exception const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        hpx::exception const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        boost::system::system_error const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        boost::system::system_error const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::exception const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::exception const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        hpx::detail::std_exception const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        hpx::detail::std_exception const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::bad_exception const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::bad_exception const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        hpx::detail::bad_exception const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        hpx::detail::bad_exception const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::bad_typeid const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::bad_typeid const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        hpx::detail::bad_typeid const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        hpx::detail::bad_typeid const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::bad_cast const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::bad_cast const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        hpx::detail::bad_cast const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        hpx::detail::bad_cast const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::bad_alloc const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::bad_alloc const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        hpx::detail::bad_alloc const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        hpx::detail::bad_alloc const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::logic_error const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::logic_error const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::runtime_error const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::runtime_error const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::out_of_range const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::out_of_range const&, hpx::exception_info info);
     template HPX_EXPORT std::exception_ptr construct_exception(
-        std::invalid_argument const&,
-        std::string const& func, std::string const& file, long line,
-        std::string const& back_trace, std::uint32_t node,
-        std::string const& hostname, std::int64_t pid, std::size_t shepherd,
-        std::size_t thread_id, std::string const& thread_name,
-        std::string const& env, std::string const& config,
-        std::string const& state_name, std::string const& auxinfo);
+        std::invalid_argument const&, hpx::exception_info info);
 
     ///////////////////////////////////////////////////////////////////////////
     //  Figure out the size of the given environment

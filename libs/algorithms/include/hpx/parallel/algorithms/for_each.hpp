@@ -17,15 +17,15 @@
 #include <hpx/functional/traits/get_function_annotation.hpp>
 #endif
 #include <hpx/functional/traits/is_callable.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
+#include <hpx/threading_base/annotated_function.hpp>
 #include <hpx/traits/is_value_proxy.hpp>
 #include <hpx/traits/segmented_iterator_traits.hpp>
 #include <hpx/type_support/identity.hpp>
-#include <hpx/util/annotated_function.hpp>
 
+#include <hpx/execution/algorithms/detail/is_negative.hpp>
+#include <hpx/execution/execution_policy.hpp>
 #include <hpx/parallel/algorithms/detail/dispatch.hpp>
-#include <hpx/parallel/algorithms/detail/is_negative.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/traits/projected.hpp>
 #include <hpx/parallel/util/detail/algorithm_result.hpp>
 #include <hpx/parallel/util/foreach_partitioner.hpp>
@@ -78,7 +78,8 @@ namespace hpx { namespace parallel { inline namespace v1 {
         template <typename F>
         struct invoke_projected<F, util::projection_identity>
         {
-            invoke_projected(typename hpx::util::decay<F>::type& f,
+            HPX_HOST_DEVICE invoke_projected(
+                typename hpx::util::decay<F>::type& f,
                 util::projection_identity)
               : f_(f)
             {

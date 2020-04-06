@@ -17,11 +17,11 @@
 #include <hpx/runtime/actions_fwd.hpp>
 #include <hpx/runtime/components/pinned_ptr.hpp>
 #include <hpx/runtime/parcelset_fwd.hpp>
-#include <hpx/runtime/serialization/base_object.hpp>
-#include <hpx/runtime/serialization/input_archive.hpp>
-#include <hpx/runtime/serialization/output_archive.hpp>
-#include <hpx/runtime/threads/thread_helpers.hpp>
-#include <hpx/runtime/threads/thread_init_data.hpp>
+#include <hpx/serialization/base_object.hpp>
+#include <hpx/serialization/input_archive.hpp>
+#include <hpx/serialization/output_archive.hpp>
+#include <hpx/threading_base/thread_helpers.hpp>
+#include <hpx/threading_base/thread_init_data.hpp>
 #include <hpx/traits/action_remote_result.hpp>
 #include <hpx/debugging/demangle_helper.hpp>
 #if HPX_HAVE_ITTNOTIFY != 0 && !defined(HPX_HAVE_APEX)
@@ -60,6 +60,7 @@ namespace hpx { namespace actions
     ///////////////////////////////////////////////////////////////////////////
     namespace detail
     {
+#if defined(HPX_HAVE_NETWORKING)
         template <typename Action>
         char const* get_action_name()
 #ifndef HPX_HAVE_AUTOMATIC_SERIALIZATION_REGISTRATION
@@ -73,6 +74,13 @@ namespace hpx { namespace actions
             static_assert(
                 traits::needs_automatic_registration<Action>::value,
                 "HPX_REGISTER_ACTION_DECLARATION missing");
+            return util::debug::type_id<Action>::typeid_.type_id();
+        }
+#endif
+#else // HPX_HAVE_NETWORKING
+        template <typename Action>
+        char const* get_action_name()
+        {
             return util::debug::type_id<Action>::typeid_.type_id();
         }
 #endif

@@ -12,15 +12,17 @@
 #define HPX_RUNTIME_ACTIONS_TRANSFER_ACTION_HPP
 
 #include <hpx/config.hpp>
+
+#if defined(HPX_HAVE_NETWORKING)
 #include <hpx/runtime/actions/transfer_base_action.hpp>
 #include <hpx/runtime/applier/apply_helper.hpp>
 #include <hpx/runtime/parcelset/detail/per_action_data_counter_registry.hpp>
-#include <hpx/runtime/serialization/input_archive.hpp>
-#include <hpx/runtime/serialization/output_archive.hpp>
-#include <hpx/runtime/serialization/serialization_fwd.hpp>
-#include <hpx/runtime/threads/thread_helpers.hpp>
-#include <hpx/runtime/threads/thread_init_data.hpp>
-#include <hpx/datastructures/detail/pack.hpp>
+#include <hpx/serialization/input_archive.hpp>
+#include <hpx/serialization/output_archive.hpp>
+#include <hpx/serialization/serialization_fwd.hpp>
+#include <hpx/threading_base/thread_helpers.hpp>
+#include <hpx/threading_base/thread_init_data.hpp>
+#include <hpx/type_support/pack.hpp>
 
 #include <cstddef>
 #include <cstdint>
@@ -69,7 +71,7 @@ namespace hpx { namespace actions
         ///       continuations.
         template <std::size_t ...Is>
         threads::thread_function_type
-        get_thread_function(util::detail::pack_c<std::size_t, Is...>,
+        get_thread_function(util::index_pack<Is...>,
             naming::id_type&& target, naming::address::address_type lva,
             naming::address::component_type comptype);
 
@@ -80,7 +82,7 @@ namespace hpx { namespace actions
 
         template <std::size_t ...Is>
         void
-        schedule_thread(util::detail::pack_c<std::size_t, Is...>,
+        schedule_thread(util::index_pack<Is...>,
             naming::gid_type const& target_gid,
             naming::address::address_type lva,
             naming::address::component_type comptype,
@@ -129,7 +131,7 @@ namespace hpx { namespace actions
     template <std::size_t ...Is>
     threads::thread_function_type
     transfer_action<Action>::get_thread_function(
-        util::detail::pack_c<std::size_t, Is...>,
+        util::index_pack<Is...>,
         naming::id_type&& target, naming::address::address_type lva,
         naming::address::component_type comptype)
     {
@@ -145,7 +147,7 @@ namespace hpx { namespace actions
         naming::address::component_type comptype)
     {
         return get_thread_function(
-            typename util::detail::make_index_pack<Action::arity>::type(),
+            typename util::make_index_pack<Action::arity>::type(),
             std::move(target), lva, comptype);
     }
 
@@ -153,7 +155,7 @@ namespace hpx { namespace actions
     template <std::size_t ...Is>
     void
     transfer_action<Action>::schedule_thread(
-            util::detail::pack_c<std::size_t, Is...>,
+            util::index_pack<Is...>,
         naming::gid_type const& target_gid,
         naming::address::address_type lva,
         naming::address::component_type comptype,
@@ -183,7 +185,7 @@ namespace hpx { namespace actions
         std::size_t num_thread)
     {
         schedule_thread(
-            typename util::detail::make_index_pack<Action::arity>::type(),
+            typename util::make_index_pack<Action::arity>::type(),
             target_gid, lva, comptype, num_thread);
 
         // keep track of number of invocations
@@ -239,5 +241,7 @@ namespace hpx { namespace traits
 }}
 
 #include <hpx/config/warnings_suffix.hpp>
+
+#endif
 
 #endif /*HPX_RUNTIME_ACTIONS_TRANSFER_ACTION_HPP*/

@@ -9,14 +9,15 @@
 #include <hpx/hpx_init.hpp>
 #include <hpx/include/async.hpp>
 #include <hpx/include/lcos.hpp>
+#include <hpx/include/parallel_executors.hpp>
 #include <hpx/include/resource_partitioner.hpp>
 #include <hpx/include/threadmanager.hpp>
 #include <hpx/include/threads.hpp>
-#include <hpx/runtime/threads/executors/pool_executor.hpp>
-#include <hpx/runtime/threads/policies/scheduler_mode.hpp>
-#include <hpx/runtime/threads/policies/schedulers.hpp>
-#include <hpx/runtime/threads/thread_helpers.hpp>
+#include <hpx/threading_base/scheduler_mode.hpp>
+#include <hpx/schedulers.hpp>
+#include <hpx/threading_base/thread_helpers.hpp>
 #include <hpx/testing.hpp>
+#include <hpx/timing.hpp>
 
 #include <atomic>
 #include <cstddef>
@@ -44,7 +45,7 @@ int hpx_main(int argc, char* argv[])
 
     hpx::threads::thread_pool_base& worker_pool =
         hpx::resource::get_thread_pool("worker");
-    hpx::threads::executors::pool_executor worker_exec("worker");
+    hpx::parallel::execution::pool_executor worker_exec("worker");
     std::size_t const worker_pool_threads =
         hpx::resource::get_num_threads("worker");
 

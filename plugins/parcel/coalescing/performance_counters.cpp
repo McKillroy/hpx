@@ -6,20 +6,19 @@
 
 #include <hpx/config.hpp>
 
-#if defined(HPX_HAVE_PARCEL_COALESCING)
+#if defined(HPX_HAVE_NETWORKING) && defined(HPX_HAVE_PARCEL_COALESCING)
+#include <hpx/functional/function.hpp>
 #include <hpx/performance_counters/counters.hpp>
 #include <hpx/performance_counters/counter_creators.hpp>
 #include <hpx/performance_counters/manage_counter_type.hpp>
 #include <hpx/runtime/startup_function.hpp>
 #include <hpx/runtime/components/component_startup_shutdown.hpp>
 #include <hpx/runtime/naming/name.hpp>
-#include <hpx/functional/function.hpp>
-#include <hpx/util/safe_lexical_cast.hpp>
+#include <hpx/util/from_string.hpp>
+#include <hpx/string_util/classification.hpp>
+#include <hpx/string_util/split.hpp>
 
 #include <hpx/plugins/parcel/coalescing_counter_registry.hpp>
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
 
 #include <cstdint>
 #include <exception>
@@ -90,7 +89,8 @@ namespace hpx { namespace plugins { namespace parcel
         hpx::performance_counters::counter_info const& info, hpx::error_code& ec)
     {
         switch (info.type_) {
-        case performance_counters::counter_raw:
+        // NOLINTNEXTLINE(bugprone-branch-clone)
+        case performance_counters::counter_monotonically_increasing:
             {
                 performance_counters::counter_path_elements paths;
                 performance_counters::get_counter_path_elements(
@@ -167,7 +167,8 @@ namespace hpx { namespace plugins { namespace parcel
         hpx::performance_counters::counter_info const& info, hpx::error_code& ec)
     {
         switch (info.type_) {
-        case performance_counters::counter_raw:
+        // NOLINTNEXTLINE(bugprone-branch-clone)
+        case performance_counters::counter_monotonically_increasing:
             {
                 performance_counters::counter_path_elements paths;
                 performance_counters::get_counter_path_elements(
@@ -244,7 +245,8 @@ namespace hpx { namespace plugins { namespace parcel
         hpx::performance_counters::counter_info const& info, hpx::error_code& ec)
     {
         switch (info.type_) {
-        case performance_counters::counter_raw:
+        // NOLINTNEXTLINE(bugprone-branch-clone)
+        case performance_counters::counter_average_count:
             {
                 performance_counters::counter_path_elements paths;
                 performance_counters::get_counter_path_elements(
@@ -323,7 +325,7 @@ namespace hpx { namespace plugins { namespace parcel
         hpx::performance_counters::counter_info const& info, hpx::error_code& ec)
     {
         switch (info.type_) {
-        case performance_counters::counter_raw:
+        case performance_counters::counter_average_timer:
             {
                 performance_counters::counter_path_elements paths;
                 performance_counters::get_counter_path_elements(
@@ -449,9 +451,9 @@ namespace hpx { namespace plugins { namespace parcel
 
                 // split parameters, extract separate values
                 std::vector<std::string> params;
-                boost::algorithm::split(params, paths.parameters_,
-                    boost::algorithm::is_any_of(","),
-                    boost::algorithm::token_compress_off);
+                hpx::string_util::split(params, paths.parameters_,
+                    hpx::string_util::is_any_of(","),
+                    hpx::string_util::token_compress_mode::off);
 
                 std::int64_t min_boundary = 0;
                 std::int64_t max_boundary = 1000000;  // 1ms
@@ -468,11 +470,11 @@ namespace hpx { namespace plugins { namespace parcel
                 }
 
                 if (params.size() > 1 && !params[1].empty())
-                    min_boundary = util::safe_lexical_cast<std::int64_t>(params[1]);
+                    min_boundary = util::from_string<std::int64_t>(params[1]);
                 if (params.size() > 2 && !params[2].empty())
-                    max_boundary = util::safe_lexical_cast<std::int64_t>(params[2]);
+                    max_boundary = util::from_string<std::int64_t>(params[2]);
                 if (params.size() > 3 && !params[3].empty())
-                    num_buckets = util::safe_lexical_cast<std::int64_t>(params[3]);
+                    num_buckets = util::from_string<std::int64_t>(params[3]);
 
                 // ask registry
                 hpx::util::function_nonser<std::vector<std::int64_t>(bool)> f =
@@ -514,7 +516,7 @@ namespace hpx { namespace plugins { namespace parcel
         generic_counter_type_data const counter_types[] =
         {
             // /coalescing(locality#<locality_id>/total)/count/parcels@action-name
-            { "/coalescing/count/parcels", counter_raw,
+            { "/coalescing/count/parcels", counter_monotonically_increasing,
               "returns the number of parcels handled by the message handler "
               "associated with the action which is given by the counter "
               "parameter",
@@ -524,7 +526,7 @@ namespace hpx { namespace plugins { namespace parcel
               ""
             },
             // /coalescing(locality#<locality_id>/total)/count/messages@action-name
-            { "/coalescing/count/messages", counter_raw,
+            { "/coalescing/count/messages", counter_monotonically_increasing,
               "returns the number of messages creates as the result of "
               "coalescing parcels of the action which is given by the counter "
               "parameter",
@@ -534,7 +536,8 @@ namespace hpx { namespace plugins { namespace parcel
               ""
             },
             // /coalescing(...)/count/average-parcels-per-message@action-name
-            { "/coalescing/count/average-parcels-per-message", counter_raw,
+            { "/coalescing/count/average-parcels-per-message",
+              counter_average_count,
               "returns the average number of parcels sent in a message "
               "generated by the message handler associated with the action "
               "which is given by the counter parameter",
@@ -544,7 +547,7 @@ namespace hpx { namespace plugins { namespace parcel
               ""
             },
             // /coalescing(...)/time/between-parcels-average@action-name
-            { "/coalescing/time/between-parcels-average", counter_raw,
+            { "/coalescing/time/between-parcels-average", counter_average_timer,
               "returns the average time between parcels for the "
               "action which is given by the counter parameter",
               HPX_PERFORMANCE_COUNTER_V1,

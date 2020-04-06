@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 '''
-Copyright (c) 2018 Thomas Heller
+Copyright (c) 2019-2020 ETH Zurich
+Copyright (c) 2018      Thomas Heller
 
 SPDX-License-Identifier: BSL-1.0
 Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -22,9 +23,9 @@ lib_name_upper = lib_name.upper()
 header_str = '=' * len(lib_name)
 
 # CMake minimum version
-cmake_version = '3.3.2'
+cmake_version = '3.13'
 
-cmake_header = f'''# Copyright (c) 2019 The STE||AR-Group
+cmake_header = f'''# Copyright (c) 2020 The STE||AR-Group
 #
 # SPDX-License-Identifier: BSL-1.0
 # Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -33,7 +34,7 @@ cmake_header = f'''# Copyright (c) 2019 The STE||AR-Group
 
 readme_template = f'''
 ..
-    Copyright (c) 2019 The STE||AR-Group
+    Copyright (c) 2020 The STE||AR-Group
 
     SPDX-License-Identifier: BSL-1.0
     Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -50,7 +51,7 @@ Documentation can be found `here
 '''
 
 index_rst = f'''..
-    Copyright (c) 2019 The STE||AR-Group
+    Copyright (c) 2020 The STE||AR-Group
 
     SPDX-License-Identifier: BSL-1.0
     Distributed under the Boost Software License, Version 1.0. (See accompanying
@@ -62,6 +63,11 @@ index_rst = f'''..
 {lib_name}
 {header_str}
 
+TODO: High-level description of the library.
+
+See the :ref:`API reference <libs_{lib_name}_api>` of this module for more
+details.
+
 '''
 
 root_cmakelists_template = cmake_header + f'''
@@ -69,8 +75,10 @@ cmake_minimum_required(VERSION {cmake_version} FATAL_ERROR)
 
 list(APPEND CMAKE_MODULE_PATH "${{CMAKE_CURRENT_SOURCE_DIR}}/cmake")
 
+# Default location is $HPX_ROOT/libs/{lib_name}/include
 set({lib_name}_headers)
 
+# Default location is $HPX_ROOT/libs/{lib_name}/include_compatibility
 set({lib_name}_compat_headers)
 
 set({lib_name}_sources)
@@ -108,36 +116,34 @@ if (NOT HPX_WITH_TESTS AND HPX_TOP_LEVEL)
   hpx_set_option(HPX_{lib_name_upper}_WITH_TESTS VALUE OFF FORCE)
   return()
 endif()
-if (NOT HPX_{lib_name_upper}_WITH_TESTS)
-  hpx_info("    Tests for {lib_name} disabled")
-  return()
-endif()
 
-if (HPX_WITH_TESTS_UNIT)
-  add_hpx_pseudo_target(tests.unit.modules.{lib_name})
-  add_hpx_pseudo_dependencies(tests.unit.modules tests.unit.modules.{lib_name})
-  add_subdirectory(unit)
-endif()
+if (HPX_{lib_name_upper}_WITH_TESTS)
+    if (HPX_WITH_TESTS_UNIT)
+      add_hpx_pseudo_target(tests.unit.modules.{lib_name})
+      add_hpx_pseudo_dependencies(tests.unit.modules tests.unit.modules.{lib_name})
+      add_subdirectory(unit)
+    endif()
 
-if (HPX_WITH_TESTS_REGRESSIONS)
-  add_hpx_pseudo_target(tests.regressions.modules.{lib_name})
-  add_hpx_pseudo_dependencies(tests.regressions.modules tests.regressions.modules.{lib_name})
-  add_subdirectory(regressions)
-endif()
+    if (HPX_WITH_TESTS_REGRESSIONS)
+      add_hpx_pseudo_target(tests.regressions.modules.{lib_name})
+      add_hpx_pseudo_dependencies(tests.regressions.modules tests.regressions.modules.{lib_name})
+      add_subdirectory(regressions)
+    endif()
 
-if (HPX_WITH_TESTS_BENCHMARKS)
-  add_hpx_pseudo_target(tests.performance.modules.{lib_name})
-  add_hpx_pseudo_dependencies(tests.performance.modules tests.performance.modules.{lib_name})
-  add_subdirectory(performance)
-endif()
+    if (HPX_WITH_TESTS_BENCHMARKS)
+      add_hpx_pseudo_target(tests.performance.modules.{lib_name})
+      add_hpx_pseudo_dependencies(tests.performance.modules tests.performance.modules.{lib_name})
+      add_subdirectory(performance)
+    endif()
 
-if (HPX_WITH_TESTS_HEADERS)
-  add_hpx_header_tests(
-    modules.{lib_name}
-    HEADERS ${{{lib_name}_headers}}
-    HEADER_ROOT ${{PROJECT_SOURCE_DIR}}/include
-    NOLIBS
-    DEPENDENCIES hpx_{lib_name})
+    if (HPX_WITH_TESTS_HEADERS)
+      add_hpx_header_tests(
+        modules.{lib_name}
+        HEADERS ${{{lib_name}_headers}}
+        HEADER_ROOT ${{PROJECT_SOURCE_DIR}}/include
+        NOLIBS
+        DEPENDENCIES hpx_{lib_name})
+    endif()
 endif()
 '''
 
@@ -150,7 +156,7 @@ if lib_name != '--recreate-index':
 
     ################################################################################
     # Generate basic directory structure
-    for subdir in ['cmake', 'docs', 'examples', 'include', 'src', 'tests']:
+    for subdir in ['docs', 'examples', 'include', 'src', 'tests']:
         path = os.path.join(lib_name, subdir)
         mkdir(path)
     # Generate include directory structure
@@ -258,7 +264,7 @@ if(HPX_WITH_TESTS)
   endif()
 
   if (HPX_WITH_TESTS_HEADERS)
-    add_custom_target(tests.headers.modules)
+    add_hpx_pseudo_target(tests.headers.modules)
     add_hpx_pseudo_dependencies(tests.headers tests.headers.modules)
   endif()
 endif()
@@ -266,24 +272,45 @@ endif()
 '''
 
 libs_cmakelists += '''
+hpx_info("")
 hpx_info("Configuring modules:")
 
+# variables needed for modules.cpp
 set(MODULE_FORCE_LINKING_INCLUDES)
 set(MODULE_FORCE_LINKING_CALLS)
+
+# variables needed for config_strings_modules.hpp
+set(CONFIG_STRINGS_MODULES_INCLUDES)
+set(CONFIG_STRINGS_MODULES_ENTRIES)
+
 foreach(lib ${HPX_LIBS})
   add_subdirectory(${lib})
 
   set(MODULE_FORCE_LINKING_INCLUDES
-    "${MODULE_FORCE_LINKING_INCLUDES}\\n#include <hpx/${lib}/force_linking.hpp>\\n")
+    "${MODULE_FORCE_LINKING_INCLUDES}#include <hpx/${lib}/force_linking.hpp>\\n")
 
   set(MODULE_FORCE_LINKING_CALLS
     "${MODULE_FORCE_LINKING_CALLS}\\n        ${lib}::force_linking();")
+
+  set(CONFIG_STRINGS_MODULES_INCLUDES
+    "${CONFIG_STRINGS_MODULES_INCLUDES}#include <hpx/${lib}/config/config_strings.hpp>\\n")
+  set(CONFIG_STRINGS_MODULES_ENTRIES
+    "${CONFIG_STRINGS_MODULES_ENTRIES}\\n        { \\"${lib}\\", ${lib}::config_strings },")
 endforeach()
 
 configure_file(
     "${PROJECT_SOURCE_DIR}/cmake/templates/modules.cpp.in"
-    "${CMAKE_BINARY_DIR}/libs/modules.cpp"
+    "${PROJECT_BINARY_DIR}/libs/modules.cpp"
     @ONLY)
+
+configure_file(
+  "${PROJECT_SOURCE_DIR}/cmake/templates/config_defines_strings_modules.hpp.in"
+  "${PROJECT_BINARY_DIR}/hpx/config/config_defines_strings_modules.hpp"
+  @ONLY)
+configure_file(
+  "${PROJECT_SOURCE_DIR}/cmake/templates/config_defines_strings_modules.hpp.in"
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/hpx/config/config_defines_strings_modules.hpp"
+  @ONLY)
 '''
 
 f = open(os.path.join(cwd, 'CMakeLists.txt'), 'w')
@@ -291,7 +318,7 @@ f.write(libs_cmakelists)
 
 # Adapting all_modules.rst
 all_modules_rst = f'''..
-    Copyright (c) 2018-2019 The STE||AR-Group
+    Copyright (c) 2018-2020 The STE||AR-Group
 
     SPDX-License-Identifier: BSL-1.0
     Distributed under the Boost Software License, Version 1.0. (See accompanying

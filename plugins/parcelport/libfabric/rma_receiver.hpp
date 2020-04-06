@@ -28,8 +28,8 @@ namespace libfabric
     struct parcelport;
 
 
-    // The rma_receiver is repsonsible for receiving the
-    // mising chunks of the message:
+    // The rma_receiver is responsible for receiving the
+    // missing chunks of the message:
     //      1) Non-piggy backed non-zero copy chunks (if existing)
     //      2) The zero copy chunks from serialization
     struct rma_receiver : public rma_base
@@ -55,7 +55,7 @@ namespace libfabric
 
         // --------------------------------------------------------------------
         // the main entry point when a message is received, this function
-        // will despatch to either read with or without rma depending on
+        // will dispatch to either read with or without rma depending on
         // whether there are zero copy chunks to handle
         void read_message(region_type* region, fi_addr_t const& src_addr);
 

@@ -11,14 +11,14 @@
 
 #if defined(HPX_HAVE_DATAPAR)
 #include <hpx/datastructures/tuple.hpp>
+#include <hpx/execution/datapar/execution_policy_fwd.hpp>
+#include <hpx/execution/execution_policy.hpp>
+#include <hpx/execution/traits/is_execution_policy.hpp>
 #include <hpx/functional/invoke.hpp>
-#include <hpx/iterator_support/is_iterator.hpp>
-#include <hpx/parallel/datapar/execution_policy_fwd.hpp>
+#include <hpx/iterator_support/traits/is_iterator.hpp>
 #include <hpx/parallel/datapar/iterator_helpers.hpp>
-#include <hpx/parallel/execution_policy.hpp>
 #include <hpx/parallel/util/cancellation_token.hpp>
 #include <hpx/parallel/util/transform_loop.hpp>
-#include <hpx/traits/is_execution_policy.hpp>
 #include <hpx/type_support/decay.hpp>
 
 #include <algorithm>
@@ -55,7 +55,7 @@ namespace hpx { namespace parallel { namespace util {
                     datapar_transform_loop_step::call1(f, first, dest);
                 }
 
-                static std::size_t HPX_CONSTEXPR_OR_CONST size =
+                static constexpr std::size_t size =
                     traits::vector_pack_size<V>::value;
 
                 for (std::int64_t lenV = std::int64_t(count - (size + 1));
@@ -152,7 +152,7 @@ namespace hpx { namespace parallel { namespace util {
                     datapar_transform_loop_step::call1(f, first1, first2, dest);
                 }
 
-                static std::size_t HPX_CONSTEXPR_OR_CONST size =
+                static constexpr std::size_t size =
                     traits::vector_pack_size<V>::value;
 
                 for (std::int64_t lenV = std::int64_t(count - (size + 1));

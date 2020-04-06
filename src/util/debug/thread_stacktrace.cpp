@@ -6,7 +6,8 @@
 
 #include <hpx/config.hpp>
 #include <hpx/util/debug/thread_stacktrace.hpp>
-#include <hpx/runtime/threads/thread_data.hpp>
+#include <hpx/threading_base/thread_data.hpp>
+#include <hpx/runtime/thread_pool_helpers.hpp>
 
 #include <iomanip>
 #include <sstream>
@@ -45,7 +46,7 @@ namespace debug {
         hpx::threads::enumerate_threads(
             [&thread_data_vector](hpx::threads::thread_id_type id) -> bool
             {
-                hpx::threads::thread_data *data = id.get();
+                hpx::threads::thread_data *data = get_thread_id_data(id);
                 thread_data_vector.push_back(data);
                 return true; // always continue enumeration
             },
